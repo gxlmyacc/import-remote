@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "jscheck": true,
+    "experimentalDecorators": true,
+    "baseUrl": ".",
+    "paths": {
+
+    }
+  },
+  "exclude": ["node_modules", "dist", "esm"]
+}
