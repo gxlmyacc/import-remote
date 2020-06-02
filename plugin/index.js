@@ -1,10 +1,10 @@
 // @ts-check
 // Import types
-/** @typedef {import("../typings").HtmlTagObject} HtmlTagObject */
-/** @typedef {import("../typings").Options} ModuleWebpackOptions */
-/** @typedef {import("../typings").ProcessedOptions} ProcessedModuleWebpackOptions */
-/** @typedef {import("../typings").TemplateAssets} TemplateAssets */
-/** @typedef {import("../typings").TemplateParameter} TemplateParameter */
+/** @typedef {import("./typings").HtmlTagObject} HtmlTagObject */
+/** @typedef {import("./typings").Options} ModuleWebpackOptions */
+/** @typedef {import("./typings").ProcessedOptions} ProcessedModuleWebpackOptions */
+/** @typedef {import("./typings").TemplateAssets} TemplateAssets */
+/** @typedef {import("./typings").TemplateParameter} TemplateParameter */
 /** @typedef {import("webpack/lib/Compiler.js")} WebpackCompiler */
 /** @typedef {import("webpack/lib/Compilation.js")} WebpackCompilation */
 /** @typedef {import("webpack/lib/WebpackError.js")} WebpackError */

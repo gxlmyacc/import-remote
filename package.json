@@ -18,7 +18,7 @@
   },
   "files": [
     "esm",
-    "typings.d.ts"
+    "plugin"
   ],
   "scripts": {
     "build-esm": "babel src -d esm",
