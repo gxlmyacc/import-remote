@@ -28,20 +28,11 @@ module.exports = {
     path: __dirname + '/dist',
     filename: 'index_bundle.js'
   },
-  externals: {
-    react: {
-      root: 'React'
-      commonjs: 'react'
-    },
-    'react-dom': {
-      root: 'ReactDOM'
-      commonjs: 'react-dom'
-    },
-    lodash: {
-      root: '_'
-      commonjs: 'lodash'
-    }
-  },
+  externals: [
+    'react',
+    'react-dom',
+    'lodash'
+  ],
   optimization: {
     runtimeChunk: true,
   },
@@ -75,7 +66,11 @@ import _ from 'lodash',
 
 const test = await importRemote('http://localhost:3000/test/index.js', {
   // regisiter externals when call reomte
-  externals: { React, ReactDOM, _ }
+  externals: { 
+    react: React, 
+    'react-dom': ReactDOM, 
+    'lodash': _ 
+  }
 });
 
 // or register externals only once
