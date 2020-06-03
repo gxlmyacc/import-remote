@@ -31,11 +31,11 @@ function fetch(url, timeout = DEFAULT_TIMEOUT) {
 }
 
 function requireFromStr(source, global) {
-  if (global) source = `with(global){return (${source})}`;
+  if (global) source = `with(global){return ${source}}`;
   // eslint-disable-next-line
-  const fn = new Function('module', 'exports', source);
+  const fn = new Function('module', 'exports', 'global', source);
   const _module = { inBrowser: true, exports: {} };
-  fn(_module, _module.exports);
+  fn(_module, _module.exports, global);
   return _module.exports;
 }
 

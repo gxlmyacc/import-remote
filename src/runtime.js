@@ -37,7 +37,11 @@ module.exports = function (modules = [], {
   // The require function
   // eslint-disable-next-line camelcase
   function __webpack_require__(moduleId) {
-  // Check if module is in cache
+    if (!modules[moduleId]) {
+      console.warn(`module:${moduleId} not exist!`);
+      return;
+    }
+    // Check if module is in cache
     if (context.installedModules[moduleId]) {
       return context.installedModules[moduleId].exports;
     }
@@ -49,7 +53,12 @@ module.exports = function (modules = [], {
     };
 
     // Execute the module function
-    modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+    try {
+      modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+    } catch (ex) {
+      console.error(ex);
+      throw ex;
+    }
 
     // Flag the module as loaded
     module.l = true;
@@ -76,7 +85,7 @@ module.exports = function (modules = [], {
         context.installedCssChunks[chunkId] = 0;
       }));
     } else {
-      console.warn('[CSS_CHUNK_LOAD_FAILED] chunkId:' + chunkId + 'not found!');
+      console.warn('[CSS_CHUNK_LOAD_FAILED] chunkId:' + chunkId + ' not found!');
     }
 
     // js chunk loading
@@ -95,7 +104,8 @@ module.exports = function (modules = [], {
         let href = __webpack_require__.p + jsChunks[chunkId];
         importJs(href, timeout, context.global).then(function (result) {
           let chunk = context.installedChunks[chunkId];
-          chunk[0](result);
+          if (Array.isArray(chunk)) chunk[0](result);
+          else if (installedChunkData) installedChunkData[0](result);
         }).catch(event => {
           let chunk = context.installedChunks[chunkId];
           let errorMessage = event && event.message;
@@ -104,7 +114,7 @@ module.exports = function (modules = [], {
           error.code = 'JS_CHUNK_LOAD_FAILED';
           error.type = errorType;
           error.request = href;
-          chunk[1](error);
+          if (Array.isArray(chunk)) chunk[1](error);
           context.installedChunks[chunkId] = undefined;
         });
       }

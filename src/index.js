@@ -1,5 +1,7 @@
-const { fetch, DEFAULT_TIMEOUT } = require('./utils');
+/* eslint-disable no-proto */
+const { DEFAULT_TIMEOUT } = require('./utils');
 const runtime = require('./runtime');
+const importJs = require('./importJs');
 
 function remote(url, options = {}) {
   if (!window.__moduleWebpack__) window.__moduleWebpack__ = {};
@@ -13,7 +15,8 @@ function remote(url, options = {}) {
       delete remote.cached[url];
       return _reject.apply(this, arguments);
     };
-    fetch(url, timeout).then(data => {
+    importJs(url, timeout, window).then(data => {
+      if (typeof data === 'function') data = data(remote, options);
       if (data.externals) {
         data.externals.forEach(key => {
           if (!externals[key] && !remote.externals[key]) {
@@ -24,17 +27,29 @@ function remote(url, options = {}) {
 
       const scopeName = data.scopeName || '[default]';
       if (!window.__moduleWebpack__[scopeName]) {
-        window.__moduleWebpack__[scopeName] = {
-          global: Object.assign(Object.assignObject.create(window), remote.externals)
-        };
+        const context = { window };
+        // context.__proto__ = window;
+        window.__moduleWebpack__[scopeName] = context;
       }
 
       const context = window.__moduleWebpack__[scopeName];
-      Object.assign(Object.assignObject.create(window), externals);
+      
+      Object.assign(externals, remote.externals);
 
-      const __require__ = runtime([], Object.assign(data, { context }));
+      const __require__ = runtime(data.entrys.js, Object.assign(data, { context }));
       Promise.all(data.entrys.ids.map(id => __require__.e(id)))
-        .then(() => resolve(__require__(data.entrys.entryFile)))
+        .then(v => {
+          try {
+            data.externals.forEach(moduleId => {
+              __require__.m[moduleId] = module => module.exports = externals[moduleId];
+            });
+            let result = __require__(data.entryFile);
+            resolve(result);
+          } catch (ex) {
+            console.error(ex);
+            reject(ex);
+          }
+        })
         .catch(reject);
     }).catch(reject);
   });

@@ -10,11 +10,11 @@ module.exports = function ({
     scopeName,
     publicPath,
     externals,
-    jsChunk: chunks.files.js,
-    cssChunk: chunks.files.css,
+    jsChunks: chunks.files.js,
+    cssChunks: chunks.files.css,
     entrys: {
-      css: entrys.css.map(v => v.file),
-      js: entrys.js.filter(v => !v.isRuntime).map(v => v.file),
+      css: entrys.css.map(v => (v.file.indexOf(publicPath) === 0 ? v.file.replace(publicPath, '') : v.file)),
+      js: entrys.js.filter(v => !v.isRuntime).map(v => (v.file.indexOf(publicPath) === 0 ? v.file.replace(publicPath, '') : v.file)),
       ids: entrys.ids.filter(v => !v.isRuntime).map(v => v.id),
     }
   };
