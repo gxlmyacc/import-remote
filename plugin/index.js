@@ -629,25 +629,30 @@ class ModuleWebpackPlugin {
       assets.manifest = this.appendHash(assets.manifest, compilationHash);
     }
 
-    const entryChunk = compilation.chunks.find(c => c.entryModule);
-    let entryModule = entryChunk && entryChunk.entryModule;
-    if (entryModule.buildMeta.providedExports) {
+    const entryChunk = compilation.chunks.find(c => {
       // @ts-ignore
-      let request = entryModule.request;
-      if (!request
+      if (!c.entryModule || !entryNames.includes(c.entryModule.name)) return; 
+      let entryModule = c && c.entryModule;
+      if (entryModule.buildMeta.providedExports) {
         // @ts-ignore
-        && entryModule._identifier
-        // @ts-ignore
-        && entryModule._identifier.startsWith('multi ')) {
-        // @ts-ignore
-        entryModule = entryModule.dependencies[entryModule.dependencies.length - 1];
-        // @ts-ignore
-        request = entryModule && entryModule.request;
+        let request = entryModule.request;
+        if (!request
+          // @ts-ignore
+          && entryModule._identifier
+          // @ts-ignore
+          && entryModule._identifier.startsWith('multi ')) {
+          // @ts-ignore
+          entryModule = entryModule.dependencies[entryModule.dependencies.length - 1];
+          // @ts-ignore
+          request = entryModule && entryModule.request;
+        }
+        if (!request) return;
+        if (request) request = request.split('?')[0];
+        assets.entryFile = path.isAbsolute(request) 
+          ? path.relative(compilation.options.context, request).replace(/\\/g, '/')
+          : request;
       }
-      if (request) {
-        assets.entryFile = './' + path.relative(compilation.options.context, request.split('?')[0]).replace(/\\/g, '/');
-      }
-    }
+    });
 
     // Extract paths to .js, .mjs and .css files from the current compilation
     const entryPointPublicPathMap = {};
