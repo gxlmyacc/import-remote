@@ -30,12 +30,12 @@ function fetch(url, timeout = DEFAULT_TIMEOUT) {
   });
 }
 
-function requireFromStr(source, global) {
-  if (global) source = `with(global){return ${source}}`;
+function requireFromStr(source, context) {
+  if (context) source = `with(__context__){try { return ${source} } catch(ex) { console.error(ex); throw ex; } }`;
   // eslint-disable-next-line
-  const fn = new Function('module', 'exports', 'global', source);
+  const fn = new Function('module', 'exports', '__context__', source);
   const _module = { inBrowser: true, exports: {} };
-  fn(_module, _module.exports, global);
+  fn(_module, _module.exports, context);
   return _module.exports;
 }
 

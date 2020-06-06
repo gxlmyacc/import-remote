@@ -111,7 +111,7 @@ declare namespace ModuleWebpackPlugin {
   interface TemplateParameter {
     version: number,
     compilation: any;
-    package: any;
+    pkg: any;
     globalObject: string;
     moduleWebpackPlugin: {
       scopeName: string,

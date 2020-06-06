@@ -9,6 +9,7 @@ module.exports = function (modules = [], {
   jsChunks = {},
   context = {},
   timeout = DEFAULT_TIMEOUT,
+  head,
 } = {}) {
   // The module cache
   context.installedModules = context.installedModules || {};
@@ -32,21 +33,29 @@ module.exports = function (modules = [], {
   jsonpArray = jsonpArray.slice();
   // eslint-disable-next-line no-use-before-define
   for (let i = 0; i < jsonpArray.length; i++) webpackJsonpCallback(jsonpArray[i]);
-  let parentJsonpFunction = oldJsonpFunction;
+  context.parentJsonpFunction = oldJsonpFunction;
 
   // The require function
   // eslint-disable-next-line camelcase
   function __webpack_require__(moduleId) {
-    if (!modules[moduleId]) {
-      console.warn(`module:${moduleId} not exist!`);
-      return;
+    let module = modules[moduleId];
+    if (!module) {
+      if (module !== false) {
+        module = context.__remoteModuleResolver__(moduleId);
+        if (!module) modules[moduleId] = false;
+      }
+      if (!module) {
+        console.warn(`module:${moduleId} not exist!`);
+        return;
+      }
+      modules[moduleId] = module;
     }
     // Check if module is in cache
     if (context.installedModules[moduleId]) {
       return context.installedModules[moduleId].exports;
     }
     // Create a new module (and put it into the cache)
-    let module = context.installedModules[moduleId] = {
+    module = context.installedModules[moduleId] = {
       i: moduleId,
       l: false,
       exports: {}
@@ -77,7 +86,7 @@ module.exports = function (modules = [], {
     else if (context.installedCssChunks[chunkId] !== 0 && cssChunks[chunkId]) {
       promises.push(context.installedCssChunks[chunkId] = new Promise(function (resolve, reject) {
         let href = __webpack_require__.p + cssChunks[chunkId];
-        importCss(href, timeout).then(resolve).catch(function (err) {
+        importCss(href, timeout, head).then(resolve).catch(function (err) {
           delete context.installedCssChunks[chunkId];
           reject(err);
         });
@@ -85,7 +94,7 @@ module.exports = function (modules = [], {
         context.installedCssChunks[chunkId] = 0;
       }));
     } else {
-      console.warn('[CSS_CHUNK_LOAD_FAILED] chunkId:' + chunkId + ' not found!');
+      console.warn('[import-remote:CSS_CHUNK_LOAD_FAILED] chunkId:' + chunkId + ' not found!');
     }
 
     // js chunk loading
@@ -102,7 +111,7 @@ module.exports = function (modules = [], {
         promises.push(installedChunkData[2] = promise);
 
         let href = __webpack_require__.p + jsChunks[chunkId];
-        importJs(href, timeout, context.global).then(function (result) {
+        importJs(href, timeout, context.window).then(function (result) {
           let chunk = context.installedChunks[chunkId];
           if (Array.isArray(chunk)) chunk[0](result);
           else if (installedChunkData) installedChunkData[0](result);
@@ -224,7 +233,7 @@ module.exports = function (modules = [], {
       }
     });
 
-    if (parentJsonpFunction) parentJsonpFunction(data);
+    if (context.parentJsonpFunction) context.parentJsonpFunction(data);
 
     while (resolves.length) {
       resolves.shift()();

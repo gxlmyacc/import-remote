@@ -1,6 +1,6 @@
 const { DEFAULT_TIMEOUT } = require('./utils');
 
-module.exports = function (href, timeout = DEFAULT_TIMEOUT) {
+module.exports = function (href, timeout = DEFAULT_TIMEOUT, head) {
   return new Promise(((resolve, reject) => {
     let existingLinkTags = document.getElementsByTagName('link');
     for (let i = 0; i < existingLinkTags.length; i++) {
@@ -41,7 +41,7 @@ module.exports = function (href, timeout = DEFAULT_TIMEOUT) {
     linkTag.onerror = onStyleLoadError;
     linkTag.href = href;
 
-    let head = document.getElementsByTagName('head')[0];
+    if (!head) head = document.getElementsByTagName('head')[0];
     head.appendChild(linkTag);
 
     timerId = setTimeout(function () {

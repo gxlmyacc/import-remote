@@ -53,7 +53,7 @@ function resolveGlobalObject(compilation, options) {
   const outputOptions = compilation.mainTemplate.outputOptions;
   const scopeName = resolveScopeName(compilation, options);
   return scopeName
-    ? `window.__moduleWebpack__['${scopeName}']`
+    ? `window.__remoteModuleWebpack__['${scopeName}']`
     : outputOptions.globalObject;
 }
 
@@ -75,14 +75,23 @@ function isPlainObject(v) {
 function resolveExternals(compilation, options) {
   let ret = [];
   let external = compilation.options.externals || [];
+  const _path = key => {
+    let v = require.resolve(key);
+    if (!v) return '';
+    return path.relative(compilation.options.context, v).replace(/\\/g, '/');
+  };
   const _obj = obj => {
     let r = [];
     Object.keys(obj).forEach(key => {
       let v = obj[key];
-      if (!v) r.push(key);
-      else if (typeof v === 'string') r.push(v);
-      else if (v.root) r.push(v.root);
-      else if (v.commonjs) r.push(v.commonjs);
+      if (!v) return;
+      let item = {};
+      if (typeof v === 'string') Object.assign(item, { name: key, var: v });
+      else if (v.root) Object.assign(item, { name: key, var: v.root });
+      else if (v.commonjs) Object.assign(item, { name: key, var: v.commonjs });
+      else return;
+      item.path = _path(key);
+      r.push(item);
     });
     return r;
   };
@@ -90,12 +99,16 @@ function resolveExternals(compilation, options) {
     let r = [];
     arr.forEach(v => {
       if (!v) return;
-      if (typeof v === 'string') r.push(v);
-      else if (isPlainObject(v)) {
-        if (v.root) r.push(v.root);
-        else if (v.commonjs) r.push(v.commonjs);
-        else r.push(..._obj(v));
+      let item = {};
+      if (typeof v === 'string') {
+        Object.assign(item, { name: v, var: v });
+      } else if (isPlainObject(v)) {
+        if (v.root) Object.assign(item, { name: v, var: v.root });
+        else if (v.commonjs) Object.assign(item, { name: v, var: v.commonjs });
+        else return r.push(..._obj(v));
       }
+      item.path = _path(v);
+      r.push(item);
     });
     return r;
   };
@@ -121,7 +134,7 @@ function templateParametersGenerator(compilation, assets, options, version) {
     version,
     compilation,
     globalObject: resolveGlobalObject(compilation, options),
-    package: options.package,
+    pkg: options.package,
     webpackConfig: compilation.options,
     moduleWebpackPlugin: {
       scopeName: resolveScopeName(compilation, options),
@@ -191,6 +204,8 @@ class ModuleWebpackPlugin {
 
     const packageFile = findUp.sync('package.json', { cwd: compiler.context || process.cwd() });
     this.options.package = require(packageFile);
+    this.options.projectPath = path.dirname(packageFile);
+    this.options.nodeModulesPath = path.relative(compiler.context, path.resolve(this.options.projectPath, './node_modules')).replace(/\\/g, '/');
     this.options.template = this.getFullTemplatePath(this.options.template, compiler.context);
 
     // convert absolute filename into relative so that webpack can
