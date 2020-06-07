@@ -1,18 +1,26 @@
-const remote = require('./remote');
+import remote from './remote';
 
 class RemoteModule {
 
-  constructor(host, options = { }) {
-    if (!host) throw new Error('[RemoteModule]host不能为空！');
+  constructor(host, options = {}) {
+    if (!host) throw new Error('[RemoteModule]`host` can not empty！');
     this.host = host;
     this.options = options;
   }
 
-  require(moduleName = 'index.js', options = {}) {
+  resolveModuleUrl(moduleName = 'index.js') {
     if (!/\.js$/.test(moduleName)) moduleName += '.js';
-    return remote(`${this.host}/${moduleName}`, options);
+    return `${this.host}/${moduleName}`;
+  }
+
+  isRequired(moduleName = 'index.js') {
+    return Boolean(remote.cached[this.resolveModuleUrl(moduleName)]);
+  }
+
+  require(moduleName = 'index.js', options = {}) {
+    return remote(this.resolveModuleUrl(moduleName), { ...this.options, ...options });
   }
 
 }
 
-module.exports = RemoteModule;
+export default RemoteModule;

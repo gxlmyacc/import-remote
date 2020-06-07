@@ -1,8 +1,8 @@
-const { DEFAULT_TIMEOUT } = require('./utils');
-const importCss = require('./importCss');
-const importJs = require('./importJs');
+import { DEFAULT_TIMEOUT } from './utils';
+import importCss from './importCss';
+import importJs from './importJs';
 
-module.exports = function (modules = [], {
+function createRuntime(modules = [], {
   jsonpFunction = 'webpackJsonp',
   publicPath = '',
   cssChunks = {},
@@ -252,4 +252,6 @@ module.exports = function (modules = [], {
 
   // eslint-disable-next-line camelcase
   return __webpack_require__;
-};
+}
+
+export default createRuntime;

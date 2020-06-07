@@ -3,13 +3,14 @@
 module.exports = function ({
   version,
   pkg,
-  moduleWebpackPlugin: { scopeName, entryFile, chunks, externals, publicPath, entrys, options }
+  moduleWebpackPlugin: { scopeName, entryFile, jsonpFunction, chunks, externals, publicPath, entrys, options }
 }) {
   const data = {
     version,
     moduleVersion: pkg.version,
     nodeModulesPath: options.nodeModulesPath,
     entryFile,
+    jsonpFunction,
     scopeName,
     publicPath,
     externals,

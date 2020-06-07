@@ -1,6 +1,6 @@
-const { DEFAULT_TIMEOUT } = require('./utils');
-const runtime = require('./runtime');
-const importJs = require('./importJs');
+import { DEFAULT_TIMEOUT } from './utils';
+import createRuntime from './runtime';
+import importJs from './importJs';
 
 function createContext() {
   const context = {
@@ -32,11 +32,12 @@ function createContext() {
 
 
 function remote(url, options = {}) {
-  if (!window.__remoteModuleWebpack__) window.__remoteModuleWebpack__ = {};
+  if (!window.__remoteModuleWebpack__) window.__remoteModuleWebpack__ = { __moduleManifest__: {} };
   const {
     timeout = DEFAULT_TIMEOUT,
-    nodeModulesPath = require.resolveWeak('import-remote').match(/^.+node_modules/) || [],
+    nodeModulesPath = (require.resolveWeak('babel-runtime/helpers/interopRequireDefault').match(/^.+node_modules/) || [])[0],
     externals = {},
+    globals = {}
   } = options;
   if (remote.cached[url]) return remote.cached[url];
   return remote.cached[url] = new Promise((resolve, _reject) => {
@@ -44,11 +45,18 @@ function remote(url, options = {}) {
       delete remote.cached[url];
       return _reject.apply(this, arguments);
     };
-    return importJs(url, timeout, window).then(data => {
+    return importJs(url, timeout, window).then(manifest => {
       try {
-        if (typeof data === 'function') data = data(remote, options);
-        if (data.externals) {
-          data.externals.forEach(external => {
+        if (typeof manifest === 'function') manifest = manifest(remote, options);
+
+        const scopeName = manifest.scopeName || '[default]';
+        if (!window.__remoteModuleWebpack__.__moduleManifest__[scopeName]) {
+          window.__remoteModuleWebpack__.__moduleManifest__[scopeName] = {};
+        }
+        window.__remoteModuleWebpack__.__moduleManifest__[scopeName][manifest.entryFile] = manifest;
+
+        if (manifest.externals) {
+          manifest.externals.forEach(external => {
             if (!externals[external.name] && !remote.externals[external.name]) {
               console.warn(`[import-remote:remote]the exteranl '${external.name}' not be found`);
             }
@@ -72,43 +80,41 @@ function remote(url, options = {}) {
           if (__webpack_require__.rm) return __webpack_require__.rm(external, modulePath);
         };
 
-        const scopeName = data.scopeName || '[default]';
+    
         if (!window.__remoteModuleWebpack__[scopeName]) {
           const context = window.__remoteModuleWebpack__[scopeName] = createContext();
           context.__remoteModuleWebpack__ = window.__remoteModuleWebpack__;
-          Object.assign(context, remote.globas);
+          Object.assign(context, remote.globals, globals);
           // eslint-disable-next-line
           context.__remoteModuleResolver__ = moduleId => __webpack_modules__ && __webpack_modules__[moduleId];
+          context.__require__ = createRuntime([], { ...manifest, scopeName, context });
+          // eslint-disable-next-line no-undef
+          context.__require__.rm = resolveModule;
         }
   
         const context = window.__remoteModuleWebpack__[scopeName];
         
         Object.assign(externals, remote.externals);
 
-        const __require__ = runtime(data.entrys.js, Object.assign(data, { context }));
-        // eslint-disable-next-line no-undef
-        __require__.rm = resolveModule;
-        Promise.all(data.entrys.ids.map(id => __require__.e(id)))
+        const __require__ = context.__require__;
+        Promise.all(manifest.entrys.ids.map(id => __require__.e(id)))
           .then(v => {
             try {
-              data.externals.forEach(external => {
+              manifest.externals.forEach(external => {
                 if (__require__.m[external.name] && __require__.m[external.name].__import_remote_external__) return;
                 const fn = module => {
                   if (fn && fn.__import_remote_exports__) return fn.__import_remote_exports__;
                   let result = externals[external.name];
-                  if (result === undefined) result = remote.modules[external.name];
                   // eslint-disable-next-line
-                  if (result === undefined && external.path) result = resolveModule(external, nodeModulesPath, data.nodeModulesPath);
+                  if (result === undefined && external.path) result = resolveModule(external, manifest.nodeModulesPath);
                   if (result === undefined && external.var) result = window[external.var];
+                  if (result !== undefined && fn) fn.__import_remote_exports__ = result;
                   module.exports = result;
-                  if (module.exports !== undefined && fn) {
-                    fn.__import_remote_exports__ = result;
-                  }
                 };
                 __require__.m[external.name] = fn;
                 __require__.m[external.name].__import_remote_external__ = true;
               });
-              let result = __require__(data.entryFile);
+              let result = __require__(manifest.entryFile);
               resolve(result);
             } catch (ex) {
               console.error(ex);
@@ -124,13 +130,9 @@ function remote(url, options = {}) {
   });
 }
 remote.cached = {};
-remote.externals = {
-
-};
-remote.modules = {};
-remote.globas = {
+remote.externals = {};
+remote.globals = {
   _interopRequireDefault: require('babel-runtime/helpers/interopRequireDefault').default
 };
 
-
-module.exports = remote;
+export default remote;

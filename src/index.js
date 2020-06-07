@@ -1,11 +1,8 @@
-const remote = require('./remote');
-const remoteModule = require('./module');
+import remote from './remote';
+import remoteModule from './module';
 
-remote.cached = {};
-remote.externals = {};
-remote.modules = {};
+export {
+  remoteModule
+};
 
-remote.default = remote;
-remote.remoteModule = remoteModule;
-
-module.exports = remote;
+export default remote;

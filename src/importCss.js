@@ -1,6 +1,6 @@
-const { DEFAULT_TIMEOUT } = require('./utils');
+import { DEFAULT_TIMEOUT } from './utils';
 
-module.exports = function (href, timeout = DEFAULT_TIMEOUT, head) {
+export default function (href, timeout = DEFAULT_TIMEOUT, head) {
   return new Promise(((resolve, reject) => {
     let existingLinkTags = document.getElementsByTagName('link');
     for (let i = 0; i < existingLinkTags.length; i++) {
@@ -48,4 +48,4 @@ module.exports = function (href, timeout = DEFAULT_TIMEOUT, head) {
       onStyleLoadError({ type: 'timeout', target: linkTag });
     }, timeout);
   }));
-};
+}

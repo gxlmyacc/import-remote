@@ -16,6 +16,7 @@ declare namespace ModuleWebpackPlugin {
   interface TemplateAssets {
     publicPath: string,
     entryFile: string,
+    jsonpFunction: string,
     externals: Array<any>,
     chunks: {
       files: {

@@ -39,7 +39,7 @@ function requireFromStr(source, context) {
   return _module.exports;
 }
 
-module.exports = {
+export {
   DEFAULT_TIMEOUT,
   fetch,
   requireFromStr

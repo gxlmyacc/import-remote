@@ -1,7 +1,7 @@
 
-const { fetch, requireFromStr, DEFAULT_TIMEOUT } = require('./utils');
+import { fetch, requireFromStr, DEFAULT_TIMEOUT } from './utils';
 
-module.exports = function importJs(href, timeout = DEFAULT_TIMEOUT, global) {
+function importJs(href, timeout = DEFAULT_TIMEOUT, global) {
   return new Promise((resolve, reject) => {
     fetch(href, timeout).then(source => {
       try {
@@ -13,5 +13,7 @@ module.exports = function importJs(href, timeout = DEFAULT_TIMEOUT, global) {
       }
     }).catch(reject);
   });
-};
+}
+
+export default importJs;
 

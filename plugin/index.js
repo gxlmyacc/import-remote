@@ -74,7 +74,14 @@ function isPlainObject(v) {
   */
 function resolveExternals(compilation, options) {
   let ret = [];
-  let external = compilation.options.externals || [];
+  // @ts-ignore
+  let externals = [...compilation._modules].filter(m => m[0].startsWith('external ')).map(([, m]) => {
+    // @ts-ignore
+    let v = m.request;
+    // @ts-ignore
+    if (isPlainObject(v)) v.request = m.userRequest;
+    return v;
+  }).filter(Boolean);
   const _path = key => {
     let v = require.resolve(key);
     if (!v) return '';
@@ -103,17 +110,16 @@ function resolveExternals(compilation, options) {
       if (typeof v === 'string') {
         Object.assign(item, { name: v, var: v });
       } else if (isPlainObject(v)) {
-        if (v.root) Object.assign(item, { name: v, var: v.root });
-        else if (v.commonjs) Object.assign(item, { name: v, var: v.commonjs });
+        if (v.root) Object.assign(item, { name: v.request, var: v.root });
+        else if (v.commonjs) Object.assign(item, { name: v.request, var: v.commonjs });
         else return r.push(..._obj(v));
-      }
-      item.path = _path(v);
+      } else return;
+      item.path = _path(item.name);
       r.push(item);
     });
     return r;
   };
-  if (Array.isArray(external)) ret.push(..._arr(external));
-  else if (isPlainObject(external)) ret.push(..._obj(external));
+  ret.push(..._arr(externals));
   return ret;
 }
 
@@ -222,6 +228,12 @@ class ModuleWebpackPlugin {
 
     // Clear the cache once a new ModuleWebpackPlugin is added
     childCompiler.clearCache(compiler);
+
+    compiler.hooks.beforeRun.tap('ModuleWebpackPlugin', compilation => {
+      if (!compilation.options.optimization.runtimeChunk) {
+        compilation.options.optimization.runtimeChunk = true;
+      }
+    });
 
     // Register all ModuleWebpackPlugins instances at the child compiler
     compiler.hooks.thisCompilation.tap('ModuleWebpackPlugin', compilation => {
@@ -585,6 +597,7 @@ class ModuleWebpackPlugin {
             source._value = value;
           });
         } else if (asset.source) {
+          // @ts-ignore
           let source = asset.source();
           const value = handleSource(source);
           if (value === source) return;
@@ -600,6 +613,8 @@ class ModuleWebpackPlugin {
       publicPath,
       // the entry file
       entryFile: '',
+      // jsonpFunction 
+      jsonpFunction,
       // the webpack externals
       externals: [],
       // Will contian all chunk files
@@ -620,7 +635,11 @@ class ModuleWebpackPlugin {
       manifest: assetKeys.find(assetFile => path.extname(assetFile) === '.appcache'),
     };
 
-    compilation.chunks.map(chunk => {
+    compilation.chunks.forEach(chunk => {
+      if (chunk.hasRuntime()) {
+        chunk.files.forEach(file => delete compilation.assets[file]);
+        return;
+      }
       chunk.files.forEach(file => {
         if ((/\.(css)(\?|$)/).test(file)) assets.chunks.files.css[chunk.id] = file;
         else if ((/\.(js|mjs)(\?|$)/).test(file)) assets.chunks.files.js[chunk.id] = file;
@@ -701,6 +720,7 @@ class ModuleWebpackPlugin {
           };
           if (isEntry && isJs) {
             const asset = compilation.assets[chunkFile];
+            // @ts-ignore
             let [, entryFile] = asset.source().match(/module.exports\s?=\s?__webpack_require__\(.+"(.+)"\);\s/) || [];
             if (entryFile) assets.entryFile = entryFile;
           }
