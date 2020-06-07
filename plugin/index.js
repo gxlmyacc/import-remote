@@ -18,6 +18,7 @@ const _ = require('lodash');
 const path = require('path');
 // @ts-ignore
 const findUp = require('find-up');
+const webpack = require('webpack');
 const loaderUtils = require('loader-utils');
 
 // @ts-ignore
@@ -150,6 +151,24 @@ function templateParametersGenerator(compilation, assets, options, version) {
   };
 }
 
+function findHMRPluginIndex(config) {
+  if (!config.plugins) {
+    config.plugins = [];
+    return;
+  }
+  return config.plugins.findIndex((plugin) => plugin.constructor === webpack.HotModuleReplacementPlugin);
+};
+
+function addHMRPlugin(config) {
+  const idx = findHMRPluginIndex(config);
+  if (idx < 0) config.plugins.push(new webpack.HotModuleReplacementPlugin());
+}
+
+function removeHMRPlugin(config) {
+  const idx = findHMRPluginIndex(config);
+  if (~idx) config.plugins.splice(idx, 1);
+};
+
 class ModuleWebpackPlugin {
 
   /**
@@ -208,6 +227,10 @@ class ModuleWebpackPlugin {
     /** @type Promise<string> */
     let compilationPromise;
 
+    if (!compiler.options.optimization.runtimeChunk) {
+      compiler.options.optimization.runtimeChunk = true;
+    }
+
     const packageFile = findUp.sync('package.json', { cwd: compiler.context || process.cwd() });
     this.options.package = require(packageFile);
     this.options.projectPath = path.dirname(packageFile);
@@ -228,15 +251,14 @@ class ModuleWebpackPlugin {
 
     // Clear the cache once a new ModuleWebpackPlugin is added
     childCompiler.clearCache(compiler);
-
-    compiler.hooks.beforeRun.tap('ModuleWebpackPlugin', compilation => {
-      if (!compilation.options.optimization.runtimeChunk) {
-        compilation.options.optimization.runtimeChunk = true;
-      }
+    
+    compiler.hooks.afterPlugins.tap('ModuleWebpackPlugin', compiler => {
+      addHMRPlugin(compiler.options);
     });
-
+    
     // Register all ModuleWebpackPlugins instances at the child compiler
     compiler.hooks.thisCompilation.tap('ModuleWebpackPlugin', compilation => {
+      removeHMRPlugin(compiler.options);
       // Clear the cache if the child compiler is outdated
       if (childCompiler.hasOutDatedTemplateCache(compilation)) {
         childCompiler.clearCache(compiler);
@@ -615,6 +637,8 @@ class ModuleWebpackPlugin {
       entryFile: '',
       // jsonpFunction 
       jsonpFunction,
+      // is hot
+      hot: Boolean(compilation.compiler.watchMode),
       // the webpack externals
       externals: [],
       // Will contian all chunk files

@@ -2,7 +2,7 @@ const DEFAULT_TIMEOUT = 120000;
 
 const cached = {};
 
-function fetch(url, timeout = DEFAULT_TIMEOUT) {
+function fetch(url, { timeout = DEFAULT_TIMEOUT, sync } = {}) {
   return new Promise(function (resolve, reject) {
     if (cached[url]) return resolve(cached[url]);
 
@@ -16,7 +16,8 @@ function fetch(url, timeout = DEFAULT_TIMEOUT) {
       }
     };
     try {
-      xhr.open('GET', url, true);
+      url += `${~url.indexOf('?') ? '&' : '?'}_=${Date.now()}`;
+      xhr.open('GET', url, !sync);
       xhr.setRequestHeader('Content-Type', 'text/plain;charset=UTF-8');
       xhr.send(null);
 
@@ -31,12 +32,18 @@ function fetch(url, timeout = DEFAULT_TIMEOUT) {
 }
 
 function requireFromStr(source, context) {
-  if (context) source = `with(__context__){try { return ${source} } catch(ex) { console.error(ex); throw ex; } }`;
-  // eslint-disable-next-line
-  const fn = new Function('module', 'exports', '__context__', source);
-  const _module = { inBrowser: true, exports: {} };
-  fn(_module, _module.exports, context);
-  return _module.exports;
+  // eslint-disable-next-line no-useless-catch
+  try {
+    if (context) source = `with(__context__){try { return ${source} } catch(ex) { console.error(ex); throw ex; } }`;
+    // eslint-disable-next-line
+    const fn = new Function('module', 'exports', '__context__', source);
+    const _module = { inBrowser: true, exports: {} };
+    fn(_module, _module.exports, context);
+    return _module.exports;
+  } catch (ex) {
+    // console.error(ex);
+    throw ex;
+  }
 }
 
 export {

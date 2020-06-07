@@ -17,6 +17,7 @@ declare namespace ModuleWebpackPlugin {
     publicPath: string,
     entryFile: string,
     jsonpFunction: string,
+    hot: boolean,
     externals: Array<any>,
     chunks: {
       files: {

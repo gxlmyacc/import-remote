@@ -64,7 +64,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import _ from 'lodash',
 
-const test = await importRemote('http://localhost:3000/test/index.js', {
+const testIndex = await importRemote('http://localhost:3000/test/index.js', {
   // regisiter externals when call reomte
   externals: { 
     react: React, 
@@ -72,6 +72,7 @@ const test = await importRemote('http://localhost:3000/test/index.js', {
     'lodash': _ 
   }
 });
+testIndex.dosomething();
 
 // or register externals only once
 Object.assign(remote.externals, { 
@@ -79,10 +80,10 @@ Object.assign(remote.externals, {
   'react-dom': ReactDOM, 
   'lodash': _ 
 });
-const test = await importRemote('http://localhost:3000/test/index.js');
+const testOther = await importRemote('http://localhost:3000/test/other.js');
 
 
-test.dosomething();
+testOther.dosomething();
 ```
 
 or 

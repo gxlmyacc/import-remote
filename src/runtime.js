@@ -86,7 +86,7 @@ function createRuntime(modules = [], {
     else if (context.installedCssChunks[chunkId] !== 0 && cssChunks[chunkId]) {
       promises.push(context.installedCssChunks[chunkId] = new Promise(function (resolve, reject) {
         let href = __webpack_require__.p + cssChunks[chunkId];
-        importCss(href, timeout, head).then(resolve).catch(function (err) {
+        importCss(href, { timeout, head }).then(resolve).catch(function (err) {
           delete context.installedCssChunks[chunkId];
           reject(err);
         });
@@ -111,7 +111,7 @@ function createRuntime(modules = [], {
         promises.push(installedChunkData[2] = promise);
 
         let href = __webpack_require__.p + jsChunks[chunkId];
-        importJs(href, timeout, context.window).then(function (result) {
+        importJs(href, { timeout, global: context.window }).then(function (result) {
           let chunk = context.installedChunks[chunkId];
           if (Array.isArray(chunk)) chunk[0](result);
           else if (installedChunkData) installedChunkData[0](result);

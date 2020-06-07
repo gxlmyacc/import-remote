@@ -1,19 +1,26 @@
-import { DEFAULT_TIMEOUT } from './utils';
+import { fetch, DEFAULT_TIMEOUT } from './utils';
 
-export default function (href, timeout = DEFAULT_TIMEOUT, head) {
+function hasFetched(href, head) {
+  if (!head) head = document.getElementsByTagName('head')[0];
+  let existingLinkTags = document.getElementsByTagName('link');
+  for (let i = 0; i < existingLinkTags.length; i++) {
+    let tag = existingLinkTags[i];
+    let dataHref = tag.getAttribute('data-href') || tag.getAttribute('href');
+    if (tag.rel === 'stylesheet' && (dataHref === href)) return true;
+  }
+  let existingStyleTags = document.getElementsByTagName('style');
+  for (let i = 0; i < existingStyleTags.length; i++) {
+    let tag = existingStyleTags[i];
+    let dataHref = tag.getAttribute('data-href');
+    if (dataHref === href) return true;
+  }
+  return false;
+}
+
+function fetchLink(href, { timeout = DEFAULT_TIMEOUT, head } = {}) {
   return new Promise(((resolve, reject) => {
-    let existingLinkTags = document.getElementsByTagName('link');
-    for (let i = 0; i < existingLinkTags.length; i++) {
-      let tag = existingLinkTags[i];
-      let dataHref = tag.getAttribute('data-href') || tag.getAttribute('href');
-      if (tag.rel === 'stylesheet' && (dataHref === href)) return resolve();
-    }
-    let existingStyleTags = document.getElementsByTagName('style');
-    for (let i = 0; i < existingStyleTags.length; i++) {
-      let tag = existingStyleTags[i];
-      let dataHref = tag.getAttribute('data-href');
-      if (dataHref === href) return resolve();
-    }
+    if (!head) head = document.getElementsByTagName('head')[0];
+    if (hasFetched(href, head)) return resolve();
 
     let timerId;
     let linkTag = document.createElement('link');
@@ -41,11 +48,38 @@ export default function (href, timeout = DEFAULT_TIMEOUT, head) {
     linkTag.onerror = onStyleLoadError;
     linkTag.href = href;
 
-    if (!head) head = document.getElementsByTagName('head')[0];
+
     head.appendChild(linkTag);
 
     timerId = setTimeout(function () {
       onStyleLoadError({ type: 'timeout', target: linkTag });
     }, timeout);
   }));
+}
+
+function fetchStyle(href, { timeout = DEFAULT_TIMEOUT, sync, head } = {}) {
+  return new Promise((resolve, reject) => {
+    if (!head) head = document.getElementsByTagName('head')[0];
+    if (hasFetched(href, head)) return resolve();
+    fetch(href, { timeout, sync }).then(source => {
+      try {
+        let styleTag = document.createElement('style');
+        styleTag.type = 'text/css';
+        styleTag.setAttribute('data-href', href);
+        styleTag.innerHTML = source;
+        head.appendChild(styleTag);
+        resolve();
+      } catch (err) {
+        console.error(err); 
+        err.code = 'CSS_CHUNK_LOAD_FAILED';
+        reject(err); 
+      }
+    }).catch(reject);
+  });
+}
+
+export default function (href, { useStyle = true, ...options } = {}) {
+  return useStyle
+    ? fetchStyle(href, options)
+    : fetchLink(href, options);
 }
