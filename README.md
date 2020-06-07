@@ -20,7 +20,7 @@ config as follows:
 
 **webpack.config.js**
 ```js
-const ModuleWebpackPlugin = require('import-remote/plugin')
+const ImportRemotePlugin = require('import-remote/plugin')
 
 module.exports = {
   entry: 'src/index.js',
@@ -37,7 +37,7 @@ module.exports = {
     runtimeChunk: true,
   },
   plugins: [
-    new ModuleWebpackPlugin()
+    new ImportRemotePlugin()
   ]
 }
 ```
@@ -74,11 +74,35 @@ const test = await importRemote('http://localhost:3000/test/index.js', {
 });
 
 // or register externals only once
-Object.assign(remote.externals, { React, ReactDOM, _ });
+Object.assign(remote.externals, { 
+  react: React, 
+  'react-dom': ReactDOM, 
+  'lodash': _ 
+});
 const test = await importRemote('http://localhost:3000/test/index.js');
 
 
 test.dosomething();
+```
+
+or 
+
+```js
+import { RemoteModule } from 'import-remote';
+import React from 'react';
+import ReactDOM from 'react-dom';
+import _ from 'lodash',
+
+const testModule = new RemoteModule('http://localhost:3000/test', {
+  externals: { react: React, 'react-dom': ReactDOM, 'lodash': _ }
+});
+
+const testIndex = await testModule.require('index');
+const testOther = await testModule.require('other');
+
+testIndex.dosomething();
+testOther.dosomething();
+
 ```
 
 ## Options
@@ -108,7 +132,7 @@ Here's an example webpack config illustrating how to use these options
     filename: 'index_bundle.js'
   },
   plugins: [
-    new HtmlWebpackPlugin({
+    new ImportRemotePlugin({
       filename: 'assets/admin.js'
     })
   ]
@@ -129,8 +153,8 @@ once in your plugins array
     filename: 'index_bundle.js'
   },
   plugins: [
-    new ModuleWebpackPlugin(), // Generates default index.js
-    new ModuleWebpackPlugin({  // Also generate a test.js
+    new ImportRemotePlugin(), // Generates default index.js
+    new ImportRemotePlugin({  // Also generate a test.js
       filename: 'test.js',
     })
   ]
@@ -144,7 +168,7 @@ To include only certain chunks you can limit the chunks being used
 **webpack.config.js**
 ```js
 plugins: [
-  new ModuleWebpackPlugin({
+  new ImportRemotePlugin({
     chunks: ['app']
   })
 ]
@@ -155,7 +179,7 @@ It is also possible to exclude certain chunks by setting the `excludeChunks` opt
 **webpack.config.js**
 ```js
 plugins: [
-  new ModuleWebpackPlugin({
+  new ImportRemotePlugin({
     excludeChunks: [ 'dev-helper' ]
   })
 ]
@@ -169,7 +193,7 @@ For long term caching add `contenthash/templatehash` to the filename.
 
 ```js
 plugins: [
-  new ModuleWebpackPlugin({
+  new ImportRemotePlugin({
     filename: 'index.[contenthash].js'
   })
 ]

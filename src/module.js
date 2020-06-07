@@ -10,7 +10,9 @@ class RemoteModule {
 
   resolveModuleUrl(moduleName = 'index.js') {
     if (!/\.js$/.test(moduleName)) moduleName += '.js';
-    return `${this.host}/${moduleName}`;
+    let host = this.host;
+    if (!/\/$/.test(host)) host += '/';
+    return `${host}${moduleName}`;
   }
 
   isRequired(moduleName = 'index.js') {
