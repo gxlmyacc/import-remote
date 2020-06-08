@@ -44,6 +44,10 @@ declare namespace ModuleWebpackPlugin {
      */
     cache: boolean;
     /**
+     * common module
+     */
+    commonModule?: string | { name: string, url?: string }
+    /**
      * List all entries which should be injected
      */
     chunks: "all" | string[];

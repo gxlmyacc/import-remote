@@ -1,10 +1,32 @@
 const DEFAULT_TIMEOUT = 120000;
 
 const cached = {};
+const queue = [];
+function pushQueue(url, resolve, reject) {
+  const item = { url };
+  queue.push(item);
+  const walk = () => {
+    while (queue.length && queue[0].done) {
+      queue.shift().done();
+    }
+  };
+  return {
+    success: r => {
+      item.done = () => resolve(r);
+      walk();
+    },
+    fail: r => {
+      item.done = () => reject(r);
+      walk();
+    },
+  };
+}
 
 function fetch(url, { timeout = DEFAULT_TIMEOUT, sync } = {}) {
   return new Promise(function (resolve, reject) {
-    if (cached[url]) return resolve(cached[url]);
+    const res = pushQueue(url, resolve, reject); 
+
+    if (cached[url] !== undefined) return res.success(cached[url]);
 
     const xhr = new window.XMLHttpRequest();
     let timerId;
@@ -12,7 +34,7 @@ function fetch(url, { timeout = DEFAULT_TIMEOUT, sync } = {}) {
       if (xhr.readyState === 4) {
         (timerId && clearTimeout(timerId)) || (timerId = 0);
         cached[url] = xhr.responseText;
-        resolve(xhr.responseText);
+        res.success(xhr.responseText);
       }
     };
     try {
@@ -25,11 +47,14 @@ function fetch(url, { timeout = DEFAULT_TIMEOUT, sync } = {}) {
         xhr.abort();
         xhr.onreadystatechange = null;
         timerId = 0;
-        reject({ type: 'timeout', target: xhr });
+        res.fail({ type: 'timeout', target: xhr });
       }, timeout);
-    } catch (e) { reject(e); }
+    } catch (e) { res.fail(e); }
   });
 }
+
+fetch.queue = queue;
+fetch.cached = cached;
 
 function requireFromStr(source, context) {
   // eslint-disable-next-line no-useless-catch

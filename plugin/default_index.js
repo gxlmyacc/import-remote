@@ -23,6 +23,7 @@ module.exports = function ({
       ids: entrys.ids.filter(v => !v.isRuntime).map(v => v.id),
     }
   };
+  if (options.commonModule) data.commonModule = options.commonModule;
   return `module.exports=function(){return ${JSON.stringify(data)};}`;
 };
 

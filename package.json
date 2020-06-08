@@ -1,6 +1,6 @@
 {
   "name": "import-remote",
-  "version": "0.0.4-alpha.1",
+  "version": "0.0.4-alpha.2",
   "main": "esm/index.js",
   "module": "esm/index.js",
   "types": "typings.d.ts",
@@ -29,6 +29,7 @@
   "dependencies": {
     "@babel/cli": "^7.2.3",
     "@babel/core": "^7.5.4",
+    "@babel/runtime": "^7.9.2",
     "@babel/plugin-proposal-class-properties": "^7.5.0",
     "@babel/plugin-proposal-decorators": "^7.4.4",
     "@babel/plugin-proposal-export-default-from": "^7.2.0",

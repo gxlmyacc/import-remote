@@ -156,8 +156,8 @@ function findHMRPluginIndex(config) {
     config.plugins = [];
     return;
   }
-  return config.plugins.findIndex((plugin) => plugin.constructor === webpack.HotModuleReplacementPlugin);
-};
+  return config.plugins.findIndex(plugin => plugin.constructor === webpack.HotModuleReplacementPlugin);
+}
 
 function addHMRPlugin(config) {
   const idx = findHMRPluginIndex(config);
@@ -167,7 +167,7 @@ function addHMRPlugin(config) {
 function removeHMRPlugin(config) {
   const idx = findHMRPluginIndex(config);
   if (~idx) config.plugins.splice(idx, 1);
-};
+}
 
 class ModuleWebpackPlugin {
 

@@ -41,7 +41,7 @@ function createRuntime(modules = [], {
     let module = modules[moduleId];
     if (!module) {
       if (module !== false) {
-        module = context.__remoteModuleResolver__(moduleId);
+        module = context.__remoteModuleResolver__ && context.__remoteModuleResolver__(moduleId);
         if (!module) modules[moduleId] = false;
       }
       if (!module) {
