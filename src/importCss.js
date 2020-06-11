@@ -17,7 +17,7 @@ function hasFetched(href, head) {
   return false;
 }
 
-function fetchLink(href, { timeout = DEFAULT_TIMEOUT, head } = {}) {
+function fetchLink(href, { timeout = DEFAULT_TIMEOUT, head, scopeName } = {}) {
   return new Promise(((resolve, reject) => {
     if (!head) head = document.getElementsByTagName('head')[0];
     if (hasFetched(href, head)) return resolve();
@@ -46,6 +46,7 @@ function fetchLink(href, { timeout = DEFAULT_TIMEOUT, head } = {}) {
     linkTag.type = 'text/css';
     linkTag.onload = resolve;
     linkTag.onerror = onStyleLoadError;
+    if (scopeName) linkTag.setAttribute('data-scope', scopeName);
     linkTag.href = href;
 
 
@@ -57,7 +58,7 @@ function fetchLink(href, { timeout = DEFAULT_TIMEOUT, head } = {}) {
   }));
 }
 
-function fetchStyle(href, { timeout = DEFAULT_TIMEOUT, sync, head } = {}) {
+function fetchStyle(href, { timeout = DEFAULT_TIMEOUT, sync, head, scopeName } = {}) {
   return new Promise((resolve, reject) => {
     if (!head) head = document.getElementsByTagName('head')[0];
     if (hasFetched(href, head)) return resolve();
@@ -66,6 +67,7 @@ function fetchStyle(href, { timeout = DEFAULT_TIMEOUT, sync, head } = {}) {
         let styleTag = document.createElement('style');
         styleTag.type = 'text/css';
         styleTag.setAttribute('data-href', href);
+        if (scopeName) styleTag.setAttribute('data-scope', scopeName);
         styleTag.innerHTML = source;
         head.appendChild(styleTag);
         resolve();

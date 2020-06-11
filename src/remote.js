@@ -49,7 +49,7 @@ function resolveModule(external, __require__, nodeModulesPath, moduleNodeModules
 
 
 function remote(url, options = {}) {
-  if (!window.__remoteModuleWebpack__) window.__remoteModuleWebpack__ = { __moduleManifest__: {} };
+  if (!window.__remoteModuleWebpack__) window.__remoteModuleWebpack__ = { __moduleManifest__: {}, cached: {} };
   const {
     timeout = DEFAULT_TIMEOUT,
     nodeModulesPath = (require.resolveWeak('babel-runtime/helpers/interopRequireDefault').match(/^.+node_modules/) || [])[0],
@@ -57,10 +57,11 @@ function remote(url, options = {}) {
     globals = {},
     moduleResolver,
   } = options;
-  if (remote.cached[url]) return remote.cached[url];
-  return remote.cached[url] = new Promise((resolve, _reject) => {
+  const cached = window.__remoteModuleWebpack__.cached;
+  if (cached[url]) return cached[url];
+  return cached[url] = new Promise((resolve, _reject) => {
     const reject = () => {
-      delete remote.cached[url];
+      delete cached[url];
       return _reject.apply(this, arguments);
     };
     return importJs(url, timeout, window).then(manifest => {
@@ -155,7 +156,6 @@ function remote(url, options = {}) {
     }).catch(reject);
   });
 }
-remote.cached = {};
 remote.externals = {};
 remote.globals = {
   _interopRequireDefault: require('babel-runtime/helpers/interopRequireDefault').default

@@ -5,7 +5,13 @@ class RemoteModule {
   constructor(host, options = {}) {
     if (!host) throw new Error('[RemoteModule]`host` can not empty！');
     this.host = host;
-    this.options = options;
+    this.options = options || {};
+  }
+
+  external(name, module) {
+    if (!this.options.externals) this.options.externals = {};
+    if (typeof name === 'string') this.options.externals[name] = module;
+    else Object.assign(this.options.externals, name);
   }
 
   resolveModuleUrl(moduleName = 'index.js') {
