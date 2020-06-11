@@ -1,8 +1,8 @@
 import remote from './remote';
-import remoteModule from './module';
+import RemoteModule from './module';
 
 export {
-  remoteModule
+  RemoteModule
 };
 
 export default remote;
