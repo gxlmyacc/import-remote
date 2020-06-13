@@ -1,4 +1,4 @@
-import { fetch, DEFAULT_TIMEOUT } from './utils';
+import { fetch, DEFAULT_TIMEOUT, joinUrl } from './utils';
 
 function hasFetched(href, head) {
   if (!head) head = document.getElementsByTagName('head')[0];
@@ -58,12 +58,16 @@ function fetchLink(href, { timeout = DEFAULT_TIMEOUT, head, scopeName } = {}) {
   }));
 }
 
-function fetchStyle(href, { timeout = DEFAULT_TIMEOUT, sync, head, scopeName } = {}) {
+function fetchStyle(href, { timeout = DEFAULT_TIMEOUT, sync, head, scopeName, host } = {}) {
   return new Promise((resolve, reject) => {
     if (!head) head = document.getElementsByTagName('head')[0];
     if (hasFetched(href, head)) return resolve();
     fetch(href, { timeout, sync }).then(source => {
       try {
+        if (host && source) {
+          if (/\/$/.test(host)) host = host.substr(0, host.length - 1);
+          source = source.replace(/url\(([^)]+)\)/ig, (m, p1) => `url(${joinUrl(host, p1)})`);
+        }
         let styleTag = document.createElement('style');
         styleTag.type = 'text/css';
         styleTag.setAttribute('data-href', href);

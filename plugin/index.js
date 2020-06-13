@@ -54,7 +54,7 @@ function resolveGlobalObject(compilation, options) {
   const outputOptions = compilation.mainTemplate.outputOptions;
   const scopeName = resolveScopeName(compilation, options);
   return scopeName
-    ? `window.__remoteModuleWebpack__['${scopeName}']`
+    ? `${options.globalObject || '__context__'}.__remoteModuleWebpack__['${scopeName}']`
     : outputOptions.globalObject;
 }
 
@@ -67,6 +67,12 @@ function isPlainObject(v) {
   return toString.call(v) === '[object Object]';
 }
 
+function resolveModulePath(compilation, moduleName) {
+  let v = require.resolve(moduleName);
+  if (!v) return '';
+  return path.relative(compilation.options.context, v).replace(/\\/g, '/');
+};
+
 /**
  * resolve webpack externals
  * @param {WebpackCompilation} compilation
@@ -74,54 +80,23 @@ function isPlainObject(v) {
   * @returns {Array<string>}
   */
 function resolveExternals(compilation, options) {
-  let ret = [];
   // @ts-ignore
-  let externals = [...compilation._modules].filter(m => m[0].startsWith('external ')).map(([, m]) => {
+  return [...compilation.modules].filter(m => m.external).map((m) => {
+    let v = { id: m.id };
     // @ts-ignore
-    let v = m.request;
-    // @ts-ignore
-    if (isPlainObject(v)) v.request = m.userRequest;
+    if (isPlainObject(m.request)) {
+      // @ts-ignore
+      let varName = m.request.root || m.request.commonjs;
+      if (!varName) return;
+      // @ts-ignore
+      Object.assign(v,{ name: m.userRequest, var: varName });
+    } else {
+      // @ts-ignore
+      Object.assign(v, { name: m.request, var: m.request });
+    }
+    v.path = resolveModulePath(compilation, v.name);
     return v;
   }).filter(Boolean);
-  const _path = key => {
-    let v = require.resolve(key);
-    if (!v) return '';
-    return path.relative(compilation.options.context, v).replace(/\\/g, '/');
-  };
-  const _obj = obj => {
-    let r = [];
-    Object.keys(obj).forEach(key => {
-      let v = obj[key];
-      if (!v) return;
-      let item = {};
-      if (typeof v === 'string') Object.assign(item, { name: key, var: v });
-      else if (v.root) Object.assign(item, { name: key, var: v.root });
-      else if (v.commonjs) Object.assign(item, { name: key, var: v.commonjs });
-      else return;
-      item.path = _path(key);
-      r.push(item);
-    });
-    return r;
-  };
-  const _arr = arr => {
-    let r = [];
-    arr.forEach(v => {
-      if (!v) return;
-      let item = {};
-      if (typeof v === 'string') {
-        Object.assign(item, { name: v, var: v });
-      } else if (isPlainObject(v)) {
-        if (v.root) Object.assign(item, { name: v.request, var: v.root });
-        else if (v.commonjs) Object.assign(item, { name: v.request, var: v.commonjs });
-        else return r.push(..._obj(v));
-      } else return;
-      item.path = _path(item.name);
-      r.push(item);
-    });
-    return r;
-  };
-  ret.push(..._arr(externals));
-  return ret;
 }
 
 
@@ -185,6 +160,7 @@ class ModuleWebpackPlugin {
       templateContent: false,
       templateParameters: null,
       filename: 'index.js',
+      modulesMapFile: 'module.map.json',
       runtime: /(manifest|runtime~).+[.]js$/,
       hash: false,
       compile: true,
@@ -390,6 +366,11 @@ class ModuleWebpackPlugin {
               source: () => html,
               size: () => html.length
             };
+
+            if (this.options.modulesMapFile) {
+              // @ts-ignore
+              compilation.assets[this.options.modulesMapFile] = self.getModulesMapAsset(compilation);
+            }
             return finalOutputName;
           })
           .then(finalOutputName => getModuleWebpackPluginHooks(compilation).afterEmit.promise({
@@ -406,6 +387,45 @@ class ModuleWebpackPlugin {
           callback();
         });
       });
+  }
+
+  /**
+   * Evaluates the child compilation result
+   * @param {WebpackCompilation} compilation
+   * @returns { { source: () => string, size: () => number } }
+   */
+  getModulesMapAsset(compilation) {
+    const asset = {};
+    // @ts-ignore
+    compilation.modules.forEach((module) => {
+      let moduleId = module.id;
+      if (moduleId === '') return;
+      // @ts-ignore
+      let request = (module.userRequest || '').split('?')[0];
+      let modulePath = '';
+      // @ts-ignore
+      if (module.external) {
+        modulePath = resolveModulePath(compilation, request);
+      } else {
+        if (!request) {
+          // @ts-ignore
+          if (module._identifier) request = module._identifier.split(' ')[0];
+        }
+        modulePath = (path.isAbsolute(request) 
+        ? path.relative(compilation.options.context, request)
+        : request).replace(/\\/g, '/');
+      }
+      if (modulePath) {
+        modulePath = modulePath.split('?')[0];
+        if (!/^\.\.?\//.test(modulePath)) modulePath = './' + modulePath;
+      } 
+      asset[modulePath] = { id: moduleId };
+    });
+    const assetStr = JSON.stringify(asset);
+    return { 
+      source: () => assetStr,
+      size: () => assetStr.length
+    }
   }
 
   /**
@@ -631,10 +651,13 @@ class ModuleWebpackPlugin {
 
 
     const assets = {
+      modulesMapFile: this.options.modulesMapFile,
       // The public path
       publicPath,
       // the entry file
       entryFile: '',
+      // then entry id
+      entryId: 0,
       // jsonpFunction 
       jsonpFunction,
       // is hot
@@ -691,6 +714,8 @@ class ModuleWebpackPlugin {
       // @ts-ignore
       if (!c.entryModule || !entryNames.includes(c.entryModule.name)) return; 
       let entryModule = c && c.entryModule;
+      // @ts-ignore
+      assets.entryId = entryModule.id;
       if (entryModule.buildMeta.providedExports) {
         // @ts-ignore
         let request = entryModule.request;

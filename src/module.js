@@ -1,4 +1,5 @@
 import remote from './remote';
+import { joinUrl } from './utils';
 
 class RemoteModule {
 
@@ -16,9 +17,7 @@ class RemoteModule {
 
   resolveModuleUrl(moduleName = 'index.js') {
     if (!/\.js$/.test(moduleName)) moduleName += '.js';
-    let host = this.host;
-    if (!/\/$/.test(host)) host += '/';
-    return `${host}${moduleName}`;
+    return joinUrl(this.host, moduleName);
   }
 
   isRequired(moduleName = 'index.js') {
@@ -26,7 +25,7 @@ class RemoteModule {
   }
 
   require(moduleName = 'index.js', options = {}) {
-    return remote(this.resolveModuleUrl(moduleName), { ...this.options, ...options });
+    return remote(this.resolveModuleUrl(moduleName), { host: this.host, ...this.options, ...options });
   }
 
 }

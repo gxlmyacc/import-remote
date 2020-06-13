@@ -22,7 +22,7 @@ function pushQueue(url, resolve, reject) {
   };
 }
 
-function fetch(url, { timeout = DEFAULT_TIMEOUT, sync } = {}) {
+function fetch(url, { timeout = DEFAULT_TIMEOUT, sync, timestamp, } = {}) {
   return new Promise(function (resolve, reject) {
     const res = pushQueue(url, resolve, reject); 
 
@@ -38,7 +38,7 @@ function fetch(url, { timeout = DEFAULT_TIMEOUT, sync } = {}) {
       }
     };
     try {
-      url += `${~url.indexOf('?') ? '&' : '?'}_=${Date.now()}`;
+      if (timestamp) url += `${~url.indexOf('?') ? '&' : '?'}_=${Date.now()}`;
       xhr.open('GET', url, !sync);
       xhr.setRequestHeader('Content-Type', 'text/plain;charset=UTF-8');
       xhr.send(null);
@@ -71,8 +71,21 @@ function requireFromStr(source, context) {
   }
 }
 
+function isAbsoluteUrl(url) {
+  return typeof url === 'string' && /^(((https?:)?\/\/)|(data:))/.test(url);
+}
+
+
+function joinUrl(host, path) {
+  if (!host || isAbsoluteUrl(path)) return path;
+  if (/\/$/.test(host)) host = host.substr(0, host.length - 1);
+  return `${host}${/^\//.test(path) ? path : `/${path}`}`;
+}
+
 export {
   DEFAULT_TIMEOUT,
   fetch,
-  requireFromStr
+  requireFromStr,
+  isAbsoluteUrl,
+  joinUrl
 };

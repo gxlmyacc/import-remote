@@ -1,10 +1,11 @@
-import { DEFAULT_TIMEOUT } from './utils';
+import { DEFAULT_TIMEOUT, joinUrl } from './utils';
 import importCss from './importCss';
 import importJs from './importJs';
 
 function createRuntime(modules = [], {
   jsonpFunction = 'webpackJsonp',
   publicPath = '',
+  host = '',
   scopeName = '',
   cssChunks = {},
   jsChunks = {},
@@ -39,24 +40,12 @@ function createRuntime(modules = [], {
   // The require function
   // eslint-disable-next-line camelcase
   function __webpack_require__(moduleId) {
-    let module = modules[moduleId];
-    if (!module) {
-      if (module !== false) {
-        module = context.__remoteModuleResolver__ && context.__remoteModuleResolver__(moduleId);
-        if (!module) modules[moduleId] = false;
-      }
-      if (!module) {
-        console.warn(`module:${moduleId} not exist!`);
-        return;
-      }
-      modules[moduleId] = module;
-    }
     // Check if module is in cache
     if (context.installedModules[moduleId]) {
       return context.installedModules[moduleId].exports;
     }
     // Create a new module (and put it into the cache)
-    module = context.installedModules[moduleId] = {
+    let module = context.installedModules[moduleId] = {
       i: moduleId,
       l: false,
       exports: {}
@@ -87,7 +76,7 @@ function createRuntime(modules = [], {
     else if (context.installedCssChunks[chunkId] !== 0 && cssChunks[chunkId]) {
       promises.push(context.installedCssChunks[chunkId] = new Promise(function (resolve, reject) {
         let href = __webpack_require__.p + cssChunks[chunkId];
-        importCss(href, { timeout, head, scopeName }).then(resolve).catch(function (err) {
+        importCss(href, { timeout, head, scopeName, host }).then(resolve).catch(function (err) {
           delete context.installedCssChunks[chunkId];
           reject(err);
         });
@@ -112,7 +101,7 @@ function createRuntime(modules = [], {
         promises.push(installedChunkData[2] = promise);
 
         let href = __webpack_require__.p + jsChunks[chunkId];
-        importJs(href, { timeout, global: context.window, scopeName }).then(function (result) {
+        importJs(href, { timeout, global: context, scopeName, host }).then(function (result) {
           let chunk = context.installedChunks[chunkId];
           if (Array.isArray(chunk)) chunk[0](result);
           else if (installedChunkData) installedChunkData[0](result);
@@ -185,7 +174,7 @@ function createRuntime(modules = [], {
   __webpack_require__.o = function (object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
 
   // __webpack_public_path__
-  __webpack_require__.p = publicPath;
+  __webpack_require__.p = joinUrl(host, publicPath);
 
   // on error function for async loading
   __webpack_require__.oe = function (err) { console.error(err); throw err; };

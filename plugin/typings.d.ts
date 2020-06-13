@@ -14,8 +14,10 @@ declare namespace ModuleWebpackPlugin {
   interface Options extends Partial<ProcessedOptions> { }
 
   interface TemplateAssets {
+    modulesMapFile: string,
     publicPath: string,
     entryFile: string,
+    entryId: string|number,
     jsonpFunction: string,
     hot: boolean,
     externals: Array<any>,
@@ -63,6 +65,10 @@ declare namespace ModuleWebpackPlugin {
      * List all entries which should not be injeccted
      */
     excludeChunks: string[];
+    /**
+     * modules map file
+     */
+    modulesMapFile: string,
     /**
      * The file to write the HTML to.
      * Defaults to `index.html`.

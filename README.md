@@ -60,25 +60,22 @@ module.exports = test;
 **host usage**
 ```js
 import importRemote from 'import-remote';
-import React from 'react';
-import ReactDOM from 'react-dom';
-import _ from 'lodash',
 
 const testIndex = await importRemote('http://localhost:3000/test/index.js', {
   // regisiter externals when call reomte
   externals: { 
-    react: React, 
-    'react-dom': ReactDOM, 
-    'lodash': _ 
+    react: require('react'), 
+    'react-dom': require('react-dom'),
+    'lodash': require('lodash'),
   }
 });
 testIndex.dosomething();
 
 // or register externals only once
 Object.assign(remote.externals, { 
-  react: React, 
-  'react-dom': ReactDOM, 
-  'lodash': _ 
+  react: require('react'), 
+  'react-dom': require('react-dom'),
+  'lodash': require('lodash'),
 });
 const testOther = await importRemote('http://localhost:3000/test/other.js');
 
@@ -95,7 +92,11 @@ import ReactDOM from 'react-dom';
 import _ from 'lodash',
 
 const testModule = new RemoteModule('http://localhost:3000/test', {
-  externals: { react: React, 'react-dom': ReactDOM, 'lodash': _ }
+  externals: { 
+    react: require('react'), 
+    'react-dom': require('react-dom'),
+    'lodash': require('lodash'),
+  }
 });
 
 const testIndex = await testModule.require('index');

@@ -1,11 +1,13 @@
-import { DEFAULT_TIMEOUT } from './utils';
+import { DEFAULT_TIMEOUT, joinUrl } from './utils';
 import createRuntime from './runtime';
 import importJs from './importJs';
+import importJson from './importJson';
 
 function createContext() {
   const context = {
     window
   };
+  context.__context__ = context;
   // Object.setPrototypeOf(context, Object.getPrototypeOf(window));
   // const keys = new Set(Object.keys(window));
   // Object.getOwnPropertyNames(window).forEach(key => keys.add(key));
@@ -30,135 +32,136 @@ function createContext() {
   return context;
 }
 
-function resolveModule(external, __require__, nodeModulesPath, moduleNodeModulesPath) {
-  // eslint-disable-next-line
-  if (!__require__.m) return;
-  // eslint-disable-next-line no-undef
-  if (__require__.m[external.name]) return __require__(external.name);
-
-  let modulePath = external.path;
-  if (!modulePath) return;
-  if (nodeModulesPath && moduleNodeModulesPath !== nodeModulesPath) {
-    modulePath = modulePath.replace(moduleNodeModulesPath, nodeModulesPath);
+function resolveModulePath(modulePath, nodeModulesPath, currentNodeModulesPath) {
+  if (!modulePath) return modulePath;
+  if (nodeModulesPath && currentNodeModulesPath !== nodeModulesPath) {
+    modulePath = modulePath.replace(currentNodeModulesPath, nodeModulesPath);
   }
-  // eslint-disable-next-line
-  if (__require__.m[modulePath]) return __require__(modulePath);
-  // eslint-disable-next-line
-  if (__require__.rm) return __require__.rm(external, modulePath);
+  return nodeModulesPath;
 }
 
+function resolveModule(external, useId, modulesMap, __require__, nodeModulesPath, currentNodeModulesPath) {
+  if (!__require__.m) return;
+  if (!useId) {
+    if (__require__.m[external.name]) return __require__.m[external.name];
+    let modulePath = resolveModulePath(external.path, nodeModulesPath, currentNodeModulesPath);
+    if (__require__.m[modulePath]) return __require__(modulePath);
+    return;
+  }
+  let modulePath = resolveModulePath(external.path, nodeModulesPath, currentNodeModulesPath);
+  let moduleId = modulesMap[modulePath] && modulesMap[modulePath].id;
+  if (moduleId === undefined) return;
+  if (__require__.m[moduleId]) return __require__(moduleId);
+}
 
 function remote(url, options = {}) {
-  if (!window.__remoteModuleWebpack__) window.__remoteModuleWebpack__ = { __moduleManifest__: {}, cached: {} };
-  const {
+  if (!window.__remoteModuleWebpack__) window.__remoteModuleWebpack__ = { __moduleManifests__: {}, cached: {} };
+  let {
     timeout = DEFAULT_TIMEOUT,
-    nodeModulesPath = (require.resolveWeak('babel-runtime/helpers/interopRequireDefault').match(/^.+node_modules/) || [])[0],
     externals = {},
     globals = {},
-    moduleResolver,
+    isCommonModule = false,
+    host = '',
   } = options;
   const cached = window.__remoteModuleWebpack__.cached;
   if (cached[url]) return cached[url];
-  return cached[url] = new Promise((resolve, _reject) => {
+  return cached[url] = new Promise(async (resolve, _reject) => {
     const reject = () => {
       delete cached[url];
       return _reject.apply(this, arguments);
     };
-    return importJs(url, timeout, window).then(manifest => {
-      try {
-        if (typeof manifest === 'function') manifest = manifest(remote, options);
+    try {
+      let manifest = await importJs(url, { timeout, global: window, timestamp: true });
+      if (typeof manifest === 'function') manifest = manifest(remote, options);
 
-        let commonModuleName = manifest.commonModule;
-        let commonModuleUrl = '';
-        if (commonModuleName && typeof manifest.commonModuleName !== 'string') {
-          commonModuleName = manifest.commonModule.name;
-          commonModuleUrl = manifest.commonModule.url;
-        }
+      const scopeName = manifest.scopeName;
+      if (!scopeName) throw new Error('[import-remote:remote]scopeName can not be empty!');
 
-        const _next = () => {
-          const scopeName = manifest.scopeName || '[default]';
-          if (!window.__remoteModuleWebpack__.__moduleManifest__[scopeName]) {
-            window.__remoteModuleWebpack__.__moduleManifest__[scopeName] = {};
+      if (manifest.externals) {
+        manifest.externals.forEach(external => {
+          if (!externals[external.name] && !remote.externals[external.name]) {
+            console.error(`warning:[import-remote:remote]module "${scopeName}" need external "${external.name}" !`);
           }
-          window.__remoteModuleWebpack__.__moduleManifest__[scopeName][manifest.entryFile] = manifest;
-  
-          if (manifest.externals) {
-            manifest.externals.forEach(external => {
-              if (!externals[external.name] && !remote.externals[external.name]) {
-                console.warn(`[import-remote:remote]the exteranl '${external.name}' not be found`);
-              }
-            });
-          }
-  
-          const _resolveModule = (external, moduleNodeModulesPath) => 
-            // eslint-disable-next-line no-undef
-            resolveModule(external, __webpack_require__, nodeModulesPath, moduleNodeModulesPath);
-  
-          if (!window.__remoteModuleWebpack__[scopeName]) {
-            const context = window.__remoteModuleWebpack__[scopeName] = createContext();
-            context.__remoteModuleWebpack__ = window.__remoteModuleWebpack__;
-            Object.assign(context, remote.globals, globals);
-            context.__remoteModuleResolver__ = moduleResolver;
-            context.__require__ = createRuntime([], { ...manifest, scopeName, context });
-            // eslint-disable-next-line no-undef
-            context.__require__.rm = _resolveModule;
-            context.__nodeModulesPath__ = nodeModulesPath;
-          }
-    
-          const context = window.__remoteModuleWebpack__[scopeName];
-          
-          Object.assign(externals, remote.externals);
-  
-          const __require__ = context.__require__;
-          Promise.all(manifest.entrys.ids.map(id => __require__.e(id)))
-            .then(v => {
-              try {
-                manifest.externals.forEach(external => {
-                  if (__require__.m[external.name] && __require__.m[external.name].__import_remote_external__) return;
-                  const fn = module => {
-                    if (fn && fn.__import_remote_exports__) return fn.__import_remote_exports__;
-                    let result = externals[external.name];
-                    // eslint-disable-next-line
-                    if (result === undefined && external.path) {
-                      if (commonModuleName && window.__remoteModuleWebpack__[commonModuleName]) {
-                        const commonModuleContext = window.__remoteModuleWebpack__[commonModuleName]; 
-                        result = resolveModule(external, 
-                          commonModuleContext.__require__, 
-                          commonModuleContext.__nodeModulesPath__, 
-                          manifest.nodeModulesPath);
-                      }
-                      if (result === undefined) result = _resolveModule(external, manifest.nodeModulesPath);
-                    }
-                    if (result === undefined && external.var) result = window[external.var];
-                    if (result !== undefined && fn) fn.__import_remote_exports__ = result;
-                    module.exports = result;
-                  };
-                  __require__.m[external.name] = fn;
-                  __require__.m[external.name].__import_remote_external__ = true;
-                });
-                let result = __require__(manifest.entryFile);
-                resolve(result);
-              } catch (ex) {
-                console.error(ex);
-                reject(ex);
-              }
-            })
-            .catch(reject);     
-        };
-
-        if (!commonModuleUrl) return _next();
-
-        return remote(commonModuleUrl).then(_next);
-      } catch (ex) {
-        console.error(ex);
-        reject(ex);
+        });
       }
-    }).catch(reject);
+
+      let commonModule = manifest.commonModule && (typeof manifest.commonModule === 'string'
+        ? { name: manifest.commonModul }
+        : manifest.commonModul);
+
+      if (commonModule && commonModule.url) {
+        await remote(commonModule.url, { 
+          isCommonModule: true, 
+          externals, 
+          globals, 
+          host: commonModule.host,
+        });
+      }
+
+      if (!window.__remoteModuleWebpack__.__moduleManifests__[scopeName]) {
+        const moduleManifest = window.__remoteModuleWebpack__.__moduleManifests__[scopeName] = {};
+        moduleManifest.jsChunks = manifest.jsChunks;
+        moduleManifest.cssChunks = manifest.cssChunks;
+        moduleManifest.hot = manifest.hot;
+        moduleManifest.useId = Boolean(manifest.entryId);
+        moduleManifest.nodeModulesPath = manifest.nodeModulesPath;
+        moduleManifest.entrys = {};
+      }
+      const moduleManifest = window.__remoteModuleWebpack__.__moduleManifests__[scopeName];
+      moduleManifest.entrys[manifest.entryFile] = manifest;
+
+      if (!window.__remoteModuleWebpack__[scopeName]) {
+        const ctx = window.__remoteModuleWebpack__[scopeName] = createContext();
+        ctx.__remoteModuleWebpack__ = window.__remoteModuleWebpack__;
+        Object.assign(ctx, remote.globals, globals);
+        ctx.__HOST__ = host;
+        ctx.__require__ = createRuntime([], { ...manifest, scopeName, host, context: ctx, });
+      }
+
+      const context = window.__remoteModuleWebpack__[scopeName];
+    
+      Object.assign(externals, remote.externals);
+
+      if (isCommonModule && moduleManifest.useId && !moduleManifest.__modulesMap__) {
+        moduleManifest.__modulesMap__ = await importJson(joinUrl(host, manifest.modulesMapFile), { timeout, timestamp: true });
+      }
+    
+      const __require__ = context.__require__;
+      await Promise.all(manifest.entrys.ids.map(id => __require__.e(id)));
+      manifest.externals.forEach(external => {
+        if (__require__.m[external.id] && __require__.m[external.id].__import_remote_external__) return;
+        const fn = module => {
+          if (fn && fn.__import_remote_exports__) return fn.__import_remote_exports__;
+          let result = externals[external.name];
+          // eslint-disable-next-line
+          if (result === undefined && external.path && commonModule) {
+            const commonModuleContext = window.__remoteModuleWebpack__[commonModule.name];
+            const commonModuleManifest = window.__remoteModuleWebpack__.__moduleManifests__[commonModule.name]; 
+            result = resolveModule(external.path,
+              commonModuleManifest.useId,
+              commonModuleManifest.__modulesMap__, 
+              commonModuleContext.__require__,
+              commonModuleManifest.nodeModulesPath,
+              manifest.nodeModulesPath);
+          }
+          if (result === undefined && external.var) result = window[external.var];
+          if (result !== undefined && fn) fn.__import_remote_exports__ = result;
+          module.exports = result;
+        };
+        __require__.m[external.id] = fn;
+        __require__.m[external.id].__import_remote_external__ = true;
+      });
+      let result = __require__(manifest.entryId || manifest.entryFile);
+      resolve(result);
+    } catch (ex) {
+      reject(ex);
+      throw ex;
+    } 
   });
 }
 remote.externals = {};
 remote.globals = {
-  _interopRequireDefault: require('babel-runtime/helpers/interopRequireDefault').default
+  // _interopRequireDefault: require('babel-runtime/helpers/interopRequireDefault').default
 };
 
 export default remote;
