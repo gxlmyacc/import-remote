@@ -1,7 +1,8 @@
-import { DEFAULT_TIMEOUT, joinUrl } from './utils';
+import { DEFAULT_TIMEOUT, joinUrl, isFunction, getHostFromUrl } from './utils';
 import createRuntime from './runtime';
 import importJs from './importJs';
 import importJson from './importJson';
+import { isRequireFactory } from './requireFactory';
 
 function createContext() {
   const context = {
@@ -62,6 +63,7 @@ function remote(url, options = {}) {
     globals = {},
     isCommonModule = false,
     host = '',
+    sync = false,
   } = options;
   const cached = window.__remoteModuleWebpack__.cached;
   if (cached[url]) return cached[url];
@@ -71,32 +73,35 @@ function remote(url, options = {}) {
       return _reject.apply(this, arguments);
     };
     try {
-      let manifest = await importJs(url, { timeout, global: window, timestamp: true });
-      if (typeof manifest === 'function') manifest = manifest(remote, options);
+      let manifest = await importJs(url, { timeout, global: window, timestamp: true, sync });
+      if (isFunction(manifest)) manifest = manifest(remote, options);
 
       const scopeName = manifest.scopeName;
       if (!scopeName) throw new Error('[import-remote:remote]scopeName can not be empty!');
 
-      if (manifest.externals) {
-        manifest.externals.forEach(external => {
-          if (!externals[external.name] && !remote.externals[external.name]) {
-            console.error(`warning:[import-remote:remote]module "${scopeName}" need external "${external.name}" !`);
-          }
-        });
-      }
+      Object.assign(externals, remote.externals);
 
-      let commonModule = manifest.commonModule && (typeof manifest.commonModule === 'string'
-        ? { name: manifest.commonModul }
-        : manifest.commonModul);
-
-      if (commonModule && commonModule.url) {
-        await remote(commonModule.url, { 
-          isCommonModule: true, 
-          externals, 
-          globals, 
-          host: commonModule.host,
-        });
-      }
+      let commonModuleOptions = manifest.commonModules || [];
+      let commonModules = await Promise.all(commonModuleOptions.filter(m => m && (m.name && m.url)).map(m => remote(m.url, { 
+        isCommonModule: true, 
+        externals, 
+        globals, 
+        host: m.host || getHostFromUrl(m.url),
+        sync,
+      })));
+      let manifestExternals = manifest.externals.filter(v => !externals[v.name]);
+      commonModules = await Promise.all(commonModules.filter(m => m).map(async m => {
+        if (m.__esModule) m = m.default;
+        if (!isRequireFactory(m)) return m;
+        let modules = await m(manifestExternals);
+        if (modules) {
+          Object.keys(modules).forEach(key => {
+            let idx = manifestExternals.find(v => v.name === key);
+            if (~idx) manifestExternals.splice(idx, 1);
+          });
+        }
+        return modules;
+      }));
 
       if (!window.__remoteModuleWebpack__.__moduleManifests__[scopeName]) {
         const moduleManifest = window.__remoteModuleWebpack__.__moduleManifests__[scopeName] = {};
@@ -119,11 +124,9 @@ function remote(url, options = {}) {
       }
 
       const context = window.__remoteModuleWebpack__[scopeName];
-    
-      Object.assign(externals, remote.externals);
 
       if (isCommonModule && moduleManifest.useId && !moduleManifest.__modulesMap__) {
-        moduleManifest.__modulesMap__ = await importJson(joinUrl(host, manifest.modulesMapFile), { timeout, timestamp: true });
+        moduleManifest.__modulesMap__ = await importJson(joinUrl(host, manifest.modulesMapFile), { timeout, timestamp: true, sync });
       }
     
       const __require__ = context.__require__;
@@ -131,25 +134,37 @@ function remote(url, options = {}) {
       manifest.externals.forEach(external => {
         if (__require__.m[external.id] && __require__.m[external.id].__import_remote_external__) return;
         const fn = module => {
-          if (fn && fn.__import_remote_exports__) return fn.__import_remote_exports__;
+          if (fn.__import_remote_module__) return fn.__import_remote_module__.exports;
           let result = externals[external.name];
-          // eslint-disable-next-line
-          if (result === undefined && external.path && commonModule) {
-            const commonModuleContext = window.__remoteModuleWebpack__[commonModule.name];
-            const commonModuleManifest = window.__remoteModuleWebpack__.__moduleManifests__[commonModule.name]; 
-            result = resolveModule(external.path,
-              commonModuleManifest.useId,
-              commonModuleManifest.__modulesMap__, 
-              commonModuleContext.__require__,
-              commonModuleManifest.nodeModulesPath,
-              manifest.nodeModulesPath);
+          if (result === undefined) {
+            commonModules.some(m => {
+              if (isFunction(m)) result = m(external);
+              else result = m[external.name];
+              return result !== undefined;
+            });
+          }
+          if (result === undefined && external.path) {
+            commonModuleOptions.some(option => {
+              const commonModuleContext = window.__remoteModuleWebpack__[option.name];
+              const commonModuleManifest = window.__remoteModuleWebpack__.__moduleManifests__[option.name]; 
+              result = resolveModule(external,
+                commonModuleManifest.useId,
+                commonModuleManifest.__modulesMap__, 
+                commonModuleContext.__require__,
+                commonModuleManifest.nodeModulesPath,
+                manifest.nodeModulesPath);
+              return result !== undefined;
+            });
           }
           if (result === undefined && external.var) result = window[external.var];
-          if (result !== undefined && fn) fn.__import_remote_exports__ = result;
           module.exports = result;
+          if (result === undefined) {
+            console.error(`warning:[import-remote:remote]module "${scopeName}" need external "${external.name}" !`);
+          }
+          fn.__import_remote_module__ = module;
         };
+        fn.__import_remote_external__ = true;
         __require__.m[external.id] = fn;
-        __require__.m[external.id].__import_remote_external__ = true;
       });
       let result = __require__(manifest.entryId || manifest.entryFile);
       resolve(result);

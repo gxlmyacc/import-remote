@@ -7,7 +7,7 @@ function importJson(href, { timeout = DEFAULT_TIMEOUT, global, sync, timestamp }
       try {
         resolve(JSON.parse(source.trim()));
       } catch (err) {
-        console.error(err); 
+        console.error(err, source); 
         reject(err); 
       }
     }).catch(reject);

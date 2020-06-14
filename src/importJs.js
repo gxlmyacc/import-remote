@@ -8,7 +8,7 @@ function importJs(href, { timeout = DEFAULT_TIMEOUT, global, sync, timestamp } =
         const result = requireFromStr(source, global);
         resolve(result);
       } catch (err) {
-        console.error(err); 
+        console.error(err, source); 
         reject(err); 
       }
     }).catch(reject);

@@ -48,7 +48,7 @@ declare namespace ModuleWebpackPlugin {
     /**
      * common module
      */
-    commonModule?: string | { name: string, url?: string }
+    commonModules?: { name: string, url: string }
     /**
      * List all entries which should be injected
      */

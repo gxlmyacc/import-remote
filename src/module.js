@@ -1,5 +1,5 @@
 import remote from './remote';
-import { joinUrl } from './utils';
+import { joinUrl, mergeObject, innumerable } from './utils';
 
 class RemoteModule {
 
@@ -25,9 +25,19 @@ class RemoteModule {
   }
 
   require(moduleName = 'index.js', options = {}) {
-    return remote(this.resolveModuleUrl(moduleName), { host: this.host, ...this.options, ...options });
+    return remote(this.resolveModuleUrl(moduleName), mergeObject({}, this.options, options, { host: this.host }));
+  }
+
+  requireSync(moduleName = 'index.js', options = {}) {
+    let result;
+    this.require(moduleName, mergeObject({}, options, { sync: true }))
+      .then(r => result = r)
+      .catch(ex => { throw ex; });
+    return result;
   }
 
 }
+
+innumerable(RemoteModule, '__import_remote_module_class__', true);
 
 export default RemoteModule;

@@ -82,10 +82,69 @@ function joinUrl(host, path) {
   return `${host}${/^\//.test(path) ? path : `/${path}`}`;
 }
 
+const _toString = Object.prototype.toString;
+
+function isPlainObject(obj) {
+  return _toString.call(obj) === '[object Object]';
+}
+
+function isFunction(fn) {
+  return typeof fn === 'function';
+}
+
+function mergeObject(target) {
+  function _mergeObject(target, source, copiedObjects) {
+    if (!target) return target;
+    if (!isPlainObject(source)) return target;
+    copiedObjects.push({ source, target });
+    Object.keys(source).forEach(key => {
+      let v = source[key];
+      if (isPlainObject(v)) {
+        let copied = copiedObjects.find(c => c.target === v);
+        if (copied) target[key] = copied.target;
+        else {
+          let w = target[key];
+          if (!isPlainObject(w)) w = target[key] = {};
+          _mergeObject(w, v, copiedObjects);
+        }
+      } else target[key] = v;
+    });
+    return target;
+  }
+
+  let ret = target;
+  let copiedObjects = [];
+  for (let i = 1; i < arguments.length; i++) _mergeObject(ret, arguments[i], copiedObjects);
+  return ret;
+}
+
+function innumerable(
+  obj,
+  key,
+  value,
+  options = { configurable: true }
+) {
+  Object.defineProperty(obj, key, { value, ...options });
+  return obj;
+}
+
+function getHostFromUrl(url) {
+  url = url.replace(/((https?:)?\/\/[^?#]*).*/g, '$1');
+  if (!/\.js$/.test(url)) return url;
+  let urls = url.replace(/((https?:)?\/\/[^?#]*).*/g, '$1').split('/');
+  urls.pop();
+  return urls.join('/');
+}
+
 export {
   DEFAULT_TIMEOUT,
   fetch,
   requireFromStr,
   isAbsoluteUrl,
-  joinUrl
+  joinUrl,
+  isPlainObject,
+  isFunction,
+  mergeObject,
+  innumerable,
+  getHostFromUrl
 };

@@ -28,7 +28,7 @@ module.exports = function ({
       ids: entrys.ids.filter(v => !v.isRuntime).map(v => v.id),
     }
   };
-  if (options.commonModule) data.commonModule = options.commonModule;
+  if (options.commonModules) data.commonModules = options.commonModules;
   return `module.exports=function(){return ${JSON.stringify(data)};}`;
 };
 
