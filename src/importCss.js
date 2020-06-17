@@ -1,14 +1,14 @@
 import { fetch, DEFAULT_TIMEOUT, joinUrl } from './utils';
 
 function hasFetched(href, head) {
-  if (!head) head = document.getElementsByTagName('head')[0];
-  let existingLinkTags = document.getElementsByTagName('link');
+  if (!head) head = document.documentElement.getElementsByTagName('head')[0];
+  let existingLinkTags = head.getElementsByTagName('link');
   for (let i = 0; i < existingLinkTags.length; i++) {
     let tag = existingLinkTags[i];
     let dataHref = tag.getAttribute('data-href') || tag.getAttribute('href');
     if (tag.rel === 'stylesheet' && (dataHref === href)) return true;
   }
-  let existingStyleTags = document.getElementsByTagName('style');
+  let existingStyleTags = head.getElementsByTagName('style');
   for (let i = 0; i < existingStyleTags.length; i++) {
     let tag = existingStyleTags[i];
     let dataHref = tag.getAttribute('data-href');
@@ -46,7 +46,7 @@ function fetchLink(href, { timeout = DEFAULT_TIMEOUT, head, scopeName } = {}) {
     linkTag.type = 'text/css';
     linkTag.onload = resolve;
     linkTag.onerror = onStyleLoadError;
-    if (scopeName) linkTag.setAttribute('data-scope', scopeName);
+    if (scopeName) linkTag.setAttribute('data-remote-scope', scopeName);
     linkTag.href = href;
 
 
@@ -58,7 +58,7 @@ function fetchLink(href, { timeout = DEFAULT_TIMEOUT, head, scopeName } = {}) {
   }));
 }
 
-function fetchStyle(href, { timeout = DEFAULT_TIMEOUT, sync, head, scopeName, host } = {}) {
+function fetchStyle(href, { timeout = DEFAULT_TIMEOUT, sync, head, scopeName, host, beforeSource } = {}) {
   return new Promise((resolve, reject) => {
     if (!head) head = document.getElementsByTagName('head')[0];
     if (hasFetched(href, head)) return resolve();
@@ -68,10 +68,12 @@ function fetchStyle(href, { timeout = DEFAULT_TIMEOUT, sync, head, scopeName, ho
           if (/\/$/.test(host)) host = host.substr(0, host.length - 1);
           source = source.replace(/url\(([^)]+)\)/ig, (m, p1) => `url(${joinUrl(host, p1)})`);
         }
+        if (beforeSource) source = beforeSource(source, 'css', href);
+
         let styleTag = document.createElement('style');
         styleTag.type = 'text/css';
         styleTag.setAttribute('data-href', href);
-        if (scopeName) styleTag.setAttribute('data-scope', scopeName);
+        if (scopeName) styleTag.setAttribute('data-remote-scope', scopeName);
         styleTag.innerHTML = source;
         head.appendChild(styleTag);
         resolve();

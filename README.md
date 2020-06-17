@@ -87,9 +87,6 @@ or
 
 ```js
 import { RemoteModule } from 'import-remote';
-import React from 'react';
-import ReactDOM from 'react-dom';
-import _ from 'lodash',
 
 const testModule = new RemoteModule('http://localhost:3000/test', {
   externals: { 

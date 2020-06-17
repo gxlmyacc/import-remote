@@ -9,6 +9,7 @@ module.exports = function ({
   }
 }) {
   const data = {
+    name: pkg.name,
     version,
     moduleVersion: pkg.version,
     modulesMapFile,

@@ -56,13 +56,13 @@ function fetch(url, { timeout = DEFAULT_TIMEOUT, sync, timestamp, } = {}) {
 fetch.queue = queue;
 fetch.cached = cached;
 
-function requireFromStr(source, context) {
+function requireFromStr(source, { global: context, moduleProps = {}, } = {}) {
   // eslint-disable-next-line no-useless-catch
   try {
     if (context) source = `with(__context__){try { return ${source} } catch(ex) { console.error(ex); throw ex; } }`;
     // eslint-disable-next-line
     const fn = new Function('module', 'exports', '__context__', source);
-    const _module = { inBrowser: true, exports: {} };
+    const _module = { inRemoteModule: true, exports: {}, ...moduleProps };
     fn(_module, _module.exports, context);
     return _module.exports;
   } catch (ex) {
@@ -89,7 +89,9 @@ function isPlainObject(obj) {
 }
 
 function isFunction(fn) {
-  return typeof fn === 'function';
+  return fn 
+    && typeof fn === 'function'
+    && (!fn.prototype || fn.prototype === Function || fn.constructor === Function);
 }
 
 function mergeObject(target) {

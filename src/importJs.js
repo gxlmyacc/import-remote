@@ -1,11 +1,12 @@
 
 import { fetch, requireFromStr, DEFAULT_TIMEOUT } from './utils';
 
-function importJs(href, { timeout = DEFAULT_TIMEOUT, global, sync, timestamp } = {}) {
+function importJs(href, { timeout = DEFAULT_TIMEOUT, global, sync, timestamp, beforeSource } = {}) {
   return new Promise((resolve, reject) => {
-    fetch(href, { timeout, sync, timestamp }).then(source => {
+    fetch(href, { timeout, sync, timestamp, beforeSource }).then(source => {
       try {
-        const result = requireFromStr(source, global);
+        if (beforeSource) source = beforeSource(source, 'js', href);
+        const result = requireFromStr(source, { global });
         resolve(result);
       } catch (err) {
         console.error(err, source); 

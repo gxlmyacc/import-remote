@@ -33,12 +33,11 @@ const fsReadFileAsync = promisify(fs.readFile);
 
 /**
  * resolve globalObject
- * @param {WebpackCompilation} compilation
   * @param {ProcessedModuleWebpackOptions} options
   * @returns {string}
   */
 // @ts-ignore
-function resolveScopeName(compilation, options) {
+function resolveScopeName(options) {
   let scopeName = options.scopeName;
   if (typeof scopeName === 'function') scopeName = scopeName(options);
   return scopeName;
@@ -52,7 +51,7 @@ function resolveScopeName(compilation, options) {
   */
 function resolveGlobalObject(compilation, options) {
   const outputOptions = compilation.mainTemplate.outputOptions;
-  const scopeName = resolveScopeName(compilation, options);
+  const scopeName = resolveScopeName(options);
   return scopeName
     ? `${options.globalObject || '__context__'}.__remoteModuleWebpack__['${scopeName}']`
     : outputOptions.globalObject;
@@ -71,7 +70,7 @@ function resolveModulePath(compilation, moduleName) {
   let v = require.resolve(moduleName);
   if (!v) return '';
   return path.relative(compilation.options.context, v).replace(/\\/g, '/');
-};
+}
 
 /**
  * resolve webpack externals
@@ -81,7 +80,7 @@ function resolveModulePath(compilation, moduleName) {
   */
 function resolveExternals(compilation, options) {
   // @ts-ignore
-  return [...compilation.modules].filter(m => m.external).map((m) => {
+  return [...compilation.modules].filter(m => m.external).map(m => {
     let v = { id: m.id };
     // @ts-ignore
     if (isPlainObject(m.request)) {
@@ -89,7 +88,7 @@ function resolveExternals(compilation, options) {
       let varName = m.request.root || m.request.commonjs;
       if (!varName) return;
       // @ts-ignore
-      Object.assign(v,{ name: m.userRequest, var: varName });
+      Object.assign(v, { name: m.userRequest, var: varName });
     } else {
       // @ts-ignore
       Object.assign(v, { name: m.request, var: m.request });
@@ -119,7 +118,7 @@ function templateParametersGenerator(compilation, assets, options, version) {
     pkg: options.package,
     webpackConfig: compilation.options,
     moduleWebpackPlugin: {
-      scopeName: resolveScopeName(compilation, options),
+      scopeName: resolveScopeName(options),
       ...assets,
       options
     }
@@ -218,6 +217,10 @@ class ModuleWebpackPlugin {
     const filename = this.options.filename;
     if (path.resolve(filename) === path.normalize(filename)) {
       this.options.filename = path.relative(compiler.options.output.path, filename);
+    }
+
+    if (!compiler.options.output.devtoolNamespace) {
+      compiler.options.output.devtoolNamespace = '(import-remote)/' + resolveScopeName(this.options);
     }
 
     // `contenthash` is introduced in webpack v4.3
@@ -397,7 +400,7 @@ class ModuleWebpackPlugin {
   getModulesMapAsset(compilation) {
     const asset = {};
     // @ts-ignore
-    compilation.modules.forEach((module) => {
+    compilation.modules.forEach(module => {
       let moduleId = module.id;
       if (moduleId === '') return;
       // @ts-ignore
@@ -412,8 +415,8 @@ class ModuleWebpackPlugin {
           if (module._identifier) request = module._identifier.split(' ')[0];
         }
         modulePath = (path.isAbsolute(request) 
-        ? path.relative(compilation.options.context, request)
-        : request).replace(/\\/g, '/');
+          ? path.relative(compilation.options.context, request)
+          : request).replace(/\\/g, '/');
       }
       if (modulePath) {
         modulePath = modulePath.split('?')[0];
@@ -425,7 +428,7 @@ class ModuleWebpackPlugin {
     return { 
       source: () => assetStr,
       size: () => assetStr.length
-    }
+    };
   }
 
   /**
