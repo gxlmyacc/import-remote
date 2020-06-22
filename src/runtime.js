@@ -90,7 +90,7 @@ function createRuntime(modules = [], {
         context.installedCssChunks[chunkId] = 0;
       }));
     } else {
-      console.warn('[import-remote:CSS_CHUNK_LOAD_FAILED] chunkId:' + chunkId + ' not found!');
+      // console.warn('[import-remote:CSS_CHUNK_LOAD_FAILED] chunkId:' + chunkId + ' not found!');
     }
 
     // js chunk loading
