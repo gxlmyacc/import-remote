@@ -111,7 +111,7 @@ function remote(url, options = {}) {
           globals, 
           host: m.host || getHostFromUrl(m.url),
           sync,
-          windowProxy: m.global ? undefined : windowProxy,
+          windowProxy: m.scoped ? windowProxy : undefined,
         })));
         let manifestExternals = manifest.externals.filter(v => !externals[v.name]);
         commonModules = (await Promise.all(commonModules.filter(m => m).map(async m => {
@@ -148,6 +148,8 @@ function remote(url, options = {}) {
           ctx.__require__ = createRuntime([], { 
             ...manifest, 
             scopeName, 
+            hot: manifest.hot,
+            hash: manifest.hash,
             host, 
             context: ctx,
             beforeSource(source, type, href) {
@@ -216,7 +218,7 @@ function remote(url, options = {}) {
           fn.__import_remote_external__ = true;
           __require__.m[external.id] = fn;
         });
-        let result = __require__(manifest.entryId || manifest.entryFile);
+        let result = __require__(manifest.entryId || manifest.entryFile, manifest.entryFile);
         resolve(result);
       } catch (ex) {
         reject(ex);

@@ -33,8 +33,25 @@ function fetch(url, { timeout = DEFAULT_TIMEOUT, sync, timestamp, } = {}) {
     xhr.onreadystatechange = () => {
       if (xhr.readyState === 4) {
         (timerId && clearTimeout(timerId)) || (timerId = 0);
-        cached[url] = xhr.responseText;
-        res.success(xhr.responseText);
+        if (xhr.status === 0) {
+          // timeout
+          const err = new Error('fetch [' + url + '] timed out.');
+          err.xhr = xhr;
+          res.fail(err);
+        } else if (xhr.status === 404) {
+          // no update available
+          const err = new Error('fetch [' + url + '] not found.');
+          err.xhr = xhr;
+          res.fail(err);
+        } else if (xhr.status !== 200 && xhr.status !== 304) {
+          // other failure
+          const err = new Error('fetch [' + url + '] failed.');
+          err.xhr = xhr;
+          res.fail(err);
+        } else {
+          // success
+          res.success(cached[url] = xhr.responseText);
+        }
       }
     };
     try {

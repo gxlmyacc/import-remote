@@ -18,6 +18,7 @@ declare namespace ModuleWebpackPlugin {
     publicPath: string,
     entryFile: string,
     entryId: string|number,
+    hash: string,
     jsonpFunction: string,
     hot: boolean,
     externals: Array<any>,
@@ -48,7 +49,7 @@ declare namespace ModuleWebpackPlugin {
     /**
      * common module
      */
-    commonModules?: { name: string, url: string }
+    commonModules?: { name: string, url: string, scoped?: boolean }
     /**
      * List all entries which should be injected
      */

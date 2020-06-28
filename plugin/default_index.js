@@ -4,7 +4,7 @@ module.exports = function ({
   version,
   pkg,
   moduleWebpackPlugin: {
-    scopeName, entryFile, entryId, modulesMapFile, jsonpFunction, 
+    scopeName, entryFile, entryId, hash, modulesMapFile, jsonpFunction, 
     hot, chunks, externals, publicPath, entrys, options 
   }
 }) {
@@ -13,6 +13,7 @@ module.exports = function ({
     version,
     moduleVersion: pkg.version,
     modulesMapFile,
+    hash,
     hot,
     nodeModulesPath: options.nodeModulesPath,
     entryFile,
@@ -27,7 +28,8 @@ module.exports = function ({
       css: entrys.css.map(v => (v.file.indexOf(publicPath) === 0 ? v.file.replace(publicPath, '') : v.file)),
       js: entrys.js.filter(v => !v.isRuntime).map(v => (v.file.indexOf(publicPath) === 0 ? v.file.replace(publicPath, '') : v.file)),
       ids: entrys.ids.filter(v => !v.isRuntime).map(v => v.id),
-    }
+    },
+    meta: options.meta || {}
   };
   if (options.commonModules) data.commonModules = options.commonModules;
   return `module.exports=function(){return ${JSON.stringify(data)};}`;
