@@ -18,7 +18,7 @@ const _ = require('lodash');
 const path = require('path');
 // @ts-ignore
 const findUp = require('find-up');
-// const webpack = require('webpack');
+const webpack = require('webpack');
 const loaderUtils = require('loader-utils');
 
 // @ts-ignore
@@ -125,23 +125,23 @@ function templateParametersGenerator(compilation, assets, options, version) {
   };
 }
 
-// function findHMRPluginIndex(config) {
-//   if (!config.plugins) {
-//     config.plugins = [];
-//     return;
-//   }
-//   return config.plugins.findIndex(plugin => plugin.constructor === webpack.HotModuleReplacementPlugin);
-// }
+function findHMRPluginIndex(config) {
+  if (!config.plugins) {
+    config.plugins = [];
+    return;
+  }
+  return config.plugins.findIndex(plugin => plugin.constructor === webpack.HotModuleReplacementPlugin);
+}
 
-// function addHMRPlugin(config) {
-//   const idx = findHMRPluginIndex(config);
-//   if (idx < 0) config.plugins.push(new webpack.HotModuleReplacementPlugin());
-// }
+function addHMRPlugin(config) {
+  const idx = findHMRPluginIndex(config);
+  if (idx < 0) config.plugins.push(new webpack.HotModuleReplacementPlugin());
+}
 
-// function removeHMRPlugin(config) {
-//   const idx = findHMRPluginIndex(config);
-//   if (~idx) config.plugins.splice(idx, 1);
-// }
+function removeHMRPlugin(config) {
+  const idx = findHMRPluginIndex(config);
+  if (~idx) config.plugins.splice(idx, 1);
+}
 
 class ModuleWebpackPlugin {
 
@@ -232,12 +232,12 @@ class ModuleWebpackPlugin {
     childCompiler.clearCache(compiler);
     
     compiler.hooks.afterPlugins.tap('ModuleWebpackPlugin', compiler => {
-      // addHMRPlugin(compiler.options);
+      addHMRPlugin(compiler.options);
     });
     
     // Register all ModuleWebpackPlugins instances at the child compiler
     compiler.hooks.thisCompilation.tap('ModuleWebpackPlugin', compilation => {
-      // removeHMRPlugin(compiler.options);
+      removeHMRPlugin(compiler.options);
       // Clear the cache if the child compiler is outdated
       if (childCompiler.hasOutDatedTemplateCache(compilation)) {
         childCompiler.clearCache(compiler);
