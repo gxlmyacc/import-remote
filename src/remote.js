@@ -93,7 +93,7 @@ function remote(url, options = {}) {
         return _reject.apply(this, arguments);
       };
       try {
-        let manifest = await importJs(url, { timeout, global: window, timestamp: true, sync });
+        let manifest = await importJs(url, { timeout, global: window, nocache: true, sync });
         if (isFunction(manifest)) manifest = manifest(remote, options);
   
         const scopeName = manifest.scopeName;
@@ -178,7 +178,7 @@ function remote(url, options = {}) {
         const context = window.__remoteModuleWebpack__[scopeName];
   
         if (isCommonModule && moduleManifest.useId && !moduleManifest.__modulesMap__) {
-          moduleManifest.__modulesMap__ = await importJson(joinUrl(host, manifest.modulesMapFile), { timeout, timestamp: true, sync });
+          moduleManifest.__modulesMap__ = await importJson(joinUrl(host, manifest.modulesMapFile), { timeout, nocache: true, sync });
         }
       
         const __require__ = context.__require__;

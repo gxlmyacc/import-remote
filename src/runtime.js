@@ -42,7 +42,7 @@ function createRuntime(modules = [], {
 
   // The require function
   function __webpack_require__(moduleId, entryFile) {
-    if (entryFile && modules[entryFile]) moduleId = entryFile;
+    if (!modules[moduleId] && entryFile && modules[entryFile]) moduleId = entryFile;
     // if (Array.isArray(moduleId)) {
     //   moduleId = moduleId.find(id => id && modules[id]);
     // }
@@ -829,19 +829,29 @@ function createRuntime(modules = [], {
         });
         promises.push(installedChunkData[2] = promise);
 
-        let href = __webpack_require__.p + jsChunks[chunkId];
-        importJs(href, { timeout, global: context, scopeName, host, beforeSource }).then(function (result) {
+        let prom;
+        let jsChunk = jsChunks[chunkId];
+        if (Array.isArray(jsChunk)) {
+          prom = Promise.all(
+            jsChunk.map(
+              v => importJs(__webpack_require__.p + v, { timeout, global: context, scopeName, host, beforeSource })
+            )
+          ).then(results => results[0]);
+        } else prom = importJs(__webpack_require__.p + jsChunk, { timeout, global: context, scopeName, host, beforeSource });
+
+        prom.then(function (result) {
           let chunk = context.installedChunks[chunkId];
           if (Array.isArray(chunk)) chunk[0](result);
           else if (installedChunkData) installedChunkData[0](result);
         }).catch(event => {
           let chunk = context.installedChunks[chunkId];
           let errorMessage = event && event.message;
+          let url = event && event.url;
           let errorType = event && (event.type === 'load' ? 'missing' : event.type);
-          let error = new Error(errorMessage || 'Loading chunk ' + chunkId + ' failed.\n(' + errorType + ': ' + href + ')');
+          let error = new Error(errorMessage || 'Loading chunk ' + chunkId + ' failed.\n(' + errorType + (url ? ': ' + url : '') + ')');
           error.code = 'JS_CHUNK_LOAD_FAILED';
           error.type = errorType;
-          error.request = href;
+          error.request = url;
           if (Array.isArray(chunk)) chunk[1](error);
           context.installedChunks[chunkId] = undefined;
         });

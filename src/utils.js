@@ -22,7 +22,7 @@ function pushQueue(url, resolve, reject) {
   };
 }
 
-function fetch(url, { timeout = DEFAULT_TIMEOUT, sync, timestamp, } = {}) {
+function fetch(url, { timeout = DEFAULT_TIMEOUT, sync, nocache, } = {}) {
   return new Promise(function (resolve, reject) {
     const res = pushQueue(url, resolve, reject); 
 
@@ -37,16 +37,19 @@ function fetch(url, { timeout = DEFAULT_TIMEOUT, sync, timestamp, } = {}) {
           // timeout
           const err = new Error('fetch [' + url + '] timed out.');
           err.xhr = xhr;
+          err.url = url;
           res.fail(err);
         } else if (xhr.status === 404) {
           // no update available
           const err = new Error('fetch [' + url + '] not found.');
           err.xhr = xhr;
+          err.url = url;
           res.fail(err);
         } else if (xhr.status !== 200 && xhr.status !== 304) {
           // other failure
           const err = new Error('fetch [' + url + '] failed.');
           err.xhr = xhr;
+          err.url = url;
           res.fail(err);
         } else {
           // success
@@ -55,9 +58,13 @@ function fetch(url, { timeout = DEFAULT_TIMEOUT, sync, timestamp, } = {}) {
       }
     };
     try {
-      if (timestamp) url += `${~url.indexOf('?') ? '&' : '?'}_=${Date.now()}`;
+      if (nocache) url += `${~url.indexOf('?') ? '&' : '?'}_=${Date.now()}`;
       xhr.open('GET', url, !sync);
       xhr.setRequestHeader('Content-Type', 'text/plain;charset=UTF-8');
+      // if (nocache) {
+      //   xhr.setRequestHeader('If-Modified-Since', '0');
+      //   xhr.setRequestHeader('Cache-Control', 'no-cache');
+      // }
       xhr.send(null);
 
       timerId = setTimeout(() => {

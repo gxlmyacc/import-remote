@@ -18,7 +18,7 @@ const _ = require('lodash');
 const path = require('path');
 // @ts-ignore
 const findUp = require('find-up');
-const webpack = require('webpack');
+// const webpack = require('webpack');
 const loaderUtils = require('loader-utils');
 
 // @ts-ignore
@@ -125,23 +125,23 @@ function templateParametersGenerator(compilation, assets, options, version) {
   };
 }
 
-function findHMRPluginIndex(config) {
-  if (!config.plugins) {
-    config.plugins = [];
-    return;
-  }
-  return config.plugins.findIndex(plugin => plugin.constructor === webpack.HotModuleReplacementPlugin);
-}
+// function findHMRPluginIndex(config) {
+//   if (!config.plugins) {
+//     config.plugins = [];
+//     return;
+//   }
+//   return config.plugins.findIndex(plugin => plugin.constructor === webpack.HotModuleReplacementPlugin);
+// }
 
-function addHMRPlugin(config) {
-  const idx = findHMRPluginIndex(config);
-  if (idx < 0) config.plugins.push(new webpack.HotModuleReplacementPlugin());
-}
+// function addHMRPlugin(config) {
+//   const idx = findHMRPluginIndex(config);
+//   if (idx < 0) config.plugins.push(new webpack.HotModuleReplacementPlugin());
+// }
 
-function removeHMRPlugin(config) {
-  const idx = findHMRPluginIndex(config);
-  if (~idx) config.plugins.splice(idx, 1);
-}
+// function removeHMRPlugin(config) {
+//   const idx = findHMRPluginIndex(config);
+//   if (~idx) config.plugins.splice(idx, 1);
+// }
 
 class ModuleWebpackPlugin {
 
@@ -232,12 +232,12 @@ class ModuleWebpackPlugin {
     childCompiler.clearCache(compiler);
     
     compiler.hooks.afterPlugins.tap('ModuleWebpackPlugin', compiler => {
-      addHMRPlugin(compiler.options);
+      // addHMRPlugin(compiler.options);
     });
     
     // Register all ModuleWebpackPlugins instances at the child compiler
     compiler.hooks.thisCompilation.tap('ModuleWebpackPlugin', compilation => {
-      removeHMRPlugin(compiler.options);
+      // removeHMRPlugin(compiler.options);
       // Clear the cache if the child compiler is outdated
       if (childCompiler.hasOutDatedTemplateCache(compilation)) {
         childCompiler.clearCache(compiler);
@@ -662,7 +662,7 @@ class ModuleWebpackPlugin {
       // then entry id
       entryId: 0,
       // hash
-      hash: compilation.hash,
+      hash: compilationHash,
       // jsonpFunction 
       jsonpFunction,
       // is hot
@@ -687,16 +687,30 @@ class ModuleWebpackPlugin {
       manifest: assetKeys.find(assetFile => path.extname(assetFile) === '.appcache'),
     };
 
-    compilation.chunks.forEach(chunk => {
+    let runtimeChunkIdx = -1;
+    compilation.chunks.forEach((chunk, i) => {
       if (chunk.hasRuntime()) {
-        chunk.files.forEach(file => delete compilation.assets[file]);
+        if (entryNames.some(entryName => chunk.name.includes(entryName))) {
+          runtimeChunkIdx = i;
+        }
         return;
       }
       chunk.files.forEach(file => {
+        // if (file.endsWith('.hot-update.js')) return;
         if ((/\.(css)(\?|$)/).test(file)) assets.chunks.files.css[chunk.id] = file;
-        else if ((/\.(js|mjs)(\?|$)/).test(file)) assets.chunks.files.js[chunk.id] = file;
+        else if ((/\.(js|mjs)(\?|$)/).test(file)) {
+          if (!assets.chunks.files.js[chunk.id]) {
+            assets.chunks.files.js[chunk.id] = file;
+            return;
+          } 
+          if (!Array.isArray(assets.chunks.files.js[chunk.id])) {
+            assets.chunks.files.js[chunk.id] = [assets.chunks.files.js[chunk.id]];
+          }
+          assets.chunks.files.js[chunk.id].push(file);
+        }
       });
     });
+    if (~runtimeChunkIdx) compilation.chunks.splice(runtimeChunkIdx, 1);
 
     assets.externals = resolveExternals(compilation, this.options);
 
@@ -739,6 +753,7 @@ class ModuleWebpackPlugin {
         assets.entryFile = path.isAbsolute(request) 
           ? path.relative(compilation.options.context, request).replace(/\\/g, '/')
           : request;
+        return true;
       }
     });
 
@@ -749,6 +764,16 @@ class ModuleWebpackPlugin {
       const entryName = entryNames[i];
       const entrypoints = compilation.entrypoints.get(entryName);
       const runtimeChunk = entrypoints.runtimeChunk;
+
+      let runtimeChunkIdx = -1;
+      entrypoints.chunks.some((chunk, i) => {
+        if (chunk.hasRuntime()) {
+          runtimeChunkIdx = i;
+          return true;
+        }
+      });
+      if (~runtimeChunkIdx) entrypoints.chunks.splice(i, 1);
+
       const entryPointFiles = entrypoints.getFiles();
 
       assets.entrys.ids.push(...entrypoints.chunks.map(c => ({

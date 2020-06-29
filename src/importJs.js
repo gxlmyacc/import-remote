@@ -1,9 +1,9 @@
 
 import { fetch, requireFromStr, DEFAULT_TIMEOUT } from './utils';
 
-function importJs(href, { timeout = DEFAULT_TIMEOUT, global, sync, host, timestamp, beforeSource } = {}) {
+function importJs(href, { timeout = DEFAULT_TIMEOUT, global, sync, host, nocache, beforeSource } = {}) {
   return new Promise((resolve, reject) => {
-    fetch(href, { timeout, sync, timestamp, beforeSource }).then(source => {
+    fetch(href, { timeout, sync, nocache, beforeSource }).then(source => {
       try {
         if (host && source) {
           if (!/\/$/.test(host)) host += '/';
@@ -16,6 +16,7 @@ function importJs(href, { timeout = DEFAULT_TIMEOUT, global, sync, host, timesta
         const result = requireFromStr(source, { global });
         resolve(result);
       } catch (err) {
+        if (err && !err.url) err.url = href;
         console.error(err, source); 
         reject(err); 
       }
