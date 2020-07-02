@@ -8,8 +8,8 @@ class RemoteView extends React.Component {
     src: PropTypes.string.isRequired,
     props: PropTypes.object,
     externals: PropTypes.object,
-    onLoading: PropTypes.func,
-    onError: PropTypes.func,
+    onViewLoading: PropTypes.func,
+    onViewError: PropTypes.func,
   }
 
   constructor(props) {
@@ -60,14 +60,14 @@ class RemoteView extends React.Component {
   }
 
   async _loadView() {
-    let { src, externals, onLoading, onError } = this.props;
+    let { src, externals, onViewLoading, onViewError } = this.props;
     let { viewSrc } = this.state;
     if (viewSrc === src) return;
     if (!src) {
       return this.setState({ loading: false, viewSrc: '', view: null });
     }
     this.setState({ loading: true });
-    onLoading && onLoading(true);
+    onViewLoading && onViewLoading(true);
 
     let oldScopeName = null;
     const state = {};
@@ -121,19 +121,19 @@ class RemoteView extends React.Component {
       });
       Object.assign(state, { view, viewSrc: src });
     } catch (ex) {
-      let errorView = onError && onError(ex);
+      let errorView = onViewError && onViewError(ex);
       if (errorView !== undefined) Object.assign(state, { view: errorView, viewSrc: '' });
     } finally {
       this.setState({ loading: false, ...state }, () => {
-        onLoading && onLoading(false);
-        if (oldScopeName) this._destoryView(oldScopeName);
+        onViewLoading && onViewLoading(false);
+        if (oldScopeName && oldScopeName !== this.viewScopeName) this._destoryView(oldScopeName);
       });
     }
   }
   
   render() {
     // eslint-disable-next-line no-unused-vars
-    const { className, src, externals, onLoading, props = {}, ...otherProps } = this.props;
+    const { className, src, externals, onViewLoading, onViewError, props = {}, ...otherProps } = this.props;
     const { loading, view: View } = this.state;
     return <div
       className={`import-remote-view import-remote-view-html ${loading ? 'view-loading' : ''} ${className || ''}`}

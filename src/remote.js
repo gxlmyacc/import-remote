@@ -111,6 +111,7 @@ function remote(url, options = {}) {
           globals, 
           host: m.host || getHostFromUrl(m.url),
           sync,
+          // getManifestCallback: m.scoped ? getManifestCallback : undefined,
           windowProxy: m.scoped ? windowProxy : undefined,
         })));
         let manifestExternals = manifest.externals.filter(v => !externals[v.name]);

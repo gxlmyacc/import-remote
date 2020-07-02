@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-import { DEFAULT_TIMEOUT, joinUrl } from './utils';
+import { DEFAULT_TIMEOUT, joinUrl, fetch } from './utils';
 import importCss from './importCss';
 import importJs from './importJs';
 
@@ -107,7 +107,7 @@ function createRuntime(modules = [], {
   
   function hotDownloadUpdateChunk(chunkId) {
     let href = __webpack_require__.p + '' + chunkId + '.' + hotCurrentHash + '.hot-update.js';
-    return importJs(href, { timeout, global: context, scopeName });
+    return importJs(href, { timeout, global: context, scopeName, sync: true });
   }
   
   function hotDownloadManifest(requestTimeout) {

@@ -1,7 +1,7 @@
 
 import { fetch, DEFAULT_TIMEOUT } from './utils';
 
-function importJson(href, { timeout = DEFAULT_TIMEOUT, global, sync, nocache } = {}) {
+function importJson(href, { timeout = DEFAULT_TIMEOUT, sync, nocache } = {}) {
   return new Promise((resolve, reject) => {
     fetch(href, { timeout, sync, nocache }).then(source => {
       try {
