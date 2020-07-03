@@ -88,7 +88,7 @@ function remote(url, options = {}) {
   }
   cached[url] = {
     result: new Promise(async (resolve, _reject) => {
-      const reject = () => {
+      const reject = function () {
         delete cached[url];
         return _reject.apply(this, arguments);
       };
