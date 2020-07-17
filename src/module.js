@@ -24,6 +24,15 @@ class RemoteModule {
     return Boolean(remote.cached[this.resolveModuleUrl(moduleName)]);
   }
 
+  async prefetch(prefetchs = []) {
+    const ret = {};
+    prefetchs = prefetchs.slice();
+    for (let i = 0; i < prefetchs.length; i++) {
+      ret.push(await this.require(prefetchs[i]));
+    }
+    return ret;
+  }
+
   require(moduleName = 'index.js', options = {}) {
     return remote(this.resolveModuleUrl(moduleName), mergeObject({}, this.options, options, { host: this.host }));
   }
