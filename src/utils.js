@@ -101,6 +101,7 @@ function isAbsoluteUrl(url) {
 
 
 function joinUrl(host, path) {
+  if (path && /^["'].+["']$/.test(path)) path = path.substr(1, path.length - 2);
   if (!host || isAbsoluteUrl(path)) return path;
   if (/\/$/.test(host)) host = host.substr(0, host.length - 1);
   return `${host}${/^\//.test(path) ? path : `/${path}`}`;
