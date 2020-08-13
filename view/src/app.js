@@ -8,6 +8,18 @@ function createApp(view, options = {}) {
       view.bootstrap && view.bootstrap(props, options);
     }
 
+    get root() {
+      const { shadow } = options;
+      if (shadow && this.shadowEl && this.el && (this.el.attachShadow || this.el.createShadowRoot)) {
+        this.shadowEl = this.el.attachShadow
+          ? this.el.attachShadow({ mode: 'open' })
+          : this.el.createShadowRoot();
+      }
+      return shadow
+        ? (this.shadowEl || this.el)
+        : this.el;
+    }
+
     _getAppProps(props) {
       const { id, className, style, ...otherProps } = props;
       return { id, className, style, otherProps };
@@ -15,18 +27,18 @@ function createApp(view, options = {}) {
 
     async componentDidMount() {
       let props = this._getAppProps(this.props).otherProps;
-      view.mounted && await view.mounted(this.el, props);
-      this.update && this.update(this.el, props, null);
+      view.mounted && await view.mounted(this.root, props);
+      this.update && this.update(this.root, props, null);
     }
 
     componentWillUnmount() {
-      view.unmount && view.unmount(this.el);
+      view.unmount && view.unmount(this.root);
     }
 
     componentDidUpdate(prevProps) {
       let newProps = this._getAppProps(this.props).otherProps;
       let oldProps = this._getAppProps(prevProps).otherProps;
-      view.update && view.update(this.el, newProps, oldProps);
+      view.update && view.update(this.root, newProps, oldProps);
     }
 
     render() {
