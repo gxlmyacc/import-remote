@@ -77,7 +77,8 @@ function remote(url, options = {}) {
     getManifestCallback = null,
     host = getHostFromUrl(url),
     sync = false,
-    windowProxy = { document: { html: document.documentElement, body: document.body, head: document.head } }
+    windowProxy = { document: { html: document.documentElement, body: document.body, head: document.head } },
+    useEsModuleDefault = false
   } = options;
   const cached = window.__remoteModuleWebpack__.cached;
   if (cached[url]) {
@@ -220,6 +221,9 @@ function remote(url, options = {}) {
           __require__.m[external.id] = fn;
         });
         let result = __require__(manifest.entryId || manifest.entryFile, manifest.entryFile);
+
+        if (useEsModuleDefault && result && result.__esModule) result = result.default;
+        
         resolve(result);
       } catch (ex) {
         reject(ex);
