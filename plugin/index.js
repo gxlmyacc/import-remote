@@ -168,7 +168,7 @@ class ModuleWebpackPlugin {
       chunks: 'all',
       excludeChunks: [],
       chunksSortMode: 'auto',
-      replaceGlobalObject: true,
+      replaceGlobalObject: false,
       scopeName: options => options.package.name,
       base: false,
     };
@@ -618,41 +618,42 @@ class ModuleWebpackPlugin {
 
     const assetKeys = Object.keys(compilation.assets);
     const jsonpFunction = compilation.mainTemplate.outputOptions.jsonpFunction;
-    const globalObject = compilation.mainTemplate.outputOptions.globalObject;
-    const newGlobalObject = resolveGlobalObject(compilation, this.options);
-    if (newGlobalObject !== globalObject) {
-      const jsRegexp = /\.(js)(\?|$)/;
-      const sourcePrefix1 = `(${globalObject}["${jsonpFunction}"] = ${globalObject}["${jsonpFunction}"] || [])`;
-      const sourcePrefix2 = `(${globalObject}.${jsonpFunction}=${globalObject}.${jsonpFunction}||[])`;
-      const newSourcePrefix1 = `(${newGlobalObject}['${jsonpFunction}']=${newGlobalObject}['${jsonpFunction}']||[])`;
-      const handleSource = source => {
-        if (!source || typeof source !== 'string') return source;
-        if (source.startsWith(sourcePrefix1)) return newSourcePrefix1 + source.substr(sourcePrefix1.length);
-        if (source.startsWith(sourcePrefix2)) return newSourcePrefix1 + source.substr(sourcePrefix2.length);
-        return source;
-      };
-      assetKeys.forEach(key => {
-        if (!jsRegexp.test(key)) return;
-        const asset = compilation.assets[key];
-        // @ts-ignore
-        if (asset.children) {
+    if (this.options.replaceGlobalObject) {
+      const globalObject = compilation.mainTemplate.outputOptions.globalObject;
+      const newGlobalObject = resolveGlobalObject(compilation, this.options);
+      if (newGlobalObject !== globalObject) {
+        const jsRegexp = /\.(js)(\?|$)/;
+        const sourcePrefix1 = `(${globalObject}["${jsonpFunction}"] = ${globalObject}["${jsonpFunction}"] || [])`;
+        const sourcePrefix2 = `(${globalObject}.${jsonpFunction}=${globalObject}.${jsonpFunction}||[])`;
+        const newSourcePrefix1 = `(${newGlobalObject}['${jsonpFunction}']=${newGlobalObject}['${jsonpFunction}']||[])`;
+        const handleSource = source => {
+          if (!source || typeof source !== 'string') return source;
+          if (source.startsWith(sourcePrefix1)) return newSourcePrefix1 + source.substr(sourcePrefix1.length);
+          if (source.startsWith(sourcePrefix2)) return newSourcePrefix1 + source.substr(sourcePrefix2.length);
+          return source;
+        };
+        assetKeys.forEach(key => {
+          if (!jsRegexp.test(key)) return;
+          const asset = compilation.assets[key];
           // @ts-ignore
-          asset.children.forEach(source => {
-            const value = handleSource(source._value);
-            if (value === source._value) return;
-            source._value = value;
-          });
-        } else if (asset.source) {
-          // @ts-ignore
-          let source = asset.source();
-          const value = handleSource(source);
-          if (value === source) return;
-          asset.source = () => value;
-          asset.size = () => value.length;
-        }
-      });
+          if (asset.children) {
+            // @ts-ignore
+            asset.children.forEach(source => {
+              const value = handleSource(source._value);
+              if (value === source._value) return;
+              source._value = value;
+            });
+          } else if (asset.source) {
+            // @ts-ignore
+            let source = asset.source();
+            const value = handleSource(source);
+            if (value === source) return;
+            asset.source = () => value;
+            asset.size = () => value.length;
+          }
+        });
+      }
     }
-
 
     const assets = {
       modulesMapFile: this.options.modulesMapFile,
