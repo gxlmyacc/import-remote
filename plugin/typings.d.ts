@@ -109,6 +109,8 @@ declare namespace ModuleWebpackPlugin {
       version: number,
     ) => { [option: string]: any } | Promise<{ [option: string]: any }>)
     | { [option: string]: any };
+
+    replaceGlobalObject: boolean;
     /**
      * In addition to the options actually used by this plugin, you can use this hash to pass arbitrary data through
      * to your template.

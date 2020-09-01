@@ -168,6 +168,7 @@ class ModuleWebpackPlugin {
       chunks: 'all',
       excludeChunks: [],
       chunksSortMode: 'auto',
+      replaceGlobalObject: true,
       scopeName: options => options.package.name,
       base: false,
     };
@@ -687,12 +688,12 @@ class ModuleWebpackPlugin {
       manifest: assetKeys.find(assetFile => path.extname(assetFile) === '.appcache'),
     };
 
-    let runtimeChunkIdx = -1;
+    // let runtimeChunkIdx = -1;
     compilation.chunks.forEach((chunk, i) => {
       if (chunk.hasRuntime()) {
-        if (entryNames.some(entryName => chunk.name.includes(entryName))) {
-          runtimeChunkIdx = i;
-        }
+        // if (entryNames.some(entryName => chunk.name.includes(entryName))) {
+        //   runtimeChunkIdx = i;
+        // }
         return;
       }
       chunk.files.forEach(file => {
@@ -710,7 +711,7 @@ class ModuleWebpackPlugin {
         }
       });
     });
-    if (~runtimeChunkIdx) compilation.chunks.splice(runtimeChunkIdx, 1);
+    // if (~runtimeChunkIdx) compilation.chunks.splice(runtimeChunkIdx, 1);
 
     assets.externals = resolveExternals(compilation, this.options);
 
@@ -765,14 +766,14 @@ class ModuleWebpackPlugin {
       const entrypoints = compilation.entrypoints.get(entryName);
       const runtimeChunk = entrypoints.runtimeChunk;
 
-      let runtimeChunkIdx = -1;
-      entrypoints.chunks.some((chunk, i) => {
-        if (chunk.hasRuntime()) {
-          runtimeChunkIdx = i;
-          return true;
-        }
-      });
-      if (~runtimeChunkIdx) entrypoints.chunks.splice(i, 1);
+      // let runtimeChunkIdx = -1;
+      // entrypoints.chunks.some((chunk, i) => {
+      //   if (chunk.hasRuntime()) {
+      //     runtimeChunkIdx = i;
+      //     return true;
+      //   }
+      // });
+      // if (~runtimeChunkIdx) entrypoints.chunks.splice(i, 1);
 
       const entryPointFiles = entrypoints.getFiles();
 

@@ -142,6 +142,9 @@ function remote(url, options = {}) {
         moduleManifest.entrys[manifest.entryFile] = manifest;
   
         if (!window.__remoteModuleWebpack__[scopeName]) {
+          const globalObject = 'window';
+          const newGlobalObject = manifest.globalObject;
+          const jsonpFunction = manifest.jsonpFunction || 'webpackJsonp';
           const ctx = window.__remoteModuleWebpack__[scopeName] = createContext(windowProxy.context);
           ctx.__remoteModuleWebpack__ = window.__remoteModuleWebpack__;
           Object.assign(ctx, remote.globals, globals);
@@ -156,6 +159,14 @@ function remote(url, options = {}) {
             context: ctx,
             beforeSource(source, type, href) {
               if (type === 'js') {
+                if (newGlobalObject) {
+                  const sourcePrefix1 = `(${globalObject}["${jsonpFunction}"] = ${globalObject}["${jsonpFunction}"] || [])`;
+                  const sourcePrefix2 = `(${globalObject}.${jsonpFunction}=${globalObject}.${jsonpFunction}||[])`;
+                  const newSourcePrefix1 = `(${newGlobalObject}['${jsonpFunction}']=${newGlobalObject}['${jsonpFunction}']||[])`;
+                  if (source.startsWith(sourcePrefix1))  source = newSourcePrefix1 + source.substr(sourcePrefix1.length);
+                  else if (source.startsWith(sourcePrefix2)) source = newSourcePrefix1 + source.substr(sourcePrefix2.length);
+                }
+       
                 source = source
                   .replace(/\b(?:window\.)?document\.getElementsBy(TagName(?:NS)?|Name|ClassName)\b/g, (m, p1) => 'document.documentElement.getElementsBy' + p1)
                   .replace(/\b(?:window\.)?document\.querySelector(All)?\b/g, (m, p1) => 'document.documentElement.querySelector' + (p1 || ''))

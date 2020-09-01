@@ -1,6 +1,7 @@
 
 
 module.exports = function ({
+  globalObject,
   version,
   pkg,
   moduleWebpackPlugin: {
@@ -18,6 +19,7 @@ module.exports = function ({
     nodeModulesPath: options.nodeModulesPath,
     entryFile,
     entryId,
+    globalObject,
     jsonpFunction,
     scopeName,
     publicPath,
