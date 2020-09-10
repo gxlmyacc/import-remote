@@ -16,6 +16,7 @@ function createRuntime(modules = [], {
   timeout = DEFAULT_TIMEOUT,
   beforeSource,
 } = {}) {
+  const _hasOwnProperty = Object.prototype.hasOwnProperty;
   // The module cache
   context.installedModules = context.installedModules || {};
 
@@ -160,7 +161,7 @@ function createRuntime(modules = [], {
     };
     for (let name in __webpack_require__) {
       if (
-        Object.prototype.hasOwnProperty.call(__webpack_require__, name)
+        _hasOwnProperty.call(__webpack_require__, name)
         && name !== 'e'
         && name !== 't') {
         Object.defineProperty(fn, name, ObjectFactory(name));
@@ -340,7 +341,7 @@ function createRuntime(modules = [], {
     if (!hotAvailableFilesMap[chunkId] || !hotRequestedFilesMap[chunkId]) return;
     hotRequestedFilesMap[chunkId] = false;
     for (let moduleId in moreModules) {
-      if (Object.prototype.hasOwnProperty.call(moreModules, moduleId)) {
+      if (_hasOwnProperty.call(moreModules, moduleId)) {
         hotUpdate[moduleId] = moreModules[moduleId];
       }
     }
@@ -383,7 +384,7 @@ function createRuntime(modules = [], {
     } else {
       let outdatedModules = [];
       for (let id in hotUpdate) {
-        if (Object.prototype.hasOwnProperty.call(hotUpdate, id)) {
+        if (_hasOwnProperty.call(hotUpdate, id)) {
           outdatedModules.push(toModuleId(id));
         }
       }
@@ -494,7 +495,7 @@ function createRuntime(modules = [], {
     };
   
     for (let id in hotUpdate) {
-      if (Object.prototype.hasOwnProperty.call(hotUpdate, id)) {
+      if (_hasOwnProperty.call(hotUpdate, id)) {
         moduleId = toModuleId(id);
  
         if (hotUpdate[id]) {
@@ -558,7 +559,7 @@ function createRuntime(modules = [], {
           addAllToSet(outdatedModules, result.outdatedModules);
           for (moduleId in result.outdatedDependencies) {
             if (
-              Object.prototype.hasOwnProperty.call(
+              _hasOwnProperty.call(
                 result.outdatedDependencies,
                 moduleId
               )) {
@@ -646,7 +647,7 @@ function createRuntime(modules = [], {
     let moduleOutdatedDependencies;
     for (moduleId in outdatedDependencies) {
       if (
-        Object.prototype.hasOwnProperty.call(outdatedDependencies, moduleId)) {
+        _hasOwnProperty.call(outdatedDependencies, moduleId)) {
         module = context.installedModules[moduleId];
         if (module) {
           moduleOutdatedDependencies = outdatedDependencies[moduleId];
@@ -670,7 +671,7 @@ function createRuntime(modules = [], {
   
     // insert new code
     for (moduleId in appliedUpdate) {
-      if (Object.prototype.hasOwnProperty.call(appliedUpdate, moduleId)) {
+      if (_hasOwnProperty.call(appliedUpdate, moduleId)) {
         modules[moduleId] = appliedUpdate[moduleId];
       }
     }
@@ -679,7 +680,7 @@ function createRuntime(modules = [], {
     let error = null;
     for (moduleId in outdatedDependencies) {
       if (
-        Object.prototype.hasOwnProperty.call(outdatedDependencies, moduleId)) {
+        _hasOwnProperty.call(outdatedDependencies, moduleId)) {
         module = context.installedModules[moduleId];
         if (module) {
           moduleOutdatedDependencies = outdatedDependencies[moduleId];
@@ -786,7 +787,7 @@ function createRuntime(modules = [], {
   }
   
   function hotApplyInvalidatedModule(moduleId) {
-    if (!Object.prototype.hasOwnProperty.call(hotUpdate, moduleId)) hotUpdate[moduleId] = modules[moduleId];
+    if (!_hasOwnProperty.call(hotUpdate, moduleId)) hotUpdate[moduleId] = modules[moduleId];
   }
 
   // This file contains only the entry chunk.
@@ -909,8 +910,8 @@ function createRuntime(modules = [], {
     return getter;
   };
 
-  // Object.prototype.hasOwnProperty.call
-  __webpack_require__.o = function (object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
+  // _hasOwnProperty.call
+  __webpack_require__.o = function (object, property) { return _hasOwnProperty.call(object, property); };
 
   // __webpack_public_path__
   __webpack_require__.p = joinUrl(host, publicPath);
@@ -950,14 +951,14 @@ function createRuntime(modules = [], {
     let resolves = [];
     for (;i < chunkIds.length; i++) {
       chunkId = chunkIds[i];
-      if (Object.prototype.hasOwnProperty.call(context.installedChunks, chunkId)
+      if (_hasOwnProperty.call(context.installedChunks, chunkId)
         && context.installedChunks[chunkId]) {
         resolves.push(context.installedChunks[chunkId][0]);
       }
       context.installedChunks[chunkId] = 0;
     }
     Object.keys(moreModules).forEach(function (moduleId) {
-      if (Object.prototype.hasOwnProperty.call(moreModules, moduleId)) {
+      if (_hasOwnProperty.call(moreModules, moduleId) && !modules[moduleId]) {
         modules[moduleId] = moreModules[moduleId];
       }
     });

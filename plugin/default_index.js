@@ -34,6 +34,6 @@ module.exports = function ({
     meta: options.meta || {}
   };
   if (options.commonModules) data.commonModules = options.commonModules;
-  return `module.exports=function(){return ${JSON.stringify(data)};}`;
+  return `module.exports=function(){return ${JSON.stringify(data)};};module.exports['iref']=true;`;
 };
 

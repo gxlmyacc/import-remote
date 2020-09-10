@@ -399,13 +399,22 @@ class ModuleWebpackPlugin {
    * @returns { { source: () => string, size: () => number } }
    */
   getModulesMapAsset(compilation) {
-    const asset = {};
+    const assets = {};
+
+    function resolvePath(modulePath) {
+      if (modulePath.includes('!')) {
+        let paths = modulePath.split('!').filter(Boolean);
+        modulePath = paths[paths.length - 1] || '';
+      }
+      return modulePath.split('?')[0];
+    }
     // @ts-ignore
     compilation.modules.forEach(module => {
       let moduleId = module.id;
       if (moduleId === '') return;
+      const asset = {};
       // @ts-ignore
-      let request = (module.userRequest || '').split('?')[0];
+      let request = resolvePath((module.userRequest || ''));
       let modulePath = '';
       // @ts-ignore
       if (module.external) {
@@ -413,8 +422,12 @@ class ModuleWebpackPlugin {
       } else {
         if (!request) {
           // @ts-ignore
-          if (module._identifier) request = module._identifier.split(' ')[0];
+          if (module._identifier) request = resolvePath(module._identifier.split(' ')[
+            // @ts-ignore
+            module._identifier.startsWith('multi ') ? 1 : 0
+          ]);
         }
+        
         modulePath = (path.isAbsolute(request) 
           ? path.relative(compilation.options.context, request)
           : request).replace(/\\/g, '/');
@@ -422,10 +435,18 @@ class ModuleWebpackPlugin {
       if (modulePath) {
         modulePath = modulePath.split('?')[0];
         if (!/^\.\.?\//.test(modulePath)) modulePath = './' + modulePath;
+        const packageFile = findUp.sync('package.json', { cwd: path.resolve(compilation.compiler.context, modulePath) });
+        if (packageFile && packageFile.includes('node_modules')) {
+          const pkg = require(packageFile);
+          // if (modulePath !== moduleId) 
+          asset.id = moduleId;
+          asset.name = pkg.name;
+          // asset.version = pkg.version;
+        }
       } 
-      asset[modulePath] = { id: moduleId };
+      assets[modulePath] = asset;
     });
-    const assetStr = JSON.stringify(asset);
+    const assetStr = JSON.stringify(assets);
     return { 
       source: () => assetStr,
       size: () => assetStr.length

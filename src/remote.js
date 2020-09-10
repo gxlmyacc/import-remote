@@ -11,8 +11,18 @@ function createContext(context) {
   return context;
 }
 
+function resolvePath(modulePath) {
+  if (modulePath.includes('!')) {
+    let paths = modulePath.split('!').filter(Boolean);
+    modulePath = paths[paths.length - 1] || '';
+  }
+  return modulePath.split('?')[0];
+}
+
 function resolveModulePath(modulePath, nodeModulesPath, currentNodeModulesPath) {
   if (!modulePath) return modulePath;
+  nodeModulesPath = resolvePath(nodeModulesPath || '');
+  currentNodeModulesPath = resolvePath(currentNodeModulesPath || '');
   if (nodeModulesPath && currentNodeModulesPath !== nodeModulesPath) {
     modulePath = modulePath.replace(currentNodeModulesPath, nodeModulesPath);
   }
@@ -28,7 +38,8 @@ function resolveModule(external, useId, modulesMap, __require__, nodeModulesPath
     return;
   }
   let modulePath = resolveModulePath(external.path, nodeModulesPath, currentNodeModulesPath);
-  let moduleId = modulesMap[modulePath] && modulesMap[modulePath].id;
+  let moduleAsset = modulesMap[modulePath];
+  let moduleId = moduleAsset && (moduleAsset.id === undefined ? modulePath : moduleAsset.id);
   if (moduleId === undefined) return;
   if (__require__.m[moduleId]) return __require__(moduleId);
 }
@@ -106,15 +117,17 @@ function remote(url, options = {}) {
         Object.assign(externals, remote.externals);
   
         let commonModuleOptions = manifest.commonModules || [];
-        let commonModules = await Promise.all(commonModuleOptions.filter(m => m && (m.name && m.url)).map(m => remote(m.url, { 
-          isCommonModule: true, 
-          externals, 
-          globals, 
-          host: m.host || getHostFromUrl(m.url),
-          sync,
-          // getManifestCallback: m.scoped ? getManifestCallback : undefined,
-          windowProxy: m.scoped ? windowProxy : undefined,
-        })));
+        let commonModules = await Promise.all(commonModuleOptions
+          .filter(m => m && (m.name && m.url))
+          .map(m => remote(m.url, { 
+            isCommonModule: true, 
+            externals, 
+            globals, 
+            host: m.host || getHostFromUrl(m.url),
+            sync,
+            // getManifestCallback: m.scoped ? getManifestCallback : undefined,
+            windowProxy: m.scoped ? windowProxy : undefined,
+          })));
         let manifestExternals = manifest.externals.filter(v => !externals[v.name]);
         commonModules = (await Promise.all(commonModules.filter(m => m).map(async m => {
           if (m.__esModule) m = m.default;

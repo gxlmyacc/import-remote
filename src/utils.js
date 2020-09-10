@@ -80,7 +80,7 @@ function fetch(url, { timeout = DEFAULT_TIMEOUT, sync, nocache, } = {}) {
 fetch.queue = queue;
 fetch.cached = cached;
 
-function requireFromStr(source, { global: context, moduleProps = {}, } = {}) {
+function requireFromStr(source, { global: context = global, moduleProps = {}, } = {}) {
   // eslint-disable-next-line no-useless-catch
   try {
     if (context) source = `with(__context__){try { return ${source} } catch(ex) { console.error(ex); throw ex; } }`;

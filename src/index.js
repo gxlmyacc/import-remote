@@ -2,10 +2,14 @@ import remote from './remote';
 import RemoteModule from './module';
 import createRequireFactory from './requireFactory';
 import { innumerable } from './utils';
+import importJs from './importJs';
+import importJson from './importJson';
 
 export {
   RemoteModule,
-  createRequireFactory
+  createRequireFactory,
+  importJs,
+  importJson
 };
 
 export default remote;
@@ -13,6 +17,8 @@ export default remote;
 remote.externals['import-remote'] = {
   RemoteModule,
   createRequireFactory,
+  importJs,
+  importJson,
   default: remote
 };
 
