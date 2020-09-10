@@ -83,7 +83,7 @@ fetch.cached = cached;
 function requireFromStr(source, { global: context = global, moduleProps = {}, } = {}) {
   // eslint-disable-next-line no-useless-catch
   try {
-    if (context) source = `with(__context__){try { return ${source} } catch(ex) { console.error(ex); throw ex; } }`;
+    if (context) source = `with(__context__){try { ${source} } catch(ex) { console.error(ex); throw ex; } }`;
     // eslint-disable-next-line
     const fn = new Function('module', 'exports', '__context__', source);
     const _module = { inRemoteModule: true, exports: {}, ...moduleProps };
