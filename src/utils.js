@@ -1,5 +1,7 @@
 const DEFAULT_TIMEOUT = 120000;
 
+const ATTR_SCOPE_NAME = 'data-remote-scope';
+
 const cached = {};
 const queue = [];
 function pushQueue(url, resolve, reject) {
@@ -165,6 +167,7 @@ function getHostFromUrl(url) {
 
 export {
   DEFAULT_TIMEOUT,
+  ATTR_SCOPE_NAME,
   fetch,
   requireFromStr,
   isAbsoluteUrl,

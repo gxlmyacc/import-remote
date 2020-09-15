@@ -4,12 +4,14 @@ import createRequireFactory from './requireFactory';
 import { innumerable } from './utils';
 import importJs from './importJs';
 import importJson from './importJson';
+import importCss from './importCss';
 
 export {
   RemoteModule,
   createRequireFactory,
   importJs,
-  importJson
+  importJson,
+  importCss
 };
 
 export default remote;

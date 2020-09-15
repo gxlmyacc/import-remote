@@ -1,4 +1,4 @@
-import { DEFAULT_TIMEOUT, joinUrl, isFunction, getHostFromUrl, innumerable } from './utils';
+import { DEFAULT_TIMEOUT, ATTR_SCOPE_NAME, joinUrl, isFunction, getHostFromUrl, innumerable } from './utils';
 import createRuntime from './runtime';
 import importJs from './importJs';
 import importJson from './importJson';
@@ -61,7 +61,7 @@ function createWindowProxy(windowProxy, scopeName) {
   };
   doc.createElement = function (tagName, options) {
     let el = document.createElement(tagName, options);
-    if (scopeName) el.setAttribute('data-remote-scope', scopeName);
+    if (scopeName) el.setAttribute(ATTR_SCOPE_NAME, scopeName);
     if (!el.appendChild._import_remote_proxy_) {
       const _appendChild = el.appendChild;
       el.appendChild = function appendChildProxy(node, scoped) {
@@ -76,6 +76,16 @@ function createWindowProxy(windowProxy, scopeName) {
     doc,
     ...windowOthers
   };
+}
+
+function getScopeName(scopeName, host, order = 0) {
+  let newScopeName = `${scopeName}${order ? `_${order}` : ''}`;
+  const currentManifest = window.__remoteModuleWebpack__.__moduleManifests__[newScopeName];
+  if (currentManifest && host && currentManifest.host && currentManifest.host !== host) {
+    console.warn(`[import-remote]note: [${host}:${newScopeName}] scopename alreadly exist, will rename to [${scopeName}_${order + 1}]!`);
+    return getScopeName(scopeName, host, ++order); 
+  }
+  return newScopeName;
 }
 
 function remote(url, options = {}) {
@@ -107,9 +117,9 @@ function remote(url, options = {}) {
       try {
         let manifest = await importJs(url, { timeout, global: window, nocache: true, sync });
         if (isFunction(manifest)) manifest = manifest(remote, options);
-  
-        const scopeName = manifest.scopeName;
-        if (!scopeName) throw new Error('[import-remote:remote]scopeName can not be empty!');
+        
+        if (!manifest.scopeName) throw new Error('[import-remote:remote]scopeName can not be empty!');
+        let scopeName = getScopeName(manifest.scopeName, host);
 
         cached[url] && (cached[url].manifest = manifest);
         getManifestCallback && (await getManifestCallback(manifest));
@@ -144,6 +154,7 @@ function remote(url, options = {}) {
   
         if (!window.__remoteModuleWebpack__.__moduleManifests__[scopeName]) {
           const moduleManifest = window.__remoteModuleWebpack__.__moduleManifests__[scopeName] = {};
+          moduleManifest.host = host;
           moduleManifest.jsChunks = manifest.jsChunks;
           moduleManifest.cssChunks = manifest.cssChunks;
           moduleManifest.hot = manifest.hot;

@@ -1,4 +1,4 @@
-import { fetch, DEFAULT_TIMEOUT, joinUrl } from './utils';
+import { ATTR_SCOPE_NAME, fetch, DEFAULT_TIMEOUT, joinUrl } from './utils';
 
 function hasFetched(href, head) {
   if (!head) head = document.documentElement.getElementsByTagName('head')[0];
@@ -46,7 +46,7 @@ function fetchLink(href, { timeout = DEFAULT_TIMEOUT, head, scopeName } = {}) {
     linkTag.type = 'text/css';
     linkTag.onload = resolve;
     linkTag.onerror = onStyleLoadError;
-    if (scopeName) linkTag.setAttribute('data-remote-scope', scopeName);
+    if (scopeName) linkTag.setAttribute(ATTR_SCOPE_NAME, scopeName);
     linkTag.href = href;
 
 
@@ -73,10 +73,10 @@ function fetchStyle(href, { timeout = DEFAULT_TIMEOUT, sync, head, scopeName, ho
         let styleTag = document.createElement('style');
         styleTag.type = 'text/css';
         styleTag.setAttribute('data-href', href);
-        if (scopeName) styleTag.setAttribute('data-remote-scope', scopeName);
+        if (scopeName) styleTag.setAttribute(ATTR_SCOPE_NAME, scopeName);
         styleTag.innerHTML = source;
         head.appendChild(styleTag);
-        resolve();
+        resolve(styleTag);
       } catch (err) {
         console.error(err); 
         err.code = 'CSS_CHUNK_LOAD_FAILED';
