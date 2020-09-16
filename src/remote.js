@@ -120,6 +120,7 @@ function remote(url, options = {}) {
         
         if (!manifest.scopeName) throw new Error('[import-remote:remote]scopeName can not be empty!');
         let scopeName = getScopeName(manifest.scopeName, host);
+        if (manifest.scopeName !== scopeName) manifest.scopeName = scopeName;
 
         cached[url] && (cached[url].manifest = manifest);
         getManifestCallback && (await getManifestCallback(manifest));

@@ -51,6 +51,10 @@ function createRuntime(modules = [], {
     if (context.installedModules[moduleId]) {
       return context.installedModules[moduleId].exports;
     }
+    if (!modules[moduleId]) {
+      throw new Error(`[import-remote]module[${moduleId}] not exist!`);
+    }
+
     // Create a new module (and put it into the cache)
     let module = context.installedModules[moduleId] = {
       inRemoteModule: true,
