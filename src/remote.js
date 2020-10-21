@@ -175,7 +175,7 @@ function remote(url, options = {}) {
           Object.assign(ctx, remote.globals, globals);
           ctx.__HOST__ = host;
           ctx.__windowProxy__ = createWindowProxy(windowProxy, manifest.scopeName);
-          ctx.__require__ = createRuntime([], { 
+          ctx.require = createRuntime([], { 
             ...manifest, 
             scopeName, 
             hot: manifest.hot,
@@ -219,7 +219,7 @@ function remote(url, options = {}) {
           moduleManifest.__modulesMap__ = await importJson(joinUrl(host, manifest.modulesMapFile), { timeout, nocache: true, sync });
         }
       
-        const __require__ = context.__require__;
+        const __require__ = context.require;
         await Promise.all(manifest.entrys.ids.map(id => __require__.e(id)));
         manifest.externals.forEach(external => {
           if (__require__.m[external.id] && __require__.m[external.id].__import_remote_external__) return;
