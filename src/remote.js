@@ -185,11 +185,15 @@ function remote(url, options = {}) {
             beforeSource(source, type, href) {
               if (type === 'js') {
                 if (newGlobalObject) {
+                  let sourcePrefix;
                   const sourcePrefix1 = `(${globalObject}["${jsonpFunction}"] = ${globalObject}["${jsonpFunction}"] || [])`;
-                  const sourcePrefix2 = `(${globalObject}.${jsonpFunction}=${globalObject}.${jsonpFunction}||[])`;
+                  const sourcePrefix2 = `(${globalObject}["${jsonpFunction}"]=${globalObject}["${jsonpFunction}"]||[])`;
+                  const sourcePrefix3 = `(${globalObject}.${jsonpFunction}=${globalObject}.${jsonpFunction}||[])`;
                   const newSourcePrefix1 = `(${newGlobalObject}['${jsonpFunction}']=${newGlobalObject}['${jsonpFunction}']||[])`;
-                  if (source.startsWith(sourcePrefix1))  source = newSourcePrefix1 + source.substr(sourcePrefix1.length);
-                  else if (source.startsWith(sourcePrefix2)) source = newSourcePrefix1 + source.substr(sourcePrefix2.length);
+                  if (source.startsWith(sourcePrefix1)) sourcePrefix = sourcePrefix1;
+                  else if (source.startsWith(sourcePrefix2)) sourcePrefix = sourcePrefix2;
+                  else if (source.startsWith(sourcePrefix3)) sourcePrefix = sourcePrefix3;
+                  if (sourcePrefix) source = newSourcePrefix1 + source.substr(sourcePrefix.length);
                 }
        
                 source = source
