@@ -7,11 +7,15 @@ function importJs(href, { timeout = DEFAULT_TIMEOUT, global, sync, host, nocache
       try {
         if (host && source) {
           if (!/\/$/.test(host)) host += '/';
-          source = source.replace(/\/\/# sourceURL=\[module\]\\n/g, '');
+          source = source.replace(/\/\/# sourceURL=\[module\]\\n/g, '\\n');
           source = source.replace(
             /\/\/# sourceURL=(webpack-internal:\/\/\/[A-z/\-_0-9.@[\]]+)\\n/g, 
             (m, p1) => '' // `//# sourceURL=${host}__get-internal-source?fileName=${encodeURIComponent(p1)}\\n`
           );
+          // source = source.replace(
+          //   /\/\/# sourceURL=webpack-internal:\/\/\//g, 
+          //   `//# sourceURL=webpack-internal:///${host}`
+          // );
         }
         if (beforeSource) source = beforeSource(source, 'js', href);
         const result = requireFromStr(source, { global });
