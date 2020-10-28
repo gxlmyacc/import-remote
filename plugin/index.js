@@ -169,6 +169,7 @@ class ModuleWebpackPlugin {
       excludeChunks: [],
       chunksSortMode: 'auto',
       replaceGlobalObject: false,
+      globalToScopes: [],
       scopeName: options => options.package.name,
       base: false,
     };

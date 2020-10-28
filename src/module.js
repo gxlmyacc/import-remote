@@ -45,6 +45,19 @@ class RemoteModule {
     return result;
   }
 
+  import(moduleName = 'index.js', options = {}) {
+    return this.require(moduleName, options).then(result => {
+      (result && result.__esModule) && (result = result.default);
+      return result;
+    });
+  }
+
+  importSync(moduleName = 'index.js', options = {}) {
+    let result = this.requireSync(moduleName, options);
+    (result && result.__esModule) && (result = result.default);
+    return result;
+  }
+
 }
 
 innumerable(RemoteModule, '__import_remote_module_class__', true);

@@ -58,6 +58,7 @@ function createRuntime(modules = [], {
     // Create a new module (and put it into the cache)
     let module = context.installedModules[moduleId] = {
       inRemoteModule: true,
+      publicPath,
       i: moduleId,
       l: false,
       exports: {}

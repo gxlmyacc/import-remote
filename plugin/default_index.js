@@ -17,6 +17,7 @@ module.exports = function ({
     hash,
     hot,
     nodeModulesPath: options.nodeModulesPath,
+    globalToScopes: options.globalToScopes || [],
     entryFile,
     entryId,
     globalObject,

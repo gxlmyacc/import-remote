@@ -1,3 +1,4 @@
+import escapeStringRegexp from 'escape-string-regexp';
 import { DEFAULT_TIMEOUT, ATTR_SCOPE_NAME, joinUrl, isFunction, getHostFromUrl, innumerable } from './utils';
 import createRuntime from './runtime';
 import importJs from './importJs';
@@ -74,6 +75,7 @@ function createWindowProxy(windowProxy, scopeName) {
   };
   return {
     doc,
+    globals: {},
     ...windowOthers
   };
 }
@@ -210,8 +212,21 @@ function remote(url, options = {}) {
                 if (ctx.__windowProxy__.removeEventListener) {
                   source = source.replace(/\bwindow\.removeEventListener\b/g, '__windowProxy__.removeEventListener');
                 }
+
+                if (manifest.globalToScopes) {
+                  manifest.globalToScopes.forEach(varName => {
+                    source = source.replace(
+                      new RegExp(
+                        `\\b(?:global|window)\\.${escapeStringRegexp(varName)}\\b`, 
+                        `__windowProxy__.globals.${varName}`
+                      )
+                    );
+                  });
+                }
+
                 return source;
               }
+
               return source;
             } 
           });

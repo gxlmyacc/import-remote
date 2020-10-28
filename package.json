@@ -1,6 +1,6 @@
 {
   "name": "import-remote",
-  "version": "0.0.9-alpha.11",
+  "version": "0.0.9-alpha.12",
   "main": "esm/index.js",
   "module": "esm/index.js",
   "types": "typings.d.ts",
@@ -49,6 +49,7 @@
     "@babel/plugin-transform-strict-mode": "^7.2.0",
     "@babel/preset-env": "7.4.5",
     "@babel/preset-react": "^7.0.0",
+    "escape-string-regexp": "^2.0.0",
     "find-up": "^4.1.0",
     "loader-utils": "^1.2.3",
     "lodash": "^4.17.11",
