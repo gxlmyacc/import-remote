@@ -238,7 +238,7 @@ function remote(url, options = {}) {
           moduleManifest.__modulesMap__ = await importJson(joinUrl(host, manifest.modulesMapFile), { timeout, nocache: true, sync });
         }
       
-        const __require__ = context.require;
+        const __require__ = context.require || context.__require__;
         await Promise.all(manifest.entrys.ids.map(id => __require__.e(id)));
         manifest.externals.forEach(external => {
           if (__require__.m[external.id] && __require__.m[external.id].__import_remote_external__) return;
