@@ -90,6 +90,13 @@ function getScopeName(scopeName, host, order = 0) {
   return newScopeName;
 }
 
+function batchReplace(source, replaces) {
+  replaces && replaces.filter(Boolean).forEach(([regx, replace]) => {
+    source = source.replace(regx, replace);
+  });
+  return source;
+}
+
 function remote(url, options = {}) {
   if (!window.__remoteModuleWebpack__) window.__remoteModuleWebpack__ = { __moduleManifests__: {}, cached: {} };
   let {
@@ -198,30 +205,27 @@ function remote(url, options = {}) {
                   if (sourcePrefix) source = newSourcePrefix1 + source.substr(sourcePrefix.length);
                 }
        
-                source = source
-                  .replace(/\b(?:window\.)?document\.getElementsBy(TagName(?:NS)?|Name|ClassName)\b/g, (m, p1) => 'document.documentElement.getElementsBy' + p1)
-                  .replace(/\b(?:window\.)?document\.querySelector(All)?\b/g, (m, p1) => 'document.documentElement.querySelector' + (p1 || ''))
-                  .replace(/\b(?:window\.)?document\.getElementById\b/g, '__windowProxy__.doc.getElementById')
-                  .replace(/\b(?:window\.)?document\.createElement\b/g, '__windowProxy__.doc.createElement')
-                  .replace(/\b(?:window\.)?document\.body\b/g, '__windowProxy__.doc.body')
-                  .replace(/\b(?:window\.)?document\.head\b/g, '__windowProxy__.doc.head')
-                  .replace(/\b(?:window\.)?document\.documentElement\b/g, '__windowProxy__.doc.html');
-                if (ctx.__windowProxy__.addEventListener) {
-                  source = source.replace(/\bwindow\.addEventListener\b/g, '__windowProxy__.addEventListener');
-                }
-                if (ctx.__windowProxy__.removeEventListener) {
-                  source = source.replace(/\bwindow\.removeEventListener\b/g, '__windowProxy__.removeEventListener');
-                }
-
+                
+                source = batchReplace(source, [
+                  [/\b(?:window\.)?document\.getElementsBy(TagName(?:NS)?|Name|ClassName)\b/g, (m, p1) => 'document.documentElement.getElementsBy' + p1],
+                  [/\b(?:window\.)?document\.querySelector(All)?\b/g, (m, p1) => 'document.documentElement.querySelector' + (p1 || '')],
+                  [/\b(?:window\.)?document\.getElementById\b/g, '__windowProxy__.doc.getElementById'],
+                  [/\b(?:window\.)?document\.createElement\b/g, '__windowProxy__.doc.createElement'],
+                  [/\b(?:window\.)?document\.body\b/g, '__windowProxy__.doc.body'],
+                  [/\b(?:window\.)?document\.head\b/g, '__windowProxy__.doc.head'],
+                  [/\b(?:window\.)?document\.documentElement\b/g, '__windowProxy__.doc.html'],
+                  ctx.__windowProxy__.addEventListener 
+                    ? [/\bwindow\.addEventListener\b/g, '__windowProxy__.addEventListener']
+                    : null,
+                  ctx.__windowProxy__.removeEventListener
+                    ? [/\bwindow\.removeEventListener\b/g, '__windowProxy__.removeEventListener']
+                    : null
+                ]);
                 if (manifest.globalToScopes) {
-                  manifest.globalToScopes.forEach(varName => {
-                    source = source.replace(
-                      new RegExp(
-                        `\\b(?:global|window)\\.${escapeStringRegexp(varName)}\\b`, 
-                        `__windowProxy__.globals.${varName}`
-                      )
-                    );
-                  });
+                  source = batchReplace(source, manifest.globalToScopes.map(varName => ([
+                    new RegExp(`\\b(?:global|window)\\.${escapeStringRegexp(varName)}\\b`),
+                    `__windowProxy__.globals.${varName}`
+                  ])));
                 }
 
                 return source;
