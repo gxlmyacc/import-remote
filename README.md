@@ -37,6 +37,21 @@
 
   - `webpack library`包必须配置`publicPath`；`import-remote`无需配置`publicPath`或只需配置为`/`，加载方法(`remote`)在加载资源时会自动配置JS的`publicPath，并且查找CSS源代码中的相对路径，将其替换为绝对路径；
 
+### 实现原理
+
+#### 构建期
+
+参考`html-webpack-plugin`生成的js入口里，实际上是该入口依赖的mainfest信息，包含入口JS/CSS文件、external等信息；
+
+#### 加载期
+  
+`import-remote`的加载方法调用时：
+  1. 加载入口JS文件；
+  2. 根据入口JS里的信息，通过ajax请求下载入口JS/CSS资源;
+  3. 通过内置的重写`webpack运行时`加载相关资源;
+  4. 根据`external`信息，替换调加载模块中的这些外部模块；
+  5. 调用入口模块，获取它的`modlule.exports`;
+  6. 返回获取到的`modlule.exports`；
 
 ## 安装
 
