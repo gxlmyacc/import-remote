@@ -53,6 +53,8 @@
   5. 调用入口模块，获取它的`modlule.exports`;
   6. 返回获取到的`modlule.exports`；
 
+![说明](./images/principle.png)
+
 ## 安装
 
 ```bash
