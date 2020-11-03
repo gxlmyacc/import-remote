@@ -397,3 +397,117 @@ module.exports = {
 则宿主在加载你的模块时，将会把你源代码中的`global.app`、`window.app`、`global.someVar`、`window.someVar`替换成`__windowProxy__.globals.app`、`__windowProxy__.globals.someVar`。
 
 注：全局变量私有化可能有风险，需要您仔细斟酌是否使用。毕竟最好的方案就是没有全局变量。该选项只是用于解决您目前无法或没时间去掉全局变量时的一种托底解决办法。
+
+## 运行期包使用说明
+
+### 远程加载方法
+
+函数签名：
+
+```ts
+/**
+ * @param {string} url 远程模块的url地址
+ * @param {object} options 加载选项
+ * @param {object} options.externals 远程模块的依赖模块
+ * @param {boolean} options.useEsModuleDefault 当远程模块导出的是ES模块时，是否只返回它的default导出部分
+ * @returns {Promise<any>} 远程模块的导出内容
+ **/
+function remote(url: string, options: { externals: { [key]: any } }): Promise<any>; 
+```
+
+使用方法：
+
+```js
+import remote from 'import-remote';
+
+// 通过await等待模块加载完毕
+const testIndex = await importRemote('http://localhost:3000/test/index.js', {
+  // 配置模块需要依赖
+  externals: { 
+    react: require('react'), 
+    'react-dom': require('react-dom'),
+    'lodash': require('lodash'),
+  }
+});
+// 拿到模块输出对象后，即可做你想做的任何事了
+testIndex.dosomething();
+```
+
+### 远程模块
+
+通过远程模块可以用于管理一个项目生成的所有模块：
+
+```js
+import { RemoteModule } from 'import-remote';
+
+// 配置RemoteModule的host和依赖
+const testModule = new RemoteModule('http://localhost:3000/test', {
+  externals: { 
+    react: require('react'), 
+    'react-dom': require('react-dom'),
+    'lodash': require('lodash'),
+  }
+});
+
+// 具体的加载路径为RemoteModule的`${host}${requireName}.js`
+const testIndex = await testModule.require('index');
+const testOther = await testModule.require('other');
+
+testIndex.dosomething();
+testOther.dosomething();
+```
+
+`RemoteModule`的的方法有：
+
+1. 构造函数
+
+```ts
+/**
+ * @param {string} host 该项目生成的模块的基地址(host)
+ * @param {object} options 加载选项
+ * @param {object} options.externals 远程模块的依赖模块
+ * @param {boolean} options.useEsModuleDefault 当远程模块导出的是ES模块时，是否只返回它的default导出部分
+ * @returns {void}
+ **/
+constructor(host: string, options: { externals: { [key]: any } }): void; 
+```
+
+2. 加载方法
+
+调用这些方法时，会将moduleName与创建时的host拼在一起组成该模块的地址：`${host}${moduleName}.js`，然后在内部调用`remote`方法
+```ts
+{
+  /**
+   * 异步加载方法
+   * @param {string} moduleName 模块名，调用
+   * @param {object} options 加载选项，和remote方法的option一致
+   * @returns {Promise<any>} 远程模块的导出内容
+   **/
+  require(moduleName: string = 'index', options: {}): Promise<any>; 
+
+  /**
+   * 功能和require相同，只是将加载资源时的ajax设置为同步请求
+   * @param {string} moduleName 模块名，调用
+   * @param {object} options 加载选项，和remote方法的option一致
+   * @returns {any} 远程模块的导出内容
+   **/
+  requireSync(moduleName: string = 'index', options: {}): any; 
+
+  /**
+   * 异步加载方法,功能和require相同，只是在导出模块为es模块时，只导出它的default部分
+   * @param {string} moduleName 模块名，调用
+   * @param {object} options 加载选项，和remote方法的option一致
+   * @returns {Promise<any>} 远程模块的导出内容
+   **/
+  import(moduleName: string = 'index', options: {}): Promise<any>; 
+
+  /**
+   * 功能和import相同，只是将加载资源时的ajax设置为同步请求
+   * @param {string} moduleName 模块名，调用
+   * @param {object} options 加载选项，和remote方法的option一致
+   * @returns {any} 远程模块的导出内容
+   **/
+  importSync(moduleName: string = 'index', options: {}): any;  
+}
+
+```
