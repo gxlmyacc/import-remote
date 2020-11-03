@@ -458,25 +458,17 @@ testOther.dosomething();
 ```
 
 `RemoteModule`的的方法有：
-
-1. 构造函数
-
-```ts
-/**
- * @param {string} host 该项目生成的模块的基地址(host)
- * @param {object} options 加载选项
- * @param {object} options.externals 远程模块的依赖模块
- * @param {boolean} options.useEsModuleDefault 当远程模块导出的是ES模块时，是否只返回它的default导出部分
- * @returns {void}
- **/
-constructor(host: string, options: { externals: { [key]: any } }): void; 
-```
-
-2. 加载方法
-
-调用这些方法时，会将moduleName与创建时的host拼在一起组成该模块的地址：`${host}${moduleName}.js`，然后在内部调用`remote`方法
 ```ts
 {
+  /**
+   * @param {string} host 该项目生成的模块的基地址(host)
+   * @param {object} options 加载选项
+   * @param {object} options.externals 远程模块的依赖模块
+   * @param {boolean} options.useEsModuleDefault 当远程模块导出的是ES模块时，是否只返回它的default导出部分
+   * @returns {void}
+   **/
+  constructor(host: string, options: { externals: { [key]: any } }): void; 
+  
   /**
    * 异步加载方法
    * @param {string} moduleName 模块名，调用
