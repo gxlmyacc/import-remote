@@ -2,7 +2,18 @@ const DEFAULT_TIMEOUT = 120000;
 
 const ATTR_SCOPE_NAME = 'data-remote-scope';
 
-const cached = {};
+if (!window.__remoteModuleWebpack__) {
+  window.__remoteModuleWebpack__ = { 
+    __moduleManifests__: {}, 
+    cached: {},
+    fetched: {},
+  };
+}
+if (!window.__remoteModuleWebpack__.fetched) {
+  window.__remoteModuleWebpack__.fetched = {};
+}
+
+const fetched = window.__remoteModuleWebpack__.fetched;
 const queue = [];
 function pushQueue(url, resolve, reject) {
   const item = { url };
@@ -25,10 +36,9 @@ function pushQueue(url, resolve, reject) {
 }
 
 function fetch(url, { timeout = DEFAULT_TIMEOUT, sync, nocache, } = {}) {
-  return new Promise(function (resolve, reject) {
+  if (fetched[url]) return fetched[url];
+  return fetched[url] = new Promise(function (resolve, reject) {
     const res = pushQueue(url, resolve, reject); 
-
-    if (cached[url] !== undefined) return res.success(cached[url]);
 
     const xhr = new window.XMLHttpRequest();
     let timerId;
@@ -55,7 +65,7 @@ function fetch(url, { timeout = DEFAULT_TIMEOUT, sync, nocache, } = {}) {
           res.fail(err);
         } else {
           // success
-          res.success(cached[url] = xhr.responseText);
+          res.success(xhr.responseText);
         }
       }
     };
@@ -80,7 +90,7 @@ function fetch(url, { timeout = DEFAULT_TIMEOUT, sync, nocache, } = {}) {
 }
 
 fetch.queue = queue;
-fetch.cached = cached;
+fetch.fetched = fetched;
 
 function requireFromStr(source, { global: context = global, moduleProps = {}, } = {}) {
   // eslint-disable-next-line no-useless-catch

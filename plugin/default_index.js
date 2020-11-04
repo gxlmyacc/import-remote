@@ -4,6 +4,7 @@ module.exports = function ({
   globalObject,
   version,
   pkg,
+  webpackConfig,
   moduleWebpackPlugin: {
     scopeName, entryFile, entryId, hash, modulesMapFile, jsonpFunction, 
     hot, chunks, externals, publicPath, entrys, options 
@@ -12,6 +13,8 @@ module.exports = function ({
   const data = {
     name: pkg.name,
     version,
+    mode: webpackConfig.mode,
+    libraryTarget: webpackConfig.output.libraryTarget,
     moduleVersion: pkg.version,
     modulesMapFile,
     hash,

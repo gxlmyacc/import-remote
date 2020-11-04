@@ -1,5 +1,5 @@
 import escapeStringRegexp from 'escape-string-regexp';
-import { DEFAULT_TIMEOUT, ATTR_SCOPE_NAME, joinUrl, isFunction, getHostFromUrl, innumerable } from './utils';
+import { DEFAULT_TIMEOUT, ATTR_SCOPE_NAME, joinUrl, isFunction, getHostFromUrl, innumerable, isPlainObject } from './utils';
 import createRuntime from './runtime';
 import importJs from './importJs';
 import importJson from './importJson';
@@ -98,7 +98,6 @@ function batchReplace(source, replaces) {
 }
 
 function remote(url, options = {}) {
-  if (!window.__remoteModuleWebpack__) window.__remoteModuleWebpack__ = { __moduleManifests__: {}, cached: {} };
   let {
     timeout = DEFAULT_TIMEOUT,
     externals = {},
@@ -174,10 +173,42 @@ function remote(url, options = {}) {
         }
         const moduleManifest = window.__remoteModuleWebpack__.__moduleManifests__[scopeName];
         moduleManifest.entrys[manifest.entryFile] = manifest;
+
+        const requireExternal = externalOrModuleId => {
+          let external = externalOrModuleId;
+          if (!isPlainObject(external)) external = { name: external };
+          let result = externals[external.name];
+          if (result === undefined) {
+            commonModules.some(m => {
+              if (isFunction(m)) result = m(external);
+              else result = m[external.name];
+              return result !== undefined;
+            });
+          }
+          if (result === undefined && external.path) {
+            commonModuleOptions.some(option => {
+              const commonModuleContext = window.__remoteModuleWebpack__[option.name];
+              const commonModuleManifest = window.__remoteModuleWebpack__.__moduleManifests__[option.name]; 
+              result = resolveModule(external,
+                commonModuleManifest.useId,
+                commonModuleManifest.__modulesMap__, 
+                commonModuleContext.__require__,
+                commonModuleManifest.nodeModulesPath,
+                manifest.nodeModulesPath);
+              return result !== undefined;
+            });
+          }
+          if (result === undefined && external.var) result = window[external.var];
+          if (result === undefined) {
+            console.error(`warning:[import-remote:remote]module "${scopeName}" need external "${external.name}" !`);
+          }
+          return result;
+        };
   
         if (!window.__remoteModuleWebpack__[scopeName]) {
           const globalObject = 'window';
           const newGlobalObject = manifest.globalObject;
+          const libraryTarget = manifest.libraryTarget;
           const jsonpFunction = manifest.jsonpFunction || 'webpackJsonp';
           const ctx = window.__remoteModuleWebpack__[scopeName] = createContext(windowProxy.context);
           ctx.__remoteModuleWebpack__ = window.__remoteModuleWebpack__;
@@ -191,6 +222,7 @@ function remote(url, options = {}) {
             hash: manifest.hash,
             host, 
             context: ctx,
+            requireExternal,
             beforeSource(source, type, href) {
               if (type === 'js') {
                 if (newGlobalObject) {
@@ -199,12 +231,23 @@ function remote(url, options = {}) {
                   const sourcePrefix2 = `(${globalObject}["${jsonpFunction}"]=${globalObject}["${jsonpFunction}"]||[])`;
                   const sourcePrefix3 = `(${globalObject}.${jsonpFunction}=${globalObject}.${jsonpFunction}||[])`;
                   const newSourcePrefix1 = `(${newGlobalObject}['${jsonpFunction}']=${newGlobalObject}['${jsonpFunction}']||[])`;
-                  if (source.startsWith(sourcePrefix1)) sourcePrefix = sourcePrefix1;
-                  else if (source.startsWith(sourcePrefix2)) sourcePrefix = sourcePrefix2;
-                  else if (source.startsWith(sourcePrefix3)) sourcePrefix = sourcePrefix3;
-                  if (sourcePrefix) source = newSourcePrefix1 + source.substr(sourcePrefix.length);
+                  if (!libraryTarget || libraryTarget === 'var') {
+                    if (source.startsWith(sourcePrefix1)) sourcePrefix = sourcePrefix1;
+                    else if (source.startsWith(sourcePrefix2)) sourcePrefix = sourcePrefix2;
+                    else if (source.startsWith(sourcePrefix3)) sourcePrefix = sourcePrefix3;
+                    if (sourcePrefix) source = newSourcePrefix1 + source.substr(sourcePrefix.length);
+                  } else {
+                    let idx = -1;
+                    [sourcePrefix1, sourcePrefix2, sourcePrefix3].some(prefix => {
+                      idx = source.indexOf(prefix);
+                      if (~idx) sourcePrefix = prefix;
+                      return ~idx;
+                    });          
+                    if (sourcePrefix) {
+                      source = source.substr(0, idx) + newSourcePrefix1 + source.substr(idx + sourcePrefix.length, source.length); 
+                    } 
+                  }
                 }
-       
                 
                 source = batchReplace(source, [
                   [/\b(?:window\.)?document\.getElementsBy(TagName(?:NS)?|Name|ClassName)\b/g, (m, p1) => 'document.documentElement.getElementsBy' + p1],
@@ -248,32 +291,7 @@ function remote(url, options = {}) {
           if (__require__.m[external.id] && __require__.m[external.id].__import_remote_external__) return;
           const fn = module => {
             if (fn.__import_remote_module__) return fn.__import_remote_module__.exports;
-            let result = externals[external.name];
-            if (result === undefined) {
-              commonModules.some(m => {
-                if (isFunction(m)) result = m(external);
-                else result = m[external.name];
-                return result !== undefined;
-              });
-            }
-            if (result === undefined && external.path) {
-              commonModuleOptions.some(option => {
-                const commonModuleContext = window.__remoteModuleWebpack__[option.name];
-                const commonModuleManifest = window.__remoteModuleWebpack__.__moduleManifests__[option.name]; 
-                result = resolveModule(external,
-                  commonModuleManifest.useId,
-                  commonModuleManifest.__modulesMap__, 
-                  commonModuleContext.__require__,
-                  commonModuleManifest.nodeModulesPath,
-                  manifest.nodeModulesPath);
-                return result !== undefined;
-              });
-            }
-            if (result === undefined && external.var) result = window[external.var];
-            module.exports = result;
-            if (result === undefined) {
-              console.error(`warning:[import-remote:remote]module "${scopeName}" need external "${external.name}" !`);
-            }
+            module.exports = requireExternal(external);
             fn.__import_remote_module__ = module;
           };
           fn.__import_remote_external__ = true;

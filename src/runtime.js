@@ -14,6 +14,7 @@ function createRuntime(modules = [], {
   jsChunks = {},
   context = {},
   timeout = DEFAULT_TIMEOUT,
+  requireExternal,
   beforeSource,
 } = {}) {
   const _hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -52,13 +53,18 @@ function createRuntime(modules = [], {
       return context.installedModules[moduleId].exports;
     }
     if (!modules[moduleId]) {
+      let result = requireExternal(moduleId);
+      if (result !== undefined) return result;
+
       throw new Error(`[import-remote]module[${moduleId}] not exist!`);
     }
 
     // Create a new module (and put it into the cache)
     let module = context.installedModules[moduleId] = {
       inRemoteModule: true,
+      requireExternal,
       publicPath,
+      
       i: moduleId,
       l: false,
       exports: {}
