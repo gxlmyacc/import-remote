@@ -1,5 +1,9 @@
 import escapeStringRegexp from 'escape-string-regexp';
-import { DEFAULT_TIMEOUT, ATTR_SCOPE_NAME, joinUrl, isFunction, getHostFromUrl, innumerable, isPlainObject } from './utils';
+import { 
+  DEFAULT_TIMEOUT, ATTR_SCOPE_NAME, 
+  joinUrl, isFunction, getHostFromUrl, 
+  innumerable, isPlainObject, cached 
+} from './utils';
 import createRuntime from './runtime';
 import importJs from './importJs';
 import importJson from './importJson';
@@ -109,7 +113,6 @@ function remote(url, options = {}) {
     windowProxy = { document: { html: document.documentElement, body: document.body, head: document.head } },
     useEsModuleDefault = false
   } = options;
-  const cached = window.__remoteModuleWebpack__.cached;
   if (cached[url]) {
     return cached[url].result.then(async r => {
       getManifestCallback && (await getManifestCallback(cached[url].manifest));
@@ -117,6 +120,7 @@ function remote(url, options = {}) {
     });
   }
   cached[url] = {
+    manifest: null,
     result: new Promise(async (resolve, _reject) => {
       const reject = function () {
         delete cached[url];

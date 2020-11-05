@@ -1,8 +1,12 @@
 
-import { fetch, requireFromStr, DEFAULT_TIMEOUT } from './utils';
+import { cached, fetch, innumerable, requireFromStr, DEFAULT_TIMEOUT } from './utils';
+
 
 function importJs(href, { timeout = DEFAULT_TIMEOUT, global, sync, host, nocache, beforeSource } = {}) {
-  return new Promise((resolve, reject) => {
+  if (!cached._js) innumerable(cached, '_js', {});
+  if (cached._js[href]) return cached._js[href];
+
+  return cached._js[href] = new Promise((resolve, reject) => {
     fetch(href, { timeout, sync, nocache, beforeSource }).then(source => {
       try {
         if (host && source) {

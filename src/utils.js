@@ -9,11 +9,9 @@ if (!window.__remoteModuleWebpack__) {
     fetched: {},
   };
 }
-if (!window.__remoteModuleWebpack__.fetched) {
-  window.__remoteModuleWebpack__.fetched = {};
-}
 
-const fetched = window.__remoteModuleWebpack__.fetched;
+
+const cached = window.__remoteModuleWebpack__.cached;
 const queue = [];
 function pushQueue(url, resolve, reject) {
   const item = { url };
@@ -36,6 +34,9 @@ function pushQueue(url, resolve, reject) {
 }
 
 function fetch(url, { timeout = DEFAULT_TIMEOUT, sync, nocache, } = {}) {
+  if (!cached._fetched) innumerable(cached, '_fetched', {});
+  const fetched = cached._fetched;
+
   if (fetched[url]) return fetched[url];
   return fetched[url] = new Promise(function (resolve, reject) {
     const res = pushQueue(url, resolve, reject); 
@@ -90,7 +91,6 @@ function fetch(url, { timeout = DEFAULT_TIMEOUT, sync, nocache, } = {}) {
 }
 
 fetch.queue = queue;
-fetch.fetched = fetched;
 
 function requireFromStr(source, { global: context = global, moduleProps = {}, } = {}) {
   // eslint-disable-next-line no-useless-catch
@@ -179,6 +179,8 @@ function getHostFromUrl(url) {
 export {
   DEFAULT_TIMEOUT,
   ATTR_SCOPE_NAME,
+  cached,
+
   fetch,
   requireFromStr,
   isAbsoluteUrl,
