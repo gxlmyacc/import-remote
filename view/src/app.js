@@ -1,16 +1,17 @@
 import React from 'react';
+import { innumerable } from './utils';
 
 function createApp(view, options = {}) {
   class RemoteViewApp extends React.Component {
 
     constructor(props) {
       super(props);
-      view.bootstrap && view.bootstrap(props, options);
+      if (view.bootstrap) view.bootstrap(props, options);
     }
 
     get root() {
       const { shadow } = options;
-      if (shadow && this.shadowEl && this.el && (this.el.attachShadow || this.el.createShadowRoot)) {
+      if (shadow && !this.shadowEl && this.el && (this.el.attachShadow || this.el.createShadowRoot)) {
         this.shadowEl = this.el.attachShadow
           ? this.el.attachShadow({ mode: 'open' })
           : this.el.createShadowRoot();
@@ -22,23 +23,36 @@ function createApp(view, options = {}) {
 
     _getAppProps(props) {
       const { id, className, style, ...otherProps } = props;
+      if (props.children) innumerable(otherProps, 'children', props.children);
       return { id, className, style, otherProps };
     }
 
-    async componentDidMount() {
+    componentDidMount() {
       let props = this._getAppProps(this.props).otherProps;
-      view.mounted && await view.mounted(this.root, props);
-      this.update && this.update(this.root, props, null);
+      if (view.mounted) {
+        const prom = view.mounted(this.root, props);
+        if (prom && prom.then) {
+          prom.then(() => view.update && view.update(this.root, props, null));
+        } else view.update && view.update(this.root, props, null);
+      } else if (view.init) {
+        const prom = view.init(props, options);
+        if (prom && prom.then) {
+          prom.then(() => view.render && view.render(this.root, props));
+        } else view.render && view.render(this.root, props);
+      }
     }
 
     componentWillUnmount() {
-      view.unmount && view.unmount(this.root);
+      if (view.unmount) view.unmount(this.root);
+      else if (view.destroy) view.destroy(this.root);
+      else if (view.destory) view.destory(this.root);
     }
 
     componentDidUpdate(prevProps) {
       let newProps = this._getAppProps(this.props).otherProps;
       let oldProps = this._getAppProps(prevProps).otherProps;
-      view.update && view.update(this.root, newProps, oldProps);
+      if (view.update) view.update(this.root, newProps, oldProps);  
+      else if (view.init) view.init(newProps);
     }
 
     render() {
@@ -48,7 +62,10 @@ function createApp(view, options = {}) {
         Object.assign(props, { id, style });
         if (className) props.className += ` ${className}`;
       }
-      return <div {...props} ref={el => this.el = el}></div>;
+      return React.createElement('div', {
+        ...props,
+        ref: el => this.el = el
+      });
     }
 
   }

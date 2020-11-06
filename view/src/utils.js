@@ -12,7 +12,18 @@ function isForwardComponent(component) {
     && (typeof component.render === 'function');
 }
 
+function innumerable(
+  obj,
+  key,
+  value,
+  options = { configurable: true }
+) {
+  Object.defineProperty(obj, key, { value, ...options });
+  return obj;
+}
+
 export {
   isReactComponent,
-  isForwardComponent
+  isForwardComponent,
+  innumerable
 };

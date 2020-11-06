@@ -2,7 +2,7 @@ import escapeStringRegexp from 'escape-string-regexp';
 import { 
   DEFAULT_TIMEOUT, ATTR_SCOPE_NAME, 
   joinUrl, isFunction, getHostFromUrl, 
-  innumerable, isPlainObject, cached 
+  innumerable, isPlainObject, globalCached, checkRemoteModuleWebpack
 } from './utils';
 import createRuntime from './runtime';
 import importJs from './importJs';
@@ -84,12 +84,12 @@ function createWindowProxy(windowProxy, scopeName) {
   };
 }
 
-function getScopeName(scopeName, host, order = 0) {
+function getScopeName(__remoteModuleWebpack__, scopeName, host, order = 0) {
   let newScopeName = `${scopeName}${order ? `_${order}` : ''}`;
-  const currentManifest = window.__remoteModuleWebpack__.__moduleManifests__[newScopeName];
+  const currentManifest = __remoteModuleWebpack__.__moduleManifests__[newScopeName];
   if (currentManifest && host && currentManifest.host && currentManifest.host !== host) {
     console.warn(`[import-remote]note: [${host}:${newScopeName}] scopename alreadly exist, will rename to [${scopeName}_${order + 1}]!`);
-    return getScopeName(scopeName, host, ++order); 
+    return getScopeName(__remoteModuleWebpack__, scopeName, host, ++order); 
   }
   return newScopeName;
 }
@@ -113,6 +113,8 @@ function remote(url, options = {}) {
     windowProxy = { document: { html: document.documentElement, body: document.body, head: document.head } },
     useEsModuleDefault = false
   } = options;
+  const __remoteModuleWebpack__ = checkRemoteModuleWebpack(windowProxy.context);
+  let cached = (windowProxy.context && windowProxy.context.cached) || globalCached;
   if (cached[url]) {
     return cached[url].result.then(async r => {
       getManifestCallback && (await getManifestCallback(cached[url].manifest));
@@ -127,11 +129,11 @@ function remote(url, options = {}) {
         return _reject.apply(this, arguments);
       };
       try {
-        let manifest = await importJs(url, { timeout, global: window, nocache: true, sync });
+        let manifest = await importJs(url, { timeout, global: window, nocache: true, sync, cached });
         if (isFunction(manifest)) manifest = manifest(remote, options);
         
         if (!manifest.scopeName) throw new Error('[import-remote:remote]scopeName can not be empty!');
-        let scopeName = getScopeName(manifest.scopeName, host);
+        let scopeName = getScopeName(__remoteModuleWebpack__, manifest.scopeName, host);
         if (manifest.scopeName !== scopeName) manifest.scopeName = scopeName;
 
         cached[url] && (cached[url].manifest = manifest);
@@ -165,8 +167,8 @@ function remote(url, options = {}) {
           return modules;
         }))).filter(Boolean);
   
-        if (!window.__remoteModuleWebpack__.__moduleManifests__[scopeName]) {
-          const moduleManifest = window.__remoteModuleWebpack__.__moduleManifests__[scopeName] = {};
+        if (!__remoteModuleWebpack__.__moduleManifests__[scopeName]) {
+          const moduleManifest = __remoteModuleWebpack__.__moduleManifests__[scopeName] = {};
           moduleManifest.host = host;
           moduleManifest.jsChunks = manifest.jsChunks;
           moduleManifest.cssChunks = manifest.cssChunks;
@@ -175,7 +177,7 @@ function remote(url, options = {}) {
           moduleManifest.nodeModulesPath = manifest.nodeModulesPath;
           moduleManifest.entrys = {};
         }
-        const moduleManifest = window.__remoteModuleWebpack__.__moduleManifests__[scopeName];
+        const moduleManifest = __remoteModuleWebpack__.__moduleManifests__[scopeName];
         moduleManifest.entrys[manifest.entryFile] = manifest;
 
         const requireExternal = externalOrModuleId => {
@@ -191,8 +193,8 @@ function remote(url, options = {}) {
           }
           if (result === undefined && external.path) {
             commonModuleOptions.some(option => {
-              const commonModuleContext = window.__remoteModuleWebpack__[option.name];
-              const commonModuleManifest = window.__remoteModuleWebpack__.__moduleManifests__[option.name]; 
+              const commonModuleContext = __remoteModuleWebpack__[option.name];
+              const commonModuleManifest = __remoteModuleWebpack__.__moduleManifests__[option.name]; 
               result = resolveModule(external,
                 commonModuleManifest.useId,
                 commonModuleManifest.__modulesMap__, 
@@ -209,13 +211,13 @@ function remote(url, options = {}) {
           return result;
         };
   
-        if (!window.__remoteModuleWebpack__[scopeName]) {
+        if (!__remoteModuleWebpack__[scopeName]) {
           const globalObject = 'window';
           const newGlobalObject = manifest.globalObject;
           const libraryTarget = manifest.libraryTarget;
           const jsonpFunction = manifest.jsonpFunction || 'webpackJsonp';
-          const ctx = window.__remoteModuleWebpack__[scopeName] = createContext(windowProxy.context);
-          ctx.__remoteModuleWebpack__ = window.__remoteModuleWebpack__;
+          const ctx = __remoteModuleWebpack__[scopeName] = createContext(windowProxy.context);
+          ctx.__remoteModuleWebpack__ = __remoteModuleWebpack__;
           Object.assign(ctx, remote.globals, globals);
           ctx.__HOST__ = host;
           ctx.__windowProxy__ = createWindowProxy(windowProxy, manifest.scopeName);
@@ -226,6 +228,7 @@ function remote(url, options = {}) {
             hash: manifest.hash,
             host, 
             context: ctx,
+            cached,
             requireExternal,
             beforeSource(source, type, href) {
               if (type === 'js') {
@@ -283,7 +286,7 @@ function remote(url, options = {}) {
           });
         }
   
-        const context = window.__remoteModuleWebpack__[scopeName];
+        const context = __remoteModuleWebpack__[scopeName];
   
         if (isCommonModule && moduleManifest.useId && !moduleManifest.__modulesMap__) {
           moduleManifest.__modulesMap__ = await importJson(joinUrl(host, manifest.modulesMapFile), { timeout, nocache: true, sync });

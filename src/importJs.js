@@ -1,8 +1,8 @@
 
-import { cached, fetch, innumerable, requireFromStr, DEFAULT_TIMEOUT } from './utils';
+import { globalCached, fetch, innumerable, requireFromStr, DEFAULT_TIMEOUT } from './utils';
 
 
-function importJs(href, { timeout = DEFAULT_TIMEOUT, global, sync, host, nocache, beforeSource } = {}) {
+function importJs(href, { cached = globalCached, timeout = DEFAULT_TIMEOUT, global, sync, host, nocache, beforeSource } = {}) {
   if (!cached._js) innumerable(cached, '_js', {});
   if (cached._js[href]) return cached._js[href];
 

@@ -2,16 +2,18 @@ const DEFAULT_TIMEOUT = 120000;
 
 const ATTR_SCOPE_NAME = 'data-remote-scope';
 
-if (!window.__remoteModuleWebpack__) {
-  window.__remoteModuleWebpack__ = { 
-    __moduleManifests__: {}, 
-    cached: {},
-    fetched: {},
-  };
+function checkRemoteModuleWebpack(context = global) {
+  if (!context.__remoteModuleWebpack__) {
+    context.__remoteModuleWebpack__ = { 
+      __moduleManifests__: {}, 
+      cached: {},
+    };
+  }
+  return context.__remoteModuleWebpack__;
 }
+checkRemoteModuleWebpack();
 
-
-const cached = window.__remoteModuleWebpack__.cached;
+const globalCached = window.__remoteModuleWebpack__.cached;
 const queue = [];
 function pushQueue(url, resolve, reject) {
   const item = { url };
@@ -34,8 +36,8 @@ function pushQueue(url, resolve, reject) {
 }
 
 function fetch(url, { timeout = DEFAULT_TIMEOUT, sync, nocache, } = {}) {
-  if (!cached._fetched) innumerable(cached, '_fetched', {});
-  const fetched = cached._fetched;
+  if (!globalCached._fetched) innumerable(globalCached, '_fetched', {});
+  const fetched = globalCached._fetched;
 
   if (fetched[url]) return fetched[url];
   return fetched[url] = new Promise(function (resolve, reject) {
@@ -179,8 +181,9 @@ function getHostFromUrl(url) {
 export {
   DEFAULT_TIMEOUT,
   ATTR_SCOPE_NAME,
-  cached,
+  globalCached,
 
+  checkRemoteModuleWebpack,
   fetch,
   requireFromStr,
   isAbsoluteUrl,

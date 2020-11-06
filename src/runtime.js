@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-import { DEFAULT_TIMEOUT, joinUrl, fetch } from './utils';
+import { DEFAULT_TIMEOUT, joinUrl, fetch, globalCached } from './utils';
 import importCss from './importCss';
 import importJs from './importJs';
 
@@ -13,6 +13,7 @@ function createRuntime(modules = [], {
   cssChunks = {},
   jsChunks = {},
   context = {},
+  cached = globalCached,
   timeout = DEFAULT_TIMEOUT,
   requireExternal,
   beforeSource,
@@ -119,7 +120,7 @@ function createRuntime(modules = [], {
   
   function hotDownloadUpdateChunk(chunkId) {
     let href = __webpack_require__.p + '' + chunkId + '.' + hotCurrentHash + '.hot-update.js';
-    return importJs(href, { timeout, global: context, scopeName, sync: true });
+    return importJs(href, {  timeout, global: context, cached, scopeName, sync: true });
   }
   
   function hotDownloadManifest(requestTimeout) {
@@ -816,7 +817,8 @@ function createRuntime(modules = [], {
           head: context.__windowProxy__.head, 
           scopeName, 
           host, 
-          beforeSource 
+          beforeSource,
+          cached
         }).then(resolve).catch(function (err) {
           delete context.installedCssChunks[chunkId];
           reject(err);
@@ -846,10 +848,10 @@ function createRuntime(modules = [], {
         if (Array.isArray(jsChunk)) {
           prom = Promise.all(
             jsChunk.map(
-              v => importJs(__webpack_require__.p + v, { timeout, global: context, scopeName, host, beforeSource })
+              v => importJs(__webpack_require__.p + v, { timeout, global: context, cached, scopeName, host, beforeSource })
             )
           ).then(results => results[0]);
-        } else prom = importJs(__webpack_require__.p + jsChunk, { timeout, global: context, scopeName, host, beforeSource });
+        } else prom = importJs(__webpack_require__.p + jsChunk, { timeout, global: context, cached, scopeName, host, beforeSource });
 
         prom.then(function (result) {
           let chunk = context.installedChunks[chunkId];

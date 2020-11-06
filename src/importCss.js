@@ -1,4 +1,4 @@
-import { ATTR_SCOPE_NAME, fetch, cached, innumerable, DEFAULT_TIMEOUT, joinUrl } from './utils';
+import { ATTR_SCOPE_NAME, fetch, globalCached, innumerable, DEFAULT_TIMEOUT, joinUrl } from './utils';
 
 function hasFetched(href, head) {
   if (!head) head = document.documentElement.getElementsByTagName('head')[0];
@@ -58,7 +58,7 @@ function fetchLink(href, { timeout = DEFAULT_TIMEOUT, head, scopeName } = {}) {
   }));
 }
 
-function fetchStyle(href, { timeout = DEFAULT_TIMEOUT, sync, head, scopeName, host, beforeSource } = {}) {
+function fetchStyle(href, { cached = globalCached, timeout = DEFAULT_TIMEOUT, sync, head, scopeName, host, beforeSource } = {}) {
   if (!cached._css) innumerable(cached, '_css', {});
   if (cached._css[href]) return cached._css[href];
 
