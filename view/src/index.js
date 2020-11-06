@@ -4,6 +4,8 @@ import remote from '../..';
 import createApp from './app';
 import { isForwardComponent, isReactComponent } from './utils';
 
+const RemoteViewContenxt = React.createContext({});
+
 class RemoteView extends React.Component {
 
   static propTypes = {
@@ -11,6 +13,7 @@ class RemoteView extends React.Component {
     tag: PropTypes.string,
     src: PropTypes.string.isRequired,
     props: PropTypes.object,
+    bodyStyle: PropTypes.object,
     externals: PropTypes.object,
     onViewLoading: PropTypes.func,
     onViewError: PropTypes.func,
@@ -144,8 +147,8 @@ class RemoteView extends React.Component {
     const { 
       // eslint-disable-next-line no-unused-vars
       src, externals, onViewLoading, onViewError, 
-      classPrefix, tag, className, children, bodyStyle = {},
-      props = {}, ...otherProps 
+      classPrefix, tag, className, children, bodyStyle = {}, props = {}, 
+      ...otherProps 
     } = this.props;
     const { loading, view: View } = this.state;
     return React.createElement(
@@ -172,5 +175,9 @@ class RemoteView extends React.Component {
   }
 
 }
+
+export {
+  RemoteViewContenxt
+};
 
 export default RemoteView;

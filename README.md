@@ -530,6 +530,27 @@ function Test(props) {
 }
 ```
 
+`RemoteView`除了支持远程模块导出的`React`组件，也支持以下格式的组件导出接口：
+
+```js
+{
+  bootstrap: (props, children) => void,
+  mounted: (el, props) => primise|void,
+  update: (el, props, prevProps) => void,
+  unmount: (el) => void,
+}
+```
+
+和
+
+```js
+{
+  init: (props, options) => primise|void,
+  render: (el, props) => void,
+  destory: (el) => void,
+}
+```
+
 #### RemoteView的props
 
 - `classPrefix: string = 'import-remote'` - 创建的`html`、`head`、`body`模拟元素的类名前缀
