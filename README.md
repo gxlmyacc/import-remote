@@ -503,3 +503,47 @@ testOther.dosomething();
 }
 
 ```
+
+### RemoteView
+
+`RemoteView`是一个`React`组件，模拟`iframe`，内部创建3个元素模拟`html`、`head`、`body`，通过`src`属性加载远程`React组件`, 通过该组件加载的资源会有自己独立的全局空间，移除该组件时，也将移除加载该远程模块时的所有资源。
+
+示例:
+```js
+import React from 'react';
+import RemoteView from 'import-remote/view';
+
+function Test(props) {
+  return <div>
+    <RemoteView 
+      src="http://localhost:3000/test.js" 
+      props={{
+        aa: 1,
+        bb: 2
+      }}
+      externals={{
+        'react': require('react'),
+        'react-dom': require('react-dom')
+      }}
+    />
+  </div>;
+}
+```
+
+#### RemoteView的props
+
+- `classPrefix: string = 'import-remote'` - 创建的`html`、`head`、`body`模拟元素的类名前缀
+
+- `tag: string = 'div'` - 创建的`html`、`head`、`body`模拟元素的元素类型
+
+- `src: string` - 远程模块的入口文件地址
+
+- `props: object` - 传递给远程模块导出组件的`props`
+  
+- `externals: object` - 远程组件的外部依赖
+
+- `bodyStyle: object` - `body`模拟元素的自定义样式
+   
+- `onViewLoading: (loading) => void` - 远程模块加载中的回调事件，分别会在加载前后调用
+
+- `onViewError: (error) => void` - 远程模块加载失败的回调事件
