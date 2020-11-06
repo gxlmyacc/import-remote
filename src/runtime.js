@@ -814,7 +814,7 @@ function createRuntime(modules = [], {
         let href = __webpack_require__.p + cssChunks[chunkId];
         importCss(href, { 
           timeout, 
-          head: context.__windowProxy__.head, 
+          head: context.__windowProxy__.doc.head, 
           scopeName, 
           host, 
           beforeSource,

@@ -7,11 +7,18 @@ import { isForwardComponent, isReactComponent } from './utils';
 class RemoteView extends React.Component {
 
   static propTypes = {
+    classPrefix: PropTypes.string,
+    tag: PropTypes.string,
     src: PropTypes.string.isRequired,
     props: PropTypes.object,
     externals: PropTypes.object,
     onViewLoading: PropTypes.func,
     onViewError: PropTypes.func,
+  }
+
+  static defaultProps = {
+    classPrefix: 'import-remote-',
+    tag: 'div'
   }
 
   constructor(props) {
@@ -134,24 +141,29 @@ class RemoteView extends React.Component {
   }
   
   render() {
-    // eslint-disable-next-line no-unused-vars
-    const { className, src, externals, children, onViewLoading, onViewError, props = {}, ...otherProps } = this.props;
+    const { 
+      // eslint-disable-next-line no-unused-vars
+      src, externals, onViewLoading, onViewError, 
+      classPrefix, tag, className, children, bodyStyle = {},
+      props = {}, ...otherProps 
+    } = this.props;
     const { loading, view: View } = this.state;
     return React.createElement(
-      'div', 
+      tag, 
       {
-        className: `import-remote-view import-remote-view-html ${loading ? 'view-loading' : ''} ${className || ''}`,
+        className: `${classPrefix}view ${classPrefix}view-html ${loading ? `${classPrefix}view-loading` : ''} ${className || ''}`,
         ref: r => this.$refs.html = r,
         ...otherProps
       }, 
-      React.createElement('div', {
-        className: 'import-remote-view-head',
+      React.createElement(tag, {
+        className: `${classPrefix}view-head`,
         ref: r => this.$refs.head = r
       }),
       React.createElement(
-        'div', 
+        tag, 
         {
-          className: 'import-remote-view-body',
+          className: `${classPrefix}view-body`,
+          style: { height: '100%', ...bodyStyle },
           ref: r => this.$refs.body = r
         },
         View ? React.createElement(View, props, children) : null
