@@ -547,7 +547,7 @@ function Test(props) {
 {
   init: (props, options) => primise|void,
   render: (el, props) => void,
-  destory: (el) => void,
+  destroy: (el) => void,
 }
 ```
 
