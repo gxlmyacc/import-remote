@@ -605,7 +605,7 @@ const Test = await requireApp('http://localhost:3000/test.js');
 
 #### RemoteView的props
 
-- `classPrefix: string = 'import-remote'` - 创建的`html`、`head`、`body`模拟元素的类名前缀
+- `classPrefix: string = 'import-remote-'` - 创建的`html`、`head`、`body`模拟元素的类名前缀
 
 - `tag: string = 'div'` - 创建的`html`、`head`、`body`模拟元素的元素类型
 
