@@ -1,17 +1,20 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import remote from '../..';
 import { createAppView } from './app';
-import { isForwardComponent, isReactComponent } from './utils';
+import { createShadowRoot, createDOMElement, isForwardComponent, isReactComponent, supportShadow } from './utils';
 
 class RemoteView extends React.Component {
 
   static propTypes = {
     classPrefix: PropTypes.string,
+    className: PropTypes.string,
     tag: PropTypes.string,
-    src: PropTypes.string.isRequired,
+    src: PropTypes.string,
+    module: PropTypes.object,
+    moduleName: PropTypes.string,
     props: PropTypes.object,
-    bodyStyle: PropTypes.object,
     externals: PropTypes.object,
     onViewLoading: PropTypes.func,
     onViewError: PropTypes.func,
@@ -70,7 +73,7 @@ class RemoteView extends React.Component {
   }
 
   _loadView() {
-    let { src, externals, module, moduleName, onViewLoading, onViewError } = this.props;
+    let { src, externals, module, moduleName, shadow, onViewLoading, onViewError } = this.props;
     let { viewSrc } = this.state;
     let _require = options => remote(src, options);
     if (!src && module) {
@@ -97,7 +100,7 @@ class RemoteView extends React.Component {
       windowProxy: {
         context: this.viewContext,
         document: {
-          html: this.$refs.html,
+          html: shadow ? (this.$refs.shadowHtml || this.$refs.html) : this.$refs.html,
           head: this.$refs.head,
           body: this.$refs.body
         },
@@ -149,31 +152,52 @@ class RemoteView extends React.Component {
   render() {
     const { 
       // eslint-disable-next-line no-unused-vars
-      src, externals, onViewLoading, onViewError, 
-      classPrefix, tag, className, children, bodyStyle = {}, props = {}, 
+      src, externals, onViewLoading, onViewError, module, moduleName, shadow,
+      classPrefix, tag, className, children, props = {}, 
       ...otherProps 
     } = this.props;
+
+    const shadowChild = shadow && supportShadow;
+
     const { loading, view: View } = this.state;
+
     return React.createElement(
       tag, 
       {
         className: `${classPrefix}view ${classPrefix}view-html ${loading ? `${classPrefix}view-loading` : ''} ${className || ''}`,
-        ref: r => this.$refs.html = r,
+        ref: r => {
+          this.$refs.html = r;
+          if (r && !this.$refs.shadowHtml && shadowChild) {
+            this.$refs.shadowHtml = createShadowRoot(r);
+            this.$refs.head = createDOMElement(tag, { className: `${classPrefix}view-head` }, this.$refs.shadowHtml);
+            this.$refs.body = createDOMElement(tag, { 
+              className: `${classPrefix}view-body`, 
+              style: { height: '100%' } 
+            }, this.$refs.shadowHtml);
+            this.forceUpdate();
+          }
+        },
         ...otherProps
       }, 
-      React.createElement(tag, {
-        className: `${classPrefix}view-head`,
-        ref: r => this.$refs.head = r
-      }),
-      React.createElement(
-        tag, 
-        {
-          className: `${classPrefix}view-body`,
-          style: { height: '100%', ...bodyStyle },
-          ref: r => this.$refs.body = r
-        },
-        View ? React.createElement(View, props, children) : null
-      )
+      (shadowChild) 
+        ? this.$refs.body && View 
+          ? ReactDOM.createPortal(React.createElement(View, props, children), this.$refs.body) 
+          : null
+        : [
+          React.createElement(tag, {
+            className: `${classPrefix}view-head`,
+            ref: r => this.$refs.head = r
+          }),
+          React.createElement(
+            tag, 
+            {
+              className: `${classPrefix}view-body`,
+              style: { height: '100%' },
+              ref: r => this.$refs.body = r
+            },
+            View ? React.createElement(View, props, children) : null
+          )
+        ]
     ); 
   }
 

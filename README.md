@@ -619,7 +619,7 @@ const Test = await requireApp('http://localhost:3000/test.js');
   
 - `externals: object` - 远程组件的外部依赖
 
-- `bodyStyle: object` - `body`模拟元素的自定义样式
+- `shadow: boolean` - 是否将`html`、`head`、`body`创建在`shadow DOM`中
    
 - `onViewLoading: (loading) => void` - 远程模块加载中的回调事件，分别会在加载前后调用
 

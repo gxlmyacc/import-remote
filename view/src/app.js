@@ -1,8 +1,9 @@
 import React from 'react';
-import { innumerable, isReactComponent, isForwardComponent } from './utils';
+import { innumerable, supportShadow, createShadowRoot, isReactComponent, isForwardComponent } from './utils';
 import remote from '../..';
 
 function createAppView(view, options = {}) {
+  if (view && view.__esModule) view = view.default;
   if (!view) return null;
   if (typeof view !== 'function' || isReactComponent(view) || isForwardComponent(view)) {
     return view;
@@ -16,10 +17,8 @@ function createAppView(view, options = {}) {
 
     get root() {
       const { shadow } = options;
-      if (shadow && !this.shadowEl && this.el && (this.el.attachShadow || this.el.createShadowRoot)) {
-        this.shadowEl = this.el.attachShadow
-          ? this.el.attachShadow({ mode: 'open' })
-          : this.el.createShadowRoot();
+      if (shadow && !this.shadowEl && supportShadow) {
+        this.shadowEl = createShadowRoot(this.el);
       }
       return shadow
         ? (this.shadowEl || this.el)
@@ -37,8 +36,8 @@ function createAppView(view, options = {}) {
       if (view.mounted) {
         return view.mounted(this.root, props);
       } 
-      if (view.init) {
-        const prom = view.init(props, options);
+      if (view.init || view.forceInit) {
+        const prom = (view.init || view.forceInit)(props, options);
         if (prom && prom.then) {
           prom.then(() => view.render && view.render(this.root, props));
         } else view.render && view.render(this.root, props);
@@ -56,7 +55,7 @@ function createAppView(view, options = {}) {
       let oldProps = this._getAppProps(prevProps).otherProps;
       if (view.update) view.update(this.root, newProps, oldProps);  
       else if (view.mounted) view.mounted(this.root, newProps);
-      else if (view.init) view.init(newProps);
+      else if (view.init || view.forceInit) (view.init || view.forceInit)(newProps);
     }
 
     render() {
@@ -79,10 +78,7 @@ function createAppView(view, options = {}) {
 }
 
 function requireApp(url, options = {}) {
-  return remote(url, options).then(view => {
-    if (view && view.__esModule) view = view.default;
-    return createAppView(view);
-  });
+  return remote(url, options).then(view => createAppView(view, options));
 }
 
 export {
