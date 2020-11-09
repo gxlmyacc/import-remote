@@ -1,8 +1,13 @@
 import React from 'react';
-import { innumerable } from './utils';
+import { innumerable, isReactComponent, isForwardComponent } from './utils';
+import remote from '../..';
 
-function createApp(view, options = {}) {
-  class RemoteViewApp extends React.Component {
+function createAppView(view, options = {}) {
+  if (!view) return null;
+  if (typeof view !== 'function' || isReactComponent(view) || isForwardComponent(view)) {
+    return view;
+  }
+  class RemoteAppView extends React.Component {
 
     constructor(props) {
       super(props);
@@ -30,11 +35,9 @@ function createApp(view, options = {}) {
     componentDidMount() {
       let props = this._getAppProps(this.props).otherProps;
       if (view.mounted) {
-        const prom = view.mounted(this.root, props);
-        if (prom && prom.then) {
-          prom.then(() => view.update && view.update(this.root, props, null));
-        } else view.update && view.update(this.root, props, null);
-      } else if (view.init) {
+        return view.mounted(this.root, props);
+      } 
+      if (view.init) {
         const prom = view.init(props, options);
         if (prom && prom.then) {
           prom.then(() => view.render && view.render(this.root, props));
@@ -52,6 +55,7 @@ function createApp(view, options = {}) {
       let newProps = this._getAppProps(this.props).otherProps;
       let oldProps = this._getAppProps(prevProps).otherProps;
       if (view.update) view.update(this.root, newProps, oldProps);  
+      else if (view.mounted) view.mounted(this.root, newProps);
       else if (view.init) view.init(newProps);
     }
 
@@ -69,9 +73,20 @@ function createApp(view, options = {}) {
     }
 
   }
-  RemoteViewApp.__import_remote_app__ = true;
+  RemoteAppView.__import_remote_app__ = true;
 
-  return RemoteViewApp;  
+  return RemoteAppView;  
 }
 
-export default createApp;
+function requireApp(url, options = {}) {
+  return remote(url, options).then(view => {
+    if (view && view.__esModule) view = view.default;
+    return createAppView(view);
+  });
+}
+
+export {
+  createAppView
+};
+
+export default requireApp;

@@ -530,6 +530,35 @@ function Test(props) {
 }
 ```
 
+或者使用`RemoteModule`来加载:
+
+```js
+import React from 'react';
+import { RemoteModule } from 'import-remote';
+import RemoteView from 'import-remote/view';
+
+const testModule = new RemoteModule('http://localhost:3000/test', {
+  externals: { 
+    react: require('react'), 
+    'react-dom': require('react-dom'),
+    'lodash': require('lodash'),
+  }
+});
+
+function Test(props) {
+  return <div>
+    <RemoteView 
+      module={testModule}
+      moduleName="index"
+      props={{
+        aa: 1,
+        bb: 2
+      }}
+    />
+  </div>;
+}
+```
+
 `RemoteView`除了支持远程模块导出的`React`组件，也支持以下格式的组件导出接口：
 
 ```js
@@ -558,6 +587,10 @@ function Test(props) {
 - `tag: string = 'div'` - 创建的`html`、`head`、`body`模拟元素的元素类型
 
 - `src: string` - 远程模块的入口文件地址
+
+- `module: RemoteModule` - 远程模块对象，和`moduleName`配合使用，与`src`属性互斥
+
+- `moduleName: string` - 远程模块名称，和`module`配合使用，与`src`属性互斥
 
 - `props: object` - 传递给远程模块导出组件的`props`
   

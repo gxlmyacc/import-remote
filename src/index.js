@@ -21,6 +21,7 @@ remote.externals['import-remote'] = {
   createRequireFactory,
   importJs,
   importJson,
+  importCss,
   default: remote
 };
 
