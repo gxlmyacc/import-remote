@@ -472,6 +472,13 @@ testOther.dosomething();
   constructor(host: string, options: { externals: { [key]: any } }): void; 
   
   /**
+   * 根据模块名生成该模块的入口地址
+   * @param {string} moduleName 模块名，调用
+   * @returns {string} 该模块的入口地址
+   **/
+  resolveModuleUrl(moduleName: string = 'index'): string; 
+
+  /**
    * 异步加载方法
    * @param {string} moduleName 模块名，调用
    * @param {object} options 加载选项，和remote方法的option一致
