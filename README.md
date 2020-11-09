@@ -1,5 +1,7 @@
 # import-remote
 
+[![NPM version](https://img.shields.io/npm/v/import-remote.svg?style=flat)](https://npmjs.com/package/import-remote)
+[![NPM downloads](https://img.shields.io/npm/dm/import-remote.svg?style=flat)](https://npmjs.com/package/import-remote)
 
 ## 说明
 
