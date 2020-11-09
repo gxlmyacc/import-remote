@@ -580,6 +580,27 @@ function Test(props) {
 }
 ```
 
+如果想将这样的对象转换成`React`组件，可以通过下面的办法：
+
+1. 直接将一个导出对象转换成`React`组件:
+
+```js
+import { createAppView } from 'import-remote/view';
+import testObject from './test-object';
+
+const Test = createAppView(testObject);
+```
+
+
+2. 远程加载一个导出对象，并直接将其转换成`React`组件:
+
+```js
+import { requireApp } from 'import-remote/view';
+
+const Test = await requireApp('http://localhost:3000/test.js');
+```
+
+
 #### RemoteView的props
 
 - `classPrefix: string = 'import-remote'` - 创建的`html`、`head`、`body`模拟元素的类名前缀
