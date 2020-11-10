@@ -11,6 +11,7 @@ module.exports = function ({
   }
 }) {
   const data = {
+    timestamp: Date.now(),
     name: pkg.name,
     version,
     mode: webpackConfig.mode,

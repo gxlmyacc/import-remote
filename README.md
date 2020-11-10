@@ -135,11 +135,11 @@ module.exports = test;
 **宿主端使用示例**
 
 ```js
-import importRemote from 'import-remote';
+import remote from 'import-remote';
 
 async function run() {
   // 通过await等待模块加载完毕
-  const testIndex = await importRemote('http://localhost:3000/test/index.js', {
+  const testIndex = await remote('http://localhost:3000/test/index.js', {
     // 配置模块需要依赖
     externals: { 
       react: require('react'), 
@@ -151,12 +151,12 @@ async function run() {
   testIndex.dosomething();
 
   // 也可以将依赖配置成全局依赖，这样importRemote时就不必再传依赖了
-  Object.assign(importRemote.externals, { 
+  Object.assign(remote.externals, { 
     react: require('react'), 
     'react-dom': require('react-dom'),
     'lodash': require('lodash'),
   });
-  const testOther = await importRemote('http://localhost:3000/test/other.js');
+  const testOther = await remote('http://localhost:3000/test/other.js');
   testOther.dosomething();
 }
 
@@ -368,7 +368,7 @@ module.exports = {
 
 则这个模块的依赖：
 
-  1. 首先从宿主使用`importRemote`中配置的`externals`中寻找依赖；
+  1. 首先从宿主使用加载方法`remote`中配置的`externals`中寻找依赖；
 
   2. 第一步没找到依赖，将会从模块中寻找依赖；
 
@@ -423,7 +423,7 @@ function remote(url: string, options: { externals: { [key]: any } }): Promise<an
 import remote from 'import-remote';
 
 // 通过await等待模块加载完毕
-const testIndex = await importRemote('http://localhost:3000/test/index.js', {
+const testIndex = await remote('http://localhost:3000/test/index.js', {
   // 配置模块需要依赖
   externals: { 
     react: require('react'), 
@@ -616,9 +616,9 @@ const Test = await requireApp('http://localhost:3000/test.js');
 
 #### RemoteView的props
 
-- `styleScoped: boolean` - 当为true，并且`shadow`也为true时，将为引用的样式添加一个`hash`作用域，避免样式影响到外部。是一种在不支持`shadow DOM`的情况下解决样式冲突的一种解决办法
+- `scopeStyle: boolean` - 当为true，并且`shadow`也为true时，将为引用的样式添加一个`hash`作用域，避免样式影响到外部。是一种在不支持`shadow DOM`的情况下解决样式冲突的一种解决办法
 
-- `stylePrefix: string = 'v-'` - 为引用样式创建的作用域名的前缀
+- `scopePrefix: string = 'v-'` - 为引用样式创建的作用域名的前缀
 
 - `classPrefix: string = 'import-remote-'` - 创建的`html`、`head`、`body`模拟元素的类名前缀
 
