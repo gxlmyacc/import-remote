@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
+import hashSum from 'hash-sum';
 import remote from '../..';
 import { createAppView } from './app';
 import { createShadowRoot, createDOMElement, isForwardComponent, isReactComponent, supportShadow } from './utils';
@@ -8,6 +9,8 @@ import { createShadowRoot, createDOMElement, isForwardComponent, isReactComponen
 class RemoteView extends React.Component {
 
   static propTypes = {
+    styleScoped: PropTypes.bool,
+    stylePrefix: PropTypes.string, 
     classPrefix: PropTypes.string,
     className: PropTypes.string,
     tag: PropTypes.string,
@@ -21,6 +24,7 @@ class RemoteView extends React.Component {
   }
 
   static defaultProps = {
+    stylePrefix: 'v-',
     classPrefix: 'import-remote-',
     tag: 'div'
   }
@@ -69,11 +73,26 @@ class RemoteView extends React.Component {
     els.forEach(el => el.parent && el.parent.removeChild(el));
     delete this.viewContext[scopeName];
 
+
+    const bodyEl = this.$refs.body;
+    let bodyClassName = bodyEl && bodyEl.className;
+
+    if (this.viewScopeHash && bodyClassName.includes(this.viewScopeHash)) {
+      bodyClassName = bodyClassName.replace(this.viewScopeHash, '');
+    }
+    if (this.viewNamespace && bodyClassName.includes(this.viewNamespace)) {
+      bodyClassName = bodyClassName.replace(this.viewNamespace, '');
+    }
+    if (bodyClassName !== bodyEl.className) bodyEl.className = bodyClassName.split(' ').filter(Boolean).join(' ');
+
+    this.viewScopeName = '';
+    this.viewScopeHash = '';
+    this.viewNamespace = '';
     this.viewManifest = null;
   }
 
   _loadView() {
-    let { src, externals, module, moduleName, shadow, onViewLoading, onViewError } = this.props;
+    let { src, externals, stylePrefix, styleScoped, module, moduleName, shadow, onViewLoading, onViewError } = this.props;
     let { viewSrc } = this.state;
     let _require = options => remote(src, options);
     if (!src && module) {
@@ -94,13 +113,16 @@ class RemoteView extends React.Component {
         if (oldScopeName && oldScopeName !== this.viewScopeName) this._destoryView(oldScopeName);
       });
     };
+
+    const bodyEl = this.$refs.body;
+ 
     const state = {};
     _require({
       externals,
       windowProxy: {
         context: this.viewContext,
         document: {
-          html: shadow ? (this.$refs.shadowHtml || this.$refs.html) : this.$refs.html,
+          html: this.$refs.html,
           head: this.$refs.head,
           body: this.$refs.body
         },
@@ -129,14 +151,27 @@ class RemoteView extends React.Component {
           return window.removeEventListener(type, listener, ...args);
         }
       },
+      beforeSource: (source, type, href, manifest) => {
+        if (styleScoped && (!shadow || !supportShadow) && type === 'css') {
+          source = source.replace(/([\n}])([.A-z*:#[])/g, (m, p1, p2) => `${p1} .${this.viewScopeHash} ${p2}`);
+        }
+        return source;
+      },
       getManifestCallback: viewManifest => {
         let newScopeName = viewManifest.scopeName;
         if (this.viewScopeName === newScopeName) return;
         oldScopeName = this.viewScopeName;
         this.viewScopeName = newScopeName;
+        this.viewScopeHash = `${stylePrefix}${hashSum(newScopeName)}`;
+     
+        if (!bodyEl.className.includes(this.viewScopeHash)) bodyEl.className = `${bodyEl.className} ${this.viewScopeHash}`;
       }
     }).then(view => {
       if (view && view.__esModule) view = view.default;
+      if (view.namespace && bodyEl && !bodyEl.className.includes(view.namespace)) {
+        this.viewNamespace = view.namespace;
+        bodyEl.className = `${bodyEl.className} ${view.namespace}`; 
+      }
       if (typeof view === 'function' && !isReactComponent(view) && !isForwardComponent(view)) {
         view = createAppView(view);
       }
@@ -151,11 +186,15 @@ class RemoteView extends React.Component {
   
   render() {
     const { 
-      // eslint-disable-next-line no-unused-vars
-      src, externals, onViewLoading, onViewError, module, moduleName, shadow,
-      classPrefix, tag, className, children, props = {}, 
-      ...otherProps 
+      shadow, classPrefix, tag, className, children, props = {},  
     } = this.props;
+
+    const otherProps = {};
+    Object.keys(this.props).forEach(key => {
+      // eslint-disable-next-line react/forbid-foreign-prop-types
+      if (RemoteView.propTypes[key]) return;
+      otherProps[key] = this.props[key];
+    });
 
     const shadowChild = shadow && supportShadow;
 
@@ -164,18 +203,23 @@ class RemoteView extends React.Component {
     return React.createElement(
       tag, 
       {
-        className: `${classPrefix}view ${classPrefix}view-html ${loading ? `${classPrefix}view-loading` : ''} ${className || ''}`,
+        className: `${classPrefix}view ${
+          shadowChild ? '' : `${classPrefix}view-html`
+        } ${
+          loading ? `${classPrefix}view-loading` : ''
+        } ${className || ''}`,
         ref: r => {
-          this.$refs.html = r;
-          if (r && !this.$refs.shadowHtml && shadowChild) {
-            this.$refs.shadowHtml = createShadowRoot(r);
-            this.$refs.head = createDOMElement(tag, { className: `${classPrefix}view-head` }, this.$refs.shadowHtml);
+          if (r && !this.$refs.shadowEl && shadowChild) {
+            this.$refs.root = r;
+            this.$refs.shadowEl = createShadowRoot(r);
+            this.$refs.html = createDOMElement(tag, { className: `${classPrefix}view-html`, style: { height: '100%' } }, this.$refs.shadowEl);
+            this.$refs.head = createDOMElement(tag, { className: `${classPrefix}view-head` }, this.$refs.html);
             this.$refs.body = createDOMElement(tag, { 
               className: `${classPrefix}view-body`, 
               style: { height: '100%' } 
-            }, this.$refs.shadowHtml);
+            }, this.$refs.html);
             this.forceUpdate();
-          }
+          } else this.$refs.html = r;
         },
         ...otherProps
       }, 

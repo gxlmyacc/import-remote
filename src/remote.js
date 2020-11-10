@@ -110,6 +110,7 @@ function remote(url, options = {}) {
     getManifestCallback = null,
     host = getHostFromUrl(url),
     sync = false,
+    beforeSource,
     windowProxy = { document: { html: document.documentElement, body: document.body, head: document.head } },
     useEsModuleDefault = false
   } = options;
@@ -280,6 +281,8 @@ function remote(url, options = {}) {
 
                 return source;
               }
+
+              if (beforeSource) source = beforeSource(source, type, href, manifest);
 
               return source;
             } 

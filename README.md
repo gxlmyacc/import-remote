@@ -572,6 +572,7 @@ function Test(props) {
 
 ```js
 {
+  namespace?: string,
   bootstrap: (props, children) => void,
   mounted: (el, props) => primise|void,
   update: (el, props, prevProps) => void,
@@ -583,11 +584,14 @@ function Test(props) {
 
 ```js
 {
+  namespace?: string,
   init: (props, options) => primise|void,
   render: (el, props) => void,
   destroy: (el) => void,
 }
 ```
+
+注：如果`namespace`不为空，这将会将其添加到`body`模拟元素的`className`中。
 
 如果想将这样的对象转换成`React`组件，可以通过下面的办法：
 
@@ -611,6 +615,10 @@ const Test = await requireApp('http://localhost:3000/test.js');
 
 
 #### RemoteView的props
+
+- `styleScoped: boolean` - 当为true，并且`shadow`也为true时，将为引用的样式添加一个`hash`作用域，避免样式影响到外部。是一种在不支持`shadow DOM`的情况下解决样式冲突的一种解决办法
+
+- `stylePrefix: string = 'v-'` - 为引用样式创建的作用域名的前缀
 
 - `classPrefix: string = 'import-remote-'` - 创建的`html`、`head`、`body`模拟元素的类名前缀
 
