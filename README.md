@@ -101,8 +101,7 @@ module.exports = {
   plugins: [
     // 装载插件
     ...entryFiles.map(file => new ImportRemotePlugin({
-      // 如果后缀名为html，则将被忽略。template建议不要配置，使用内置的模板即可
-      template: `${file}.html`,
+      template: `auto`,
       // 生成的入口文件名
       filename: `${file}.js`,
       // 包含的入口chunk

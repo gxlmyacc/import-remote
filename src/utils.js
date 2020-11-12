@@ -113,6 +113,22 @@ function isAbsoluteUrl(url) {
   return typeof url === 'string' && /^(((https?:)?\/\/)|(data:))/.test(url);
 }
 
+function resolveRelativeUrl(url, onHost) {
+  if (!url || isAbsoluteUrl(url)) return url;
+  let host = window.location.origin;
+  if (/^\.\//.test(url)) {
+    url = url.substr(2, url.length);
+    host = `${host}${window.location.pathname}`;
+    if (/\.(html?|js)$/.test(host)) {
+      const paths = host.split('/');
+      paths.pop();
+      host = paths.join('/');
+    }
+    onHost && onHost(host);
+  }
+  return joinUrl(host, url);
+}
+
 
 function joinUrl(host, path) {
   if (path && /^["'].+["']$/.test(path)) path = path.substr(1, path.length - 2);
@@ -187,6 +203,7 @@ export {
   fetch,
   requireFromStr,
   isAbsoluteUrl,
+  resolveRelativeUrl,
   joinUrl,
   isPlainObject,
   isFunction,

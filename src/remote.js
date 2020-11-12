@@ -1,7 +1,7 @@
 import escapeStringRegexp from 'escape-string-regexp';
 import { 
   DEFAULT_TIMEOUT, ATTR_SCOPE_NAME, 
-  joinUrl, isFunction, getHostFromUrl, 
+  joinUrl, isFunction, getHostFromUrl, resolveRelativeUrl,
   innumerable, isPlainObject, globalCached, checkRemoteModuleWebpack
 } from './utils';
 import createRuntime from './runtime';
@@ -102,6 +102,8 @@ function batchReplace(source, replaces) {
 }
 
 function remote(url, options = {}) {
+  url = resolveRelativeUrl(url, host => options.host = host);
+
   let {
     timeout = DEFAULT_TIMEOUT,
     externals = {},
@@ -145,19 +147,28 @@ function remote(url, options = {}) {
         let commonModuleOptions = manifest.commonModules || [];
         let commonModules = await Promise.all(commonModuleOptions
           .filter(m => m && (m.name && m.url))
-          .map(m => remote(m.url, { 
-            isCommonModule: true, 
-            externals, 
-            globals, 
-            host: m.host || getHostFromUrl(m.url),
-            sync,
-            // getManifestCallback: m.scoped ? getManifestCallback : undefined,
-            windowProxy: m.scoped ? windowProxy : undefined,
-          })));
+          .map(m => {
+            let url = m.url;
+            if (isFunction(url)) url = url.call(m, options, manifest);
+            url = resolveRelativeUrl(url, m.host ? null : host => {
+              if (!m.host) m.host = host;
+            });
+            return remote(url, { 
+              isCommonModule: true, 
+              externals, 
+              globals, 
+              host: m.host 
+                ? resolveRelativeUrl(isFunction(m.host) ? m.host(options, manifest) : m.host)
+                : getHostFromUrl(url),
+              sync,
+              // getManifestCallback: m.scoped ? getManifestCallback : undefined,
+              windowProxy: m.scoped ? windowProxy : undefined,
+            });
+          }));
         let manifestExternals = manifest.externals.filter(v => !externals[v.name]);
         commonModules = (await Promise.all(commonModules.filter(m => m).map(async m => {
           if (m.__esModule) m = m.default;
-          if (!isRequireFactory(m)) return;
+          if (!isRequireFactory(m)) return m;
           let modules = await m(manifestExternals);
           if (modules) {
             Object.keys(modules).forEach(key => {
@@ -196,7 +207,7 @@ function remote(url, options = {}) {
             commonModuleOptions.some(option => {
               const commonModuleContext = __remoteModuleWebpack__[option.name];
               const commonModuleManifest = __remoteModuleWebpack__.__moduleManifests__[option.name]; 
-              result = resolveModule(external,
+              result = commonModuleContext && commonModuleManifest && resolveModule(external,
                 commonModuleManifest.useId,
                 commonModuleManifest.__modulesMap__, 
                 commonModuleContext.__require__,

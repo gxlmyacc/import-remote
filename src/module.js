@@ -1,11 +1,11 @@
 import remote from './remote';
-import { joinUrl, mergeObject, innumerable } from './utils';
+import { joinUrl, mergeObject, innumerable, resolveRelativeUrl } from './utils';
 
 class RemoteModule {
 
   constructor(host, options = {}) {
     if (!host) throw new Error('[RemoteModule]`host` can not empty！');
-    this.host = host;
+    this.host = resolveRelativeUrl(host);
     this.options = options || {};
   }
 
