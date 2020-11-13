@@ -113,18 +113,21 @@ function isAbsoluteUrl(url) {
   return typeof url === 'string' && /^(((https?:)?\/\/)|(data:))/.test(url);
 }
 
-function resolveRelativeUrl(url, onHost) {
+function resolveRelativeUrl(url, options = {}) {
   if (!url || isAbsoluteUrl(url)) return url;
-  let host = window.location.origin;
+  let host = options.host || window.location.origin;
+
   if (/^\.\//.test(url)) {
     url = url.substr(2, url.length);
-    host = `${host}${window.location.pathname}`;
-    if (/\.(html?|js)$/.test(host)) {
-      const paths = host.split('/');
-      paths.pop();
-      host = paths.join('/');
+    if (!options.host) {
+      host = `${host}${window.location.pathname}`;
+      if (/\.(html?|js)$/.test(host)) {
+        const paths = host.split('/');
+        paths.pop();
+        host = paths.join('/');
+      }
+      options.onHost && options.onHost(host);
     }
-    onHost && onHost(host);
   }
   return joinUrl(host, url);
 }

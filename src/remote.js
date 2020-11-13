@@ -102,7 +102,10 @@ function batchReplace(source, replaces) {
 }
 
 function remote(url, options = {}) {
-  url = resolveRelativeUrl(url, host => options.host = host);
+  url = resolveRelativeUrl(url, {
+    host: options.host,
+    onHost: host => options.host = host
+  });
 
   let {
     timeout = DEFAULT_TIMEOUT,
@@ -144,28 +147,35 @@ function remote(url, options = {}) {
   
         Object.assign(externals, remote.externals);
   
+        let manifestExternals = manifest.externals.filter(v => !(v.name in externals));
+
         let commonModuleOptions = manifest.commonModules || [];
-        let commonModules = await Promise.all(commonModuleOptions
-          .filter(m => m && (m.name && m.url))
-          .map(m => {
-            let url = m.url;
-            if (isFunction(url)) url = url.call(m, options, manifest);
-            url = resolveRelativeUrl(url, m.host ? null : host => {
-              if (!m.host) m.host = host;
-            });
-            return remote(url, { 
-              isCommonModule: true, 
-              externals, 
-              globals, 
-              host: m.host 
-                ? resolveRelativeUrl(isFunction(m.host) ? m.host(options, manifest) : m.host)
-                : getHostFromUrl(url),
-              sync,
-              // getManifestCallback: m.scoped ? getManifestCallback : undefined,
-              windowProxy: m.scoped ? windowProxy : undefined,
-            });
-          }));
-        let manifestExternals = manifest.externals.filter(v => !externals[v.name]);
+        let commonModules = manifestExternals.length
+          ? await Promise.all(commonModuleOptions
+            .filter(m => m && (m.name && m.url))
+            .map(m => {
+              let url = m.url;
+              let mHost = resolveRelativeUrl(isFunction(m.host) ? m.host(options, manifest) : m.host, { host });
+              if (isFunction(url)) url = url.call(m, options, manifest);
+              url = resolveRelativeUrl(url, {
+                host: mHost || host,
+                onHost: m.host 
+                  ? null 
+                  : host => {
+                    if (!m.host) m.host = host;
+                  }
+              });
+              return remote(url, { 
+                isCommonModule: true, 
+                externals, 
+                globals, 
+                host: mHost || getHostFromUrl(url),
+                sync,
+                // getManifestCallback: m.scoped ? getManifestCallback : undefined,
+                windowProxy: m.scoped ? windowProxy : undefined,
+              });
+            }))
+          : [];
         commonModules = (await Promise.all(commonModules.filter(m => m).map(async m => {
           if (m.__esModule) m = m.default;
           if (!isRequireFactory(m)) return m;
