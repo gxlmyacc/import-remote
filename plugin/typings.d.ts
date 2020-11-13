@@ -7,6 +7,10 @@ declare class ModuleWebpackPlugin {
   constructor(options?: ModuleWebpackPlugin.Options);
 
   apply(compiler: WebpackCompiler): void;
+
+  static getHooks(compilation: compilation.Compilation): HtmlWebpackPlugin.Hooks;
+
+  static readonly version: number;
 }
 
 declare namespace ModuleWebpackPlugin {
@@ -43,7 +47,7 @@ declare namespace ModuleWebpackPlugin {
   interface ProcessedOptions {
     /**
      * Emit the file only if it was changed.
-     * Default: `true`.
+     * @default true
      */
     cache: boolean;
     /**
@@ -56,14 +60,14 @@ declare namespace ModuleWebpackPlugin {
     chunks: "all" | string[];
     /**
      * Allows to control how chunks should be sorted before they are included to the html.
-     * Default: `'auto'`.
+     * @default 'auto'
      */
     chunksSortMode:
     | "auto"
     | "manual"
     | (((entryNameA: string, entryNameB: string) => number));
     /**
-     * List all entries which should not be injeccted
+     * List all entries which should not be injected
      */
     excludeChunks: string[];
     /**
@@ -74,6 +78,7 @@ declare namespace ModuleWebpackPlugin {
      * The file to write the HTML to.
      * Defaults to `index.html`.
      * Supports subdirectories eg: `assets/admin.html`
+     * @default 'auto'
      */
     filename: string;
     /**
@@ -139,25 +144,17 @@ declare namespace ModuleWebpackPlugin {
 
   interface Hooks {
     alterAssetTags: AsyncSeriesWaterfallHook<{
-      assetTags: {
-        scripts: HtmlTagObject[];
-        styles: HtmlTagObject[];
-      };
       outputName: string;
       plugin: ModuleWebpackPlugin;
     }>;
 
     alterAssetTagGroups: AsyncSeriesWaterfallHook<{
-      headTags: HtmlTagObject[];
-      bodyTags: HtmlTagObject[];
       outputName: string;
       plugin: ModuleWebpackPlugin;
     }>;
 
     afterTemplateExecution: AsyncSeriesWaterfallHook<{
       html: string;
-      headTags: HtmlTagObject[];
-      bodyTags: HtmlTagObject[];
       outputName: string;
       plugin: ModuleWebpackPlugin;
     }>;

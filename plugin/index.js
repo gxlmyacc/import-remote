@@ -23,13 +23,17 @@ const loaderUtils = require('loader-utils');
 
 // @ts-ignore
 const WebPackError = require('webpack/lib/WebpackError.js');
-const childCompiler = require('./lib/compiler.js');
+const webpackMajorVersion = Number(require('webpack/package.json').version.split('.')[0]);
+
+const { CachedChildCompilation } = require('./lib/cached-child-compiler');
+
 const prettyError = require('./lib/errors.js');
 const chunkSorter = require('./lib/chunksorter.js');
 const getModuleWebpackPluginHooks = require('./lib/hooks.js').getModuleWebpackPluginHooks;
 
 const fsStatAsync = promisify(fs.stat);
 const fsReadFileAsync = promisify(fs.readFile);
+
 
 /**
  * resolve globalObject
@@ -177,7 +181,7 @@ class ModuleWebpackPlugin {
     /** @type {ProcessedModuleWebpackOptions} */
     this.options = Object.assign(defaultOptions, userOptions);
 
-    if (!/\.js$/.test(this.options.template)) this.options.template = 'auto';
+    if (!this.options.template || !/\.js$/.test(this.options.template)) this.options.template = 'auto';
     if (/\.html$/.test(this.options.filename)) {
       this.options.filename = path.basename(this.options.filename, '.html') + '.js';
     }
@@ -200,9 +204,6 @@ class ModuleWebpackPlugin {
    */
   apply(compiler) {
     const self = this;
-    let isCompilationCached = false;
-    /** @type Promise<string> */
-    let compilationPromise;
 
     if (!compiler.options.optimization.runtimeChunk) {
       compiler.options.optimization.runtimeChunk = true;
@@ -213,6 +214,12 @@ class ModuleWebpackPlugin {
     this.options.projectPath = path.dirname(packageFile);
     this.options.nodeModulesPath = path.relative(compiler.context, path.resolve(this.options.projectPath, './node_modules')).replace(/\\/g, '/');
     this.options.template = this.getFullTemplatePath(this.options.template, compiler.context);
+
+    // Inject child compiler plugin
+    const childCompilerPlugin = new CachedChildCompilation(compiler);
+    if (!this.options.templateContent) {
+      childCompilerPlugin.addEntry(this.options.template);
+    }
 
     // convert absolute filename into relative so that webpack can
     // generate it at correct location
@@ -230,79 +237,50 @@ class ModuleWebpackPlugin {
     // hence it is renamed to `templatehash` to avoid conflicts
     this.options.filename = this.options.filename.replace(/\[(?:(\w+):)?contenthash(?::([a-z]+\d*))?(?::(\d+))?\]/ig, match => match.replace('contenthash', 'templatehash'));
 
-    // Clear the cache once a new ModuleWebpackPlugin is added
-    childCompiler.clearCache(compiler);
-    
     compiler.hooks.afterPlugins.tap('ModuleWebpackPlugin', compiler => {
       // addHMRPlugin(compiler.options);
-    });
-    
-    // Register all ModuleWebpackPlugins instances at the child compiler
-    compiler.hooks.thisCompilation.tap('ModuleWebpackPlugin', compilation => {
-      // removeHMRPlugin(compiler.options);
-      // Clear the cache if the child compiler is outdated
-      if (childCompiler.hasOutDatedTemplateCache(compilation)) {
-        childCompiler.clearCache(compiler);
-      }
-      // Add this instances template to the child compiler
-      childCompiler.addTemplateToCompiler(compiler, this.options.template);
-      // Add file dependencies of child compiler to parent compiler
-      // to keep them watched even if we get the result from the cache
-      compilation.hooks.additionalChunkAssets.tap('ModuleWebpackPlugin', () => {
-        const childCompilerDependencies = childCompiler.getFileDependencies(compiler);
-        childCompilerDependencies.forEach(fileDependency => {
-          compilation.compilationDependencies.add(fileDependency);
-        });
-      });
-    });
-
-    compiler.hooks.make.tapAsync('ModuleWebpackPlugin', (compilation, callback) => {
-      // Compile the template (queued)
-      compilationPromise = childCompiler.compileTemplate(self.options.template, self.options.filename, compilation)
-        .catch(err => {
-          compilation.errors.push(prettyError(err, compiler.context).toString());
-          return {
-            content: self.options.showErrors ? prettyError(err, compiler.context).toJsonHtml() : 'ERROR',
-            outputName: self.options.filename,
-            hash: ''
-          };
-        })
-        .then(compilationResult => {
-          // If the compilation change didnt change the cache is valid
-          isCompilationCached = Boolean(compilationResult.hash) && self.childCompilerHash === compilationResult.hash;
-          self.childCompilerHash = compilationResult.hash;
-          self.childCompilationOutputName = compilationResult.outputName;
-          callback();
-          return compilationResult.content;
-        });
     });
 
     compiler.hooks.emit.tapAsync('ModuleWebpackPlugin',
       /**
        * Hook into the webpack emit phase
        * @param {WebpackCompilation} compilation
-       * @param {() => void} callback
+       * @param {(err?: Error) => void} callback
       */
       (compilation, callback) => {
         // Get all entry point names for this html file
         const entryNames = Array.from(compilation.entrypoints.keys());
         const filteredEntryNames = self.filterChunks(entryNames, self.options.chunks, self.options.excludeChunks);
         const sortedEntryNames = self.sortEntryChunks(filteredEntryNames, this.options.chunksSortMode, compilation);
-        const childCompilationOutputName = self.childCompilationOutputName;
 
-        if (childCompilationOutputName === undefined) {
-          throw new Error('Did not receive child compilation result');
+        const templateResult = this.options.templateContent
+          ? { mainCompilationHash: compilation.hash }
+          : childCompilerPlugin.getCompilationEntryResult(this.options.template);
+
+        this.childCompilerHash = templateResult.mainCompilationHash;
+
+        if ('error' in templateResult) {
+          compilation.errors.push(prettyError(templateResult.error, compiler.context).toString());
         }
+
+        const compiledEntries = 'compiledEntry' in templateResult ? {
+          hash: templateResult.compiledEntry.hash,
+          chunk: templateResult.compiledEntry.entry
+        } : {
+          hash: templateResult.mainCompilationHash
+        };
+
+        const childCompilationOutputName = webpackMajorVersion === 4
+          ? compilation.mainTemplate.getAssetPath(this.options.filename, compiledEntries)
+          // @ts-ignore
+          : compilation.getAssetPath(this.options.filename, compiledEntries);
+
+        // If the child compilation was not executed during a previous main compile run
+        // it is a cached result
+        const isCompilationCached = templateResult.mainCompilationHash !== compilation.hash;
 
         // Turn the entry point names into file paths
-        const assets = self.moduleWebpackPluginAssets(compilation, childCompilationOutputName, sortedEntryNames);
-
-        // If this is a hot update compilation, move on!
-        // This solves a problem where an `index.html` file is generated for hot-update js files
-        // It only happens in Webpack 2, where hot updates are emitted separately before the full bundle
-        if (self.isHotUpdateCompilation(assets)) {
-          return callback();
-        }
+        const assets = self.moduleWebpackPluginAssets(compilation, childCompilationOutputName, sortedEntryNames, this.options.publicPath);
 
         // If the template and the assets did not change we don't have to emit the html
         const assetJson = JSON.stringify(self.getAssetFiles(assets));
@@ -316,16 +294,21 @@ class ModuleWebpackPlugin {
         // to allow altering them more easily
         // Just before they are converted a third-party-plugin author might change the order and content
 
-        // Turn the compiled tempalte into a nodejs function or into a nodejs string
-        const templateEvaluationPromise = compilationPromise
-          .then(compiledTemplate => {
+        // Turn the compiled template into a nodejs function or into a nodejs string
+        const templateEvaluationPromise = Promise.resolve()
+          .then(() => {
+            if ('error' in templateResult) {
+              return self.options.showErrors ? prettyError(templateResult.error, compiler.context).toHtml() : 'ERROR';
+            }
             // Allow to use a custom function / string instead
             if (self.options.templateContent !== false) {
               return self.options.templateContent;
             }
             // Once everything is compiled evaluate the html factory
             // and replace it with its content
-            return self.evaluateCompilationResult(compilation, compiledTemplate);
+            return ('compiledEntry' in templateResult)
+              ? self.evaluateCompilationResult(compilation, templateResult.compiledEntry.content)
+              : Promise.reject(new Error('Child compilation contained no compiledEntry'));
           });
 
         const templateExectutionPromise = templateEvaluationPromise
@@ -334,11 +317,18 @@ class ModuleWebpackPlugin {
             ? compilationResult
             : self.executeTemplate(compilationResult, assets, compilation)));
 
-
-        const emitHtmlPromise = templateExectutionPromise
-          // Allow plugins to change the html after assets are injected
+        const injectedTemplatePromise = templateExectutionPromise
+          // Allow plugins to change the html before assets are injected
           .then(html => {
             const pluginArgs = { html, plugin: self, outputName: childCompilationOutputName };
+            return getModuleWebpackPluginHooks(compilation).afterTemplateExecution.promise(pluginArgs);
+          });
+
+        const emitHtmlPromise = injectedTemplatePromise
+          // Allow plugins to change the html after assets are injected
+          .then(html => {
+            const pluginArgs = { html: isPlainObject(html) ? html.html : html, plugin: self, outputName: childCompilationOutputName };
+            // @ts-ignore
             return getModuleWebpackPluginHooks(compilation).beforeEmit.promise(pluginArgs)
               .then(result => result.html);
           })
@@ -469,7 +459,7 @@ class ModuleWebpackPlugin {
     // To extract the result during the evaluation this part has to be removed.
     source = source.replace('var MODULE_WEBPACK_PLUGIN_RESULT =', '');
     const template = this.options.template.replace(/^.+!/, '').replace(/\?.+$/, '');
-    const vmContext = vm.createContext(_.extend({ MODULE_WEBPACK_PLUGIN: true, require }, global));
+    const vmContext = vm.createContext(_.extend({ MODULE_WEBPACK_PLUGIN: true, require, console }, global));
     const vmScript = new vm.Script(source, { filename: template });
     // Evaluate code and cast to string
     let newSource;
@@ -498,6 +488,12 @@ class ModuleWebpackPlugin {
       .then(() => templateParametersGenerator(compilation, assets, this.options, this.version))
       .then(params => {
         const templateParameters = this.options.templateParameters;
+        if (templateParameters === false) {
+          return Promise.resolve({});
+        }
+        if (typeof templateParameters !== 'function' && typeof templateParameters !== 'object') {
+          throw new Error('templateParameters has to be either a function or an object');
+        }
         if (typeof templateParameters === 'object') Object.assign(params, templateParameters);
         if (typeof templateParameters === 'function') {
           return Promise
@@ -617,22 +613,35 @@ class ModuleWebpackPlugin {
    * @param {string[]} entryNames
    * @returns {TemplateAssets}
    */
-  moduleWebpackPluginAssets(compilation, childCompilationOutputName, entryNames) {
+  moduleWebpackPluginAssets(compilation, childCompilationOutputName, entryNames, customPublicPath) {
     const compilationHash = compilation.hash;
 
     /**
      * @type {string} the configured public path to the asset root
      * if a path publicPath is set in the current webpack config use it otherwise
-     * fallback to a realtive path
+     * fallback to a relative path
      */
-    const webpackPublicPath = compilation.mainTemplate.getPublicPath({ hash: compilationHash });
-    const isPublicPathDefined = webpackPublicPath.trim() !== '';
-    let publicPath = isPublicPathDefined
-      // If a hard coded public path exists use it
-      ? webpackPublicPath
-      // If no public path was set get a relative url path
-      : path.relative(path.resolve(compilation.options.output.path, path.dirname(childCompilationOutputName)), compilation.options.output.path)
-        .split(path.sep).join('/');
+    const webpackPublicPath = webpackMajorVersion === 4
+      ? compilation.mainTemplate.getPublicPath({ hash: compilationHash })
+      // @ts-ignore
+      : compilation.getAssetPath(compilation.outputOptions.publicPath, { hash: compilationHash });
+
+    const isPublicPathDefined = webpackMajorVersion === 4
+      ? webpackPublicPath.trim() !== ''
+      // Webpack 5 introduced "auto" - however it can not be retrieved at runtime
+      : webpackPublicPath.trim() !== '' && webpackPublicPath !== 'auto';
+
+    let publicPath
+      // If the html-webpack-plugin options contain a custom public path uset it
+      = customPublicPath != null && customPublicPath !== 'auto'
+        ? customPublicPath
+        : (isPublicPathDefined
+          // If a hard coded public path exists use it
+          ? webpackPublicPath
+          // If no public path was set get a relative url path
+          : path.relative(path.resolve(compilation.options.output.path, path.dirname(childCompilationOutputName)), compilation.options.output.path)
+            .split(path.sep).join('/')
+        );
 
     if (publicPath.length && publicPath.substr(-1, 1) !== '/') {
       publicPath += '/';
@@ -811,7 +820,7 @@ class ModuleWebpackPlugin {
       // E.g. bundle.js -> /bundle.js?hash
       const entryPointPublicPaths = entryPointFiles
         .map(chunkFile => {
-          const entryPointPublicPath = publicPath + chunkFile;
+          const entryPointPublicPath = publicPath + this.urlencodePath(chunkFile);
           const isJs = /\.(js|mjs)(\?|$)/.test(chunkFile);
           const isEntry = Boolean(entryChunk && ~entryChunk.files.indexOf(chunkFile));
           let item = {
@@ -862,6 +871,41 @@ class ModuleWebpackPlugin {
       return url;
     }
     return url + (url.indexOf('?') === -1 ? '?' : '&') + hash;
+  }
+  
+  /**
+   * Encode each path component using `encodeURIComponent` as files can contain characters
+   * which needs special encoding in URLs like `+ `.
+   *
+   * Valid filesystem characters which need to be encoded for urls:
+   *
+   * # pound, % percent, & ampersand, { left curly bracket, } right curly bracket,
+   * \ back slash, < left angle bracket, > right angle bracket, * asterisk, ? question mark,
+   * blank spaces, $ dollar sign, ! exclamation point, ' single quotes, " double quotes,
+   * : colon, @ at sign, + plus sign, ` backtick, | pipe, = equal sign
+   *
+   * However the query string must not be encoded:
+   *
+   *  fo:demonstration-path/very fancy+name.js?path=/home?value=abc&value=def#zzz
+   *    ^             ^    ^    ^     ^    ^  ^    ^^    ^     ^   ^     ^   ^
+   *    |             |    |    |     |    |  |    ||    |     |   |     |   |
+   *    encoded       |    |    encoded    |  |    ||    |     |   |     |   |
+   *                 ignored              ignored  ignored     ignored   ignored
+   *
+   * @param {string} filePath
+   */
+  urlencodePath(filePath) {
+    // People use the filepath in quite unexpected ways.
+    // Try to extract the first querystring of the url:
+    //
+    // some+path/demo.html?value=abc?def
+    //
+    const queryStringStart = filePath.indexOf('?');
+    const urlPath = queryStringStart === -1 ? filePath : filePath.substr(0, queryStringStart);
+    const queryString = filePath.substr(urlPath.length);
+    // Encode all parts except '/' which are not part of the querystring:
+    const encodedUrlPath = urlPath.split('/').map(encodeURIComponent).join('/');
+    return encodedUrlPath + queryString;
   }
 
   /**

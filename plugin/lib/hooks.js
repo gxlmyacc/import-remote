@@ -38,16 +38,12 @@ const AsyncSeriesWaterfallHook = require('tapable').AsyncSeriesWaterfallHook;
     }>,
   alterAssetTagGroups:
     AsyncSeriesWaterfallHook<{
-      headTags: Array<HtmlTagObject | HtmlTagObject>,
-      bodyTags: Array<HtmlTagObject | HtmlTagObject>,
       outputName: string,
       plugin: ModuleWebpackPlugin
     }>,
   afterTemplateExecution:
     AsyncSeriesWaterfallHook<{
       html: string,
-      headTags: Array<HtmlTagObject | HtmlTagObject>,
-      bodyTags: Array<HtmlTagObject | HtmlTagObject>,
       outputName: string,
       plugin: ModuleWebpackPlugin,
     }>,
@@ -70,23 +66,6 @@ const AsyncSeriesWaterfallHook = require('tapable').AsyncSeriesWaterfallHook;
 const moduleWebpackPluginHooksMap = new WeakMap();
 
 /**
- * Add hooks to the webpack compilation object to allow foreign plugins to
- * extend the ModuleWebpackPlugin
- *
- * @returns {ModuleWebpackPluginHooks}
- */
-function createModuleWebpackPluginHooks() {
-  return {
-    beforeAssetTagGeneration: new AsyncSeriesWaterfallHook(['pluginArgs']),
-    alterAssetTags: new AsyncSeriesWaterfallHook(['pluginArgs']),
-    alterAssetTagGroups: new AsyncSeriesWaterfallHook(['pluginArgs']),
-    afterTemplateExecution: new AsyncSeriesWaterfallHook(['pluginArgs']),
-    beforeEmit: new AsyncSeriesWaterfallHook(['pluginArgs']),
-    afterEmit: new AsyncSeriesWaterfallHook(['pluginArgs'])
-  };
-}
-
-/**
  * Returns all public hooks of the html webpack plugin for the given compilation
  *
  * @param {WebpackCompilation} compilation
@@ -102,6 +81,22 @@ function getModuleWebpackPluginHooks(compilation) {
   return hooks;
 }
 
+/**
+ * Add hooks to the webpack compilation object to allow foreign plugins to
+ * extend the ModuleWebpackPlugin
+ *
+ * @returns {ModuleWebpackPluginHooks}
+ */
+function createModuleWebpackPluginHooks() {
+  return {
+    beforeAssetTagGeneration: new AsyncSeriesWaterfallHook(['pluginArgs']),
+    alterAssetTags: new AsyncSeriesWaterfallHook(['pluginArgs']),
+    alterAssetTagGroups: new AsyncSeriesWaterfallHook(['pluginArgs']),
+    afterTemplateExecution: new AsyncSeriesWaterfallHook(['pluginArgs']),
+    beforeEmit: new AsyncSeriesWaterfallHook(['pluginArgs']),
+    afterEmit: new AsyncSeriesWaterfallHook(['pluginArgs'])
+  };
+}
 
 module.exports = {
   getModuleWebpackPluginHooks
