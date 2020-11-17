@@ -19,12 +19,12 @@ function importJs(href, {
           if (isEval) {
             source = source.replace(/\/\/# sourceURL=\[module\]\\n/g, '\\n');
             source = source.replace(
-              /\/\/# sourceURL=(webpack-internal:\/\/\/[A-z/\-_0-9.@[\]]+)\\n/g, 
+              /\/\/# sourceURL=(webpack-internal:\/\/\/[A-Za-z/\-_0-9.@[\]]+)\\n/g, 
               (m, p1) => '\\n' // `//# sourceURL=${host}__get-internal-source?fileName=${encodeURIComponent(p1)}\\n`
             );
           }
           if (host) {
-            const regx = new RegExp(`\\/\\/# sourceMappingURL=data:application\\/json;charset=utf-8;base64,([0-9A-z]+={0,2})${
+            const regx = new RegExp(`\\/\\/# sourceMappingURL=data:application\\/json;charset=utf-8;base64,([0-9A-Za-z=]+)${
               isEval ? '\\\\n' : '(?:\\n|$)'
             }`, 'g');
             source = source.replace(regx, 
@@ -37,7 +37,7 @@ function importJs(href, {
                       src = src.replace(scopeNameRegx, `(import-remote)/[${scopeName}]`);
                     }
                   }
-                  return host + src;
+                  return /^https?:/.test(src) ? src : (host + src);
                 });
                 return `//# sourceMappingURL=data:application/json;charset=utf-8;base64,${encode(JSON.stringify(sourcemap))}${
                   isEval ? '\\n' : m.endsWith('\n') ? '\n' : ''

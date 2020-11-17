@@ -153,7 +153,7 @@ class RemoteView extends React.Component {
       },
       beforeSource: (source, type, href, manifest) => {
         if (scopeStyle && (!shadow || !supportShadow || scopeStyle === 'always') && type === 'css') {
-          source = source.replace(/([\n}])([.A-z*:#[])/g, (m, p1, p2) => `${p1} .${this.viewScopeHash} ${p2}`);
+          source = source.replace(/([\n}])([.A-Za-z*:#[])/g, (m, p1, p2) => `${p1} .${this.viewScopeHash} ${p2}`);
         }
         return source;
       },
