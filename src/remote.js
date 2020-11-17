@@ -101,6 +101,23 @@ function batchReplace(source, replaces) {
   return source;
 }
 
+const splitSourceSize = 102400;
+
+function splitSource(source, splitRegx, len = splitSourceSize) {
+  const _split = src => {
+    if (src.length <= len) return [src, ''];
+    while (src.length > len && !splitRegx.test(src.charAt(len - 1))) len++;
+    return [src.substr(0, len), src.substr(len, src.length)];
+  };
+  const ret = [];
+  let restSource = source;
+  while (restSource) {
+    [source, restSource] = _split(restSource);
+    ret.push(source);
+  }
+  return ret;
+}
+
 function remote(url, options = {}) {
   url = resolveRelativeUrl(url, {
     host: options.host,
@@ -245,9 +262,7 @@ function remote(url, options = {}) {
           ctx.__windowProxy__ = createWindowProxy(windowProxy, manifest.scopeName);
           ctx.require = createRuntime([], { 
             ...manifest, 
-            scopeName, 
-            hot: manifest.hot,
-            hash: manifest.hash,
+            scopeName,
             host, 
             context: ctx,
             cached,
@@ -277,30 +292,38 @@ function remote(url, options = {}) {
                     } 
                   }
                 }
-                
-                source = batchReplace(source, [
-                  [/\b(?:window\.)?document\.getElementsBy(TagName(?:NS)?|Name|ClassName)\b/g, (m, p1) => 'document.documentElement.getElementsBy' + p1],
-                  [/\b(?:window\.)?document\.querySelector(All)?\b/g, (m, p1) => 'document.documentElement.querySelector' + (p1 || '')],
-                  [/\b(?:window\.)?document\.getElementById\b/g, '__windowProxy__.doc.getElementById'],
-                  [/\b(?:window\.)?document\.createElement\b/g, '__windowProxy__.doc.createElement'],
-                  [/\b(?:window\.)?document\.body\b/g, '__windowProxy__.doc.body'],
-                  [/\b(?:window\.)?document\.head\b/g, '__windowProxy__.doc.head'],
-                  [/\b(?:window\.)?document\.documentElement\b/g, '__windowProxy__.doc.html'],
-                  ctx.__windowProxy__.addEventListener 
-                    ? [/\bwindow\.addEventListener\b/g, '__windowProxy__.addEventListener']
-                    : null,
-                  ctx.__windowProxy__.removeEventListener
-                    ? [/\bwindow\.removeEventListener\b/g, '__windowProxy__.removeEventListener']
-                    : null
-                ]);
-                if (manifest.globalToScopes) {
-                  source = batchReplace(source, manifest.globalToScopes.map(varName => ([
-                    new RegExp(`\\b(?:global|window)\\.${escapeStringRegexp(varName)}\\b`),
-                    `__windowProxy__.globals.${varName}`
-                  ])));
-                }
 
-                return source;
+                const checkOffset = (source, offset, match, replaceStr) => {
+                  if (offset && !match.startsWith('window.') && source[offset - 1] === '.') return match;
+                  return replaceStr;
+                };
+                const sources = splitSource(source, /[\s<>|&{}:,;()"'+=*![\]/\\]/);
+                sources.forEach((src, i) => {
+                  src = batchReplace(src, [
+                    [/\b(?:window\.)?document\.getElementsBy(TagName(?:NS)?|Name|ClassName)\b/g, (m, p1, offset) => checkOffset(src, offset, m, 'document.documentElement.getElementsBy' + p1)],
+                    [/\b(?:window\.)?document\.querySelector(All)?\b/g, (m, p1, offset) => checkOffset(src, offset, m, 'document.documentElement.querySelector' + (p1 || ''))],
+                    [/\b(?:window\.)?document\.getElementById\b/g, (m, offset) => checkOffset(src, offset, m, '__windowProxy__.doc.getElementById')],
+                    [/\b(?:window\.)?document\.createElement\b/g, (m, offset) => checkOffset(src, offset, m, '__windowProxy__.doc.createElement')],
+                    [/\b(?:window\.)?document\.body\b/g, (m, offset) => checkOffset(src, offset, m, '__windowProxy__.doc.body')],
+                    [/\b(?:window\.)?document\.head\b/g, (m, offset) => checkOffset(src, offset, m, '__windowProxy__.doc.head')],
+                    [/\b(?:window\.)?document\.documentElement\b/g,  (m, offset) => checkOffset(src, offset, m, '__windowProxy__.doc.html')],
+                    ctx.__windowProxy__.addEventListener 
+                      ? [/\bwindow\.addEventListener\b/g, '__windowProxy__.addEventListener']
+                      : null,
+                    ctx.__windowProxy__.removeEventListener
+                      ? [/\bwindow\.removeEventListener\b/g, '__windowProxy__.removeEventListener']
+                      : null
+                  ]);
+                  if (manifest.globalToScopes) {
+                    src = batchReplace(src, manifest.globalToScopes.map(varName => ([
+                      new RegExp(`\\b(?:global|window)\\.${escapeStringRegexp(varName)}\\b`),
+                      `__windowProxy__.globals.${varName}`
+                    ])));
+                  }
+                  sources[i] = src;
+                });
+
+                return sources.join('');
               }
 
               if (beforeSource) source = beforeSource(source, type, href, manifest);

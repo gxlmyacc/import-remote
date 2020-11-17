@@ -15,6 +15,7 @@ module.exports = function ({
     name: pkg.name,
     version,
     mode: webpackConfig.mode,
+    devtool: webpackConfig.devtool,
     libraryTarget: webpackConfig.output.libraryTarget,
     moduleVersion: pkg.version,
     modulesMapFile,
