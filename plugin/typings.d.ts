@@ -25,6 +25,8 @@ declare namespace ModuleWebpackPlugin {
     hash: string,
     jsonpFunction: string,
     hot: boolean,
+    remotes: {
+    },
     externals: Array<any>,
     chunks: {
       files: {
@@ -139,6 +141,8 @@ declare namespace ModuleWebpackPlugin {
       scopeName: string,
       options: Options;
     } | TemplateAssets;
+    outputOptions: any,
+    webpackVersion: number,
     webpackConfig: any;
   }
 

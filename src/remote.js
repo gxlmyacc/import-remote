@@ -4,7 +4,8 @@ import {
   joinUrl, isFunction, getHostFromUrl, resolveRelativeUrl,
   innumerable, isPlainObject, globalCached, checkRemoteModuleWebpack
 } from './utils';
-import createRuntime from './runtime';
+import createRuntime4 from './runtime4';
+import createRuntime5 from './runtime5';
 import importJs from './importJs';
 import importJson from './importJson';
 import { isRequireFactory } from './requireFactory';
@@ -251,16 +252,17 @@ function remote(url, options = {}) {
         };
   
         if (!__remoteModuleWebpack__[scopeName]) {
-          const globalObject = 'window';
+          const globalObject = manifest.windowObject || 'window';
           const newGlobalObject = manifest.globalObject;
           const libraryTarget = manifest.libraryTarget;
+          const hotUpdateGlobal = manifest.hotUpdateGlobal;
           const jsonpFunction = manifest.jsonpFunction || 'webpackJsonp';
           const ctx = __remoteModuleWebpack__[scopeName] = createContext(windowProxy.context);
           ctx.__remoteModuleWebpack__ = __remoteModuleWebpack__;
           Object.assign(ctx, remote.globals, globals);
           ctx.__HOST__ = host;
           ctx.__windowProxy__ = createWindowProxy(windowProxy, manifest.scopeName);
-          ctx.require = createRuntime([], { 
+          ctx.require = (manifest.webpackVersion >= 5 ? createRuntime5 : createRuntime4)({ 
             ...manifest, 
             scopeName,
             host, 
@@ -290,6 +292,13 @@ function remote(url, options = {}) {
                     if (sourcePrefix) {
                       source = source.substr(0, idx) + newSourcePrefix1 + source.substr(idx + sourcePrefix.length, source.length); 
                     } 
+                  }
+                }
+
+                if (hotUpdateGlobal) {
+                  let hotSourcePrefix = `${globalObject}["${hotUpdateGlobal}"]`;
+                  if (source.startsWith(hotSourcePrefix)) {
+                    source = `${newGlobalObject}['${hotUpdateGlobal}']` + source.substr(hotSourcePrefix.length);
                   }
                 }
 

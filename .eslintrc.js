@@ -59,6 +59,7 @@ module.exports = {
       imports: 'never',
       objects: 'ignore'
     }],
+    'prefer-spread': 0,
     // 要求 return 语句要么总是指定返回的值，要么不指定
     'consistent-return': 0,
     // 强制所有控制语句使用一致的括号风格

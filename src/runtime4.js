@@ -3,7 +3,7 @@ import { DEFAULT_TIMEOUT, joinUrl, fetch, globalCached } from './utils';
 import importCss from './importCss';
 import importJs from './importJs';
 
-function createRuntime(modules = [], {
+function createRuntime({
   jsonpFunction = 'webpackJsonp',
   publicPath = '',
   host = '',
@@ -19,6 +19,8 @@ function createRuntime(modules = [], {
   requireExternal,
   beforeSource,
 } = {}) {
+  const modules = [];
+  
   const _hasOwnProperty = Object.prototype.hasOwnProperty;
   // The module cache
   context.installedModules = context.installedModules || {};
@@ -803,6 +805,7 @@ function createRuntime(modules = [], {
     if (!_hasOwnProperty.call(hotUpdate, moduleId)) hotUpdate[moduleId] = modules[moduleId];
   }
 
+  __webpack_require__.f = {};
   // This file contains only the entry chunk.
   // The chunk loading function for additional chunks
   __webpack_require__.e = function requireEnsure(chunkId) {

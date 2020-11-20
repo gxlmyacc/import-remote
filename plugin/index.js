@@ -77,6 +77,55 @@ function resolveModulePath(compilation, moduleName) {
 }
 
 /**
+ * resolve webpack remotes
+ * @param {ModuleWebpackPlugin} self
+ * @param {WebpackCompilation} compilation
+* @param {ProcessedModuleWebpackOptions} options
+* @returns {{ chunkMapping: {}, idToExternalAndNameMapping: {} }}
+*/
+function resolveRemotes(self, compilation, options) { 
+  const remotes = { 
+    withBaseURI: self.withBaseURI,
+    withPreload: self.withPreload,
+    withPrefetch: self.withPrefetch,
+    hasJsMatcher: self.hasJsMatcher,
+    chunkMapping: {}, 
+    idToExternalAndNameMapping: {},
+    initCodePerScope: self.initCodePerScope,
+    initialConsumes: self.initialConsumes,
+    moduleIdToSourceMapping: self.moduleIdToSourceMapping,
+    chunkToModuleMapping: self.chunkToModuleMapping,
+  };
+  if (webpackMajorVersion < 5) return remotes;
+
+  // @ts-ignore
+  const miniCssFModule = compilation._modules.get('webpack/runtime/get mini-css chunk filename');
+  if (miniCssFModule) {
+    // @ts-ignore
+    remotes.miniCssF = miniCssFModule._cachedGeneratedCode
+      .replace('// This function allow to reference all chunks\n__webpack_require__.miniCssF = ', '');
+  }
+
+  [...compilation.modules].forEach(m => {
+    if (m.type === 'remote-module') {
+      // @ts-ignore
+      remotes.idToExternalAndNameMapping[m.id] = [m.shareScope, m.internalRequest, m.externalRequests[0]];
+      m.chunksIterable.forEach(c => {
+        if (!remotes.chunkMapping[c.id]) remotes.chunkMapping[c.id] = [];
+        remotes.chunkMapping[c.id].push(m.id);
+      });
+    }
+    if (m.type === 'consume-shared-module') {
+      // console.log(m);
+    }
+    if (m.type === 'provide-module') {
+      // console.log(m);
+    }
+  });
+  return remotes;
+}
+
+/**
  * resolve webpack externals
  * @param {WebpackCompilation} compilation
   * @param {ProcessedModuleWebpackOptions} options
@@ -84,8 +133,14 @@ function resolveModulePath(compilation, moduleName) {
   */
 function resolveExternals(compilation, options) {
   // @ts-ignore
-  return [...compilation.modules].filter(m => m.external).map(m => {
-    let v = { id: m.id };
+  return [...compilation.modules].filter(m => {
+    // @ts-ignore
+    if (webpackMajorVersion < 5) return m.external;
+    // @ts-ignore
+    return m.externalType === 'var';
+  }).map(m => {
+    // @ts-ignore
+    let v = { id: m.id, type: m.externalType };
     // @ts-ignore
     if (isPlainObject(m.request)) {
       // @ts-ignore
@@ -120,6 +175,8 @@ function templateParametersGenerator(compilation, assets, options, version) {
     compilation,
     globalObject: resolveGlobalObject(compilation, options),
     pkg: options.package,
+    webpackVersion: webpackMajorVersion,
+    outputOptions: compilation.outputOptions,
     webpackConfig: compilation.options,
     moduleWebpackPlugin: {
       scopeName: resolveScopeName(options),
@@ -177,6 +234,15 @@ class ModuleWebpackPlugin {
       scopeName: options => options.package.name,
       base: false,
     };
+
+    this.withPreload = false;
+    this.withPrefetch = false;
+    this.hasJsMatcher = null;
+    this.withBaseURI = false;
+    this.initCodePerScope = {}; 
+    this.initialConsumes = []; 
+    this.moduleIdToSourceMapping = {};
+    this.chunkToModuleMapping = {};
 
     /** @type {ProcessedModuleWebpackOptions} */
     this.options = Object.assign(defaultOptions, userOptions);
@@ -241,6 +307,191 @@ class ModuleWebpackPlugin {
       // addHMRPlugin(compiler.options);
     });
 
+    if (webpackMajorVersion >= 5) {
+      compiler.hooks.compilation.tap('ModuleWebpackPlugin', compilation => {
+        // @ts-ignore
+        const RuntimeGlobals = require('webpack/lib/RuntimeGlobals');
+        // @ts-ignore
+        const compileBooleanMatcher = require('webpack/lib/util/compileBooleanMatcher');
+        // @ts-ignore
+        const chunkHasJs = require('webpack/lib/javascript/JavascriptModulesPlugin').chunkHasJs;
+
+        // @ts-ignore
+        const globalChunkLoading = compilation.outputOptions.chunkLoading;
+        const isEnabledForChunk = chunk => {
+          const options = chunk.getEntryOptions();
+          const chunkLoading
+            = (options && options.chunkLoading) || globalChunkLoading;
+          return chunkLoading === 'jsonp';
+        };
+        const onceForChunkSet = new WeakSet();
+        const handler = (chunk, set) => {
+          if (onceForChunkSet.has(chunk)) return;
+          onceForChunkSet.add(chunk);
+          if (!isEnabledForChunk(chunk)) return;
+          set.add(RuntimeGlobals.moduleFactoriesAddOnly);
+          set.add(RuntimeGlobals.hasOwnProperty);
+
+          const withBaseURI = set.has(RuntimeGlobals.baseURI);
+          if (withBaseURI) self.withBaseURI = true;
+
+          const withPrefetch = set.has(
+            RuntimeGlobals.prefetchChunkHandlers
+          );
+          if (withPrefetch) self.withPrefetch = true;
+          const withPreload = set.has(
+            RuntimeGlobals.preloadChunkHandlers
+          );
+          if (withPreload) self.withPreload = true;
+          let hasJsMatcher = compileBooleanMatcher(
+            // @ts-ignore
+            compilation.chunkGraph.getChunkConditionMap(chunk, chunkHasJs)
+          );
+          if (typeof hasJsMatcher === 'function') {
+            let str = hasJsMatcher('');
+            // @ts-ignore
+            hasJsMatcher = str.substr(2, str.length - '!//.test()'.length);
+          }
+          // @ts-ignore
+          if (hasJsMatcher) self.hasJsMatcher = hasJsMatcher;
+        };
+        compilation.hooks.runtimeRequirementInTree
+          .for(RuntimeGlobals.baseURI)
+          .tap('ModuleWebpackPlugin', handler);
+        compilation.hooks.runtimeRequirementInTree
+          .for(RuntimeGlobals.ensureChunkHandlers)
+          .tap('ModuleWebpackPlugin', handler);
+        compilation.hooks.runtimeRequirementInTree
+          .for(RuntimeGlobals.hmrDownloadUpdateHandlers)
+          .tap('ModuleWebpackPlugin', handler);
+        compilation.hooks.runtimeRequirementInTree
+          .for(RuntimeGlobals.hmrDownloadManifest)
+          .tap('ModuleWebpackPlugin', handler);
+
+        compilation.hooks.runtimeRequirementInTree
+          .for(RuntimeGlobals.shareScopeMap)
+          .tap('ModuleWebpackPlugin', (chunk, set) => {
+            const {
+              compareModulesByIdentifier,
+            // @ts-ignore
+            } = require('webpack/lib/util/comparators');
+
+            const isNumber = typeof chunk.id === 'number';
+
+            const getChunkIdFormSource = (source, async = false) => {
+              let ret = [];
+              if (async) {
+                let arr;
+                let regx = new RegExp(/__webpack_require__\.e\("?([0-9A-Za-z_-]+)"?\)/g);
+                while (arr = regx.exec(source)) {
+                  ret.push(isNumber ? Number(arr[1]) : arr[1]);
+                }
+                return ret;
+              }
+              let [, entryId] = source.match(/__webpack_require__\((?:\/\*[0-9A-Za-z_\-_/.! ]+\*\/ )?"?([0-9A-Za-z_\-_/.]+)"?\)/) || [];
+              if (entryId != null) ret.push(isNumber ? Number(entryId) : entryId);
+              return ret;
+            };
+                  
+            const initCodePerScope = {};
+            for (const c of chunk.getAllReferencedChunks()) {
+              // @ts-ignore
+              const modules = compilation.chunkGraph.getOrderedChunkModulesIterableBySourceType(
+                c,
+                'share-init',
+                compareModulesByIdentifier
+              );
+              if (!modules) continue;
+              for (const m of modules) {
+                // @ts-ignore
+                const data = compilation.codeGenerationResults.getData(
+                  m,
+                  c.runtime,
+                  'share-init'
+                );
+                if (!data) continue;
+                for (const item of data) {
+                  const { shareScope, init } = item;
+                  const [, shareKey, version] = init.match(/^register\("([^"]+)", "([^"]+)"/) || [];
+                  let stage;
+                  if (shareKey) {
+                    let [entryId] = getChunkIdFormSource(init);
+                    stage = [
+                      'register', 
+                      shareKey, 
+                      version, 
+                      getChunkIdFormSource(init, true),
+                      entryId
+                    ];
+                  }
+                  const [, entryId] = init.match(/^initExternal\("?([0-9A-Za-z_\-_/.]+)"?\)/) || [];
+                  if (entryId) {
+                    stage = ['init', entryId];
+                  }
+                  let stages = initCodePerScope[shareScope];
+                  if (stages == null) initCodePerScope[shareScope] = stages = [];
+                  if (stage) stages.push(stage);
+                }
+              }
+            }
+            self.initCodePerScope = initCodePerScope;
+
+            const moduleIdToSourceMapping = {};
+            const addModules = (modules, chunk, list) => {
+              for (const m of modules) {
+                const module = m;
+                // @ts-ignore
+                const id = compilation.chunkGraph.getModuleId(module);
+                list.push(id);
+                // @ts-ignore
+                const source = compilation.codeGenerationResults.getSource(
+                  module,
+                  chunk.runtime,
+                  'consume-shared'
+                // @ts-ignore
+                )._value;
+                moduleIdToSourceMapping[id] = [
+                  module.options.shareScope,
+                  module.options.shareKey,
+                  module.options.requiredVersion,
+                  getChunkIdFormSource(source, true)
+                ];
+                let [entryId] = getChunkIdFormSource(source);
+                if (entryId != null) moduleIdToSourceMapping[id].push(entryId);
+              }
+            };
+
+            const chunkToModuleMapping = {};
+            for (const c of chunk.getAllAsyncChunks()) {
+              // @ts-ignore
+              const modules = compilation.chunkGraph.getChunkModulesIterableBySourceType(
+                c,
+                'consume-shared'
+              );
+              if (!modules) continue;
+              addModules(modules, c, (chunkToModuleMapping[c.id] = []));
+            }
+            self.chunkToModuleMapping = chunkToModuleMapping;
+          
+            const initialConsumes = [];
+            for (const c of chunk.getAllInitialChunks()) {
+              // @ts-ignore
+              const modules = compilation.chunkGraph.getChunkModulesIterableBySourceType(
+                c,
+                'consume-shared'
+              );
+              if (!modules) continue;
+              addModules(modules, c, initialConsumes);
+            }
+            self.initialConsumes = initialConsumes;
+            self.moduleIdToSourceMapping = moduleIdToSourceMapping;
+
+            return true;
+          });
+      });
+    }
+
+
     compiler.hooks.emit.tapAsync('ModuleWebpackPlugin',
       /**
        * Hook into the webpack emit phase
@@ -249,6 +500,7 @@ class ModuleWebpackPlugin {
       */
       (compilation, callback) => {
         // Get all entry point names for this html file
+        // @ts-ignore
         const entryNames = Array.from(compilation.entrypoints.keys());
         const filteredEntryNames = self.filterChunks(entryNames, self.options.chunks, self.options.excludeChunks);
         const sortedEntryNames = self.sortEntryChunks(filteredEntryNames, this.options.chunksSortMode, compilation);
@@ -289,13 +541,12 @@ class ModuleWebpackPlugin {
         }
         self.assetJson = assetJson;
 
-
         // The html-webpack plugin uses a object representation for the html-tags which will be injected
         // to allow altering them more easily
         // Just before they are converted a third-party-plugin author might change the order and content
 
         // Turn the compiled template into a nodejs function or into a nodejs string
-        const templateEvaluationPromise = Promise.resolve()
+        const templateEvaluationPromise = (Promise.resolve())
           .then(() => {
             if ('error' in templateResult) {
               return self.options.showErrors ? prettyError(templateResult.error, compiler.context).toHtml() : 'ERROR';
@@ -392,7 +643,7 @@ class ModuleWebpackPlugin {
   getModulesMapAsset(compilation) {
     const assets = {};
 
-    function resolvePath(modulePath) {
+    function resolvePath(modulePath = '') {
       if (modulePath.includes('!')) {
         let paths = modulePath.split('!').filter(Boolean);
         modulePath = paths[paths.length - 1] || '';
@@ -401,8 +652,9 @@ class ModuleWebpackPlugin {
     }
     // @ts-ignore
     compilation.modules.forEach(module => {
+      // @ts-ignore
+      if (module.externalType || ['runtime', 'remote-module'].includes(module.type) || module.id === '') return;
       let moduleId = module.id;
-      if (moduleId === '') return;
       const asset = {};
       // @ts-ignore
       let request = resolvePath((module.userRequest || ''));
@@ -413,11 +665,12 @@ class ModuleWebpackPlugin {
       } else {
         if (!request) {
           // @ts-ignore
-          if (module._identifier) request = resolvePath(module._identifier.split(' ')[
+          if (module._identifier && !module._identifier.startsWith('remote (default) ')) request = resolvePath(module._identifier.split(' ')[
             // @ts-ignore
             module._identifier.startsWith('multi ') ? 1 : 0
           ]);
         }
+        if (!request) return;
         
         modulePath = (path.isAbsolute(request) 
           ? path.relative(compilation.options.context, request)
@@ -648,7 +901,8 @@ class ModuleWebpackPlugin {
     }
 
     const assetKeys = Object.keys(compilation.assets);
-    const jsonpFunction = compilation.mainTemplate.outputOptions.jsonpFunction;
+    const jsonpFunction = compilation.mainTemplate.outputOptions.chunkLoadingGlobal
+      || compilation.mainTemplate.outputOptions.jsonpFunction;
     if (this.options.replaceGlobalObject) {
       const globalObject = compilation.mainTemplate.outputOptions.globalObject;
       const newGlobalObject = resolveGlobalObject(compilation, this.options);
@@ -700,6 +954,7 @@ class ModuleWebpackPlugin {
       jsonpFunction,
       // is hot
       hot: Boolean(compilation.compiler.watchMode),
+      remotes: {},
       // the webpack externals
       externals: [],
       // Will contian all chunk files
@@ -745,6 +1000,7 @@ class ModuleWebpackPlugin {
     });
     // if (~runtimeChunkIdx) compilation.chunks.splice(runtimeChunkIdx, 1);
 
+    assets.remotes = resolveRemotes(this, compilation, this.options);
     assets.externals = resolveExternals(compilation, this.options);
 
     // assetKeys.forEach(file => {
@@ -762,13 +1018,13 @@ class ModuleWebpackPlugin {
       assets.manifest = this.appendHash(assets.manifest, compilationHash);
     }
 
-    const entryChunk = compilation.chunks.find(c => {
-      // @ts-ignore
-      if (!c.entryModule || !entryNames.includes(c.entryModule.name)) return; 
-      let entryModule = c && c.entryModule;
+    const checkEntryModule = entryModule => {
       // @ts-ignore
       assets.entryId = entryModule.id;
-      if (entryModule.buildMeta.providedExports) {
+      if (webpackMajorVersion >= 5) {
+        return assets.entryId;
+      }
+      if (entryModule.buildMeta.providedExports || entryModule.buildMeta.exportsType) {
         // @ts-ignore
         let request = entryModule.request;
         if (!request
@@ -788,6 +1044,21 @@ class ModuleWebpackPlugin {
           : request;
         return true;
       }
+    };
+    const entryChunk = compilation.chunks.find(c => {
+      if (webpackMajorVersion < 5) {
+        // @ts-ignore
+        if (!c.entryModule || !entryNames.includes(c.entryModule.name)) return; 
+        checkEntryModule(c.entryModule);
+        return true;
+      }
+      // @ts-ignore
+      if (!c.id || !entryNames.includes(c.id)) return;
+      if (assets.hot) {
+        const entryModule = [...c.modulesIterable].find(m => m.type === 'javascript/auto');
+        checkEntryModule(entryModule);
+      } else checkEntryModule(c.entryModule);
+      return true;
     });
 
     // Extract paths to .js, .mjs and .css files from the current compilation
@@ -796,7 +1067,8 @@ class ModuleWebpackPlugin {
     for (let i = 0; i < entryNames.length; i++) {
       const entryName = entryNames[i];
       const entrypoints = compilation.entrypoints.get(entryName);
-      const runtimeChunk = entrypoints.runtimeChunk;
+      // @ts-ignore
+      const runtimeChunk = entrypoints._runtimeChunk || entrypoints.runtimeChunk;
 
       // let runtimeChunkIdx = -1;
       // entrypoints.chunks.some((chunk, i) => {
