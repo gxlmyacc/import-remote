@@ -90,7 +90,8 @@ module.exports = {
   // 配置输出目录
   output: {
     path: __dirname + '/dist',
-    filename: '[name]-[chunkhash:5].js'
+    filename: 'assets/[name]-[chunkhash:5].js',
+    chunkFilename: 'assets/[name]-[chunkhash:5]-chunk.js',
   },
   // 配置外部依赖
   externals: [

@@ -906,8 +906,11 @@ function createRuntime({
     let installedCssChunks = {};
 
     let loadStylesheet = chunkId => {
-      let href = __webpack_require__.p + __webpack_require__.miniCssF(chunkId);
+      let href = __webpack_require__.miniCssF(chunkId);
       return new Promise((resolve, reject) => {
+        if (!href) return resolve();
+        href = __webpack_require__.p + href;
+
         importCss(href, { 
           timeout, 
           head: context.__windowProxy__.doc.head, 
@@ -924,9 +927,8 @@ function createRuntime({
     };
 
     __webpack_require__.f.miniCss = (chunkId, promises) => {
-      let cssChunks = { src_global_css: 1 };
       if (installedCssChunks[chunkId]) promises.push(installedCssChunks[chunkId]);
-      else if (installedCssChunks[chunkId] !== 0 && cssChunks[chunkId]) {
+      else if (installedCssChunks[chunkId] !== 0) {
         promises.push(installedCssChunks[chunkId] = loadStylesheet(chunkId).then(() => {
           installedCssChunks[chunkId] = 0;
         }, e => {
@@ -1044,10 +1046,12 @@ function createRuntime({
   }
       
   context[hotUpdateGlobal || 'webpackHotUpdate'] = (chunkId, moreModules, runtime) => {
-    for (let moduleId in moreModules) {
-      if (__webpack_require__.o(moreModules, moduleId)) {
-        currentUpdate[moduleId] = moreModules[moduleId];
-        if (currentUpdatedModulesList) currentUpdatedModulesList.push(moduleId);
+    if (currentUpdate) {
+      for (let moduleId in moreModules) {
+        if (__webpack_require__.o(moreModules, moduleId)) {
+          currentUpdate[moduleId] = moreModules[moduleId];
+          if (currentUpdatedModulesList) currentUpdatedModulesList.push(moduleId);
+        }
       }
     }
     if (runtime) currentUpdateRuntime.push(runtime);

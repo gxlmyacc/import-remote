@@ -298,7 +298,7 @@ function remote(url, options = {}) {
                 if (hotUpdateGlobal) {
                   let hotSourcePrefix = `${globalObject}["${hotUpdateGlobal}"]`;
                   if (source.startsWith(hotSourcePrefix)) {
-                    source = `${newGlobalObject}['${hotUpdateGlobal}']` + source.substr(hotSourcePrefix.length);
+                    source = hotUpdateGlobal + source.substr(hotSourcePrefix.length);
                   }
                 }
 
