@@ -255,8 +255,20 @@ function remote(url, options = {}) {
           const globalObject = manifest.windowObject || 'window';
           const newGlobalObject = manifest.globalObject;
           const libraryTarget = manifest.libraryTarget;
-          const hotUpdateGlobal = manifest.hotUpdateGlobal;
+
+          const hotUpdateGlobal = manifest.hotUpdateGlobal || 'webpackHotUpdate';
+          const hotSourceRegx = hotUpdateGlobal
+            ? new RegExp(`${(!libraryTarget || libraryTarget === 'var') ? '^(\\/\\*[A-z\\s*():/.",-]+\\*\\/\\n)?' : ''}${
+                globalObject}\\["${hotUpdateGlobal}"\\]`)
+            : null;
+
           const jsonpFunction = manifest.jsonpFunction || 'webpackJsonp';
+          const jsonpSourceRegx = newGlobalObject
+            ? new RegExp(`${(!libraryTarget || libraryTarget === 'var') ? '^(\\/\\*[A-z\\s*():/.",-]+\\*\\/\\n)?' : ''}\\(${
+                globalObject}((\\[")|\\.)${jsonpFunction}("\\])?\\s?=\\s?${
+                globalObject}((\\[")|\\.)${jsonpFunction}("\\])?\\s?\\|\\|\\s?\\[\\]\\)`)
+            : null;
+
           const ctx = __remoteModuleWebpack__[scopeName] = createContext(windowProxy.context);
           ctx.__remoteModuleWebpack__ = __remoteModuleWebpack__;
           Object.assign(ctx, remote.globals, globals);
@@ -271,34 +283,23 @@ function remote(url, options = {}) {
             requireExternal,
             beforeSource(source, type, href) {
               if (type === 'js') {
-                if (newGlobalObject) {
-                  let sourcePrefix;
-                  const sourcePrefix1 = `(${globalObject}["${jsonpFunction}"] = ${globalObject}["${jsonpFunction}"] || [])`;
-                  const sourcePrefix2 = `(${globalObject}["${jsonpFunction}"]=${globalObject}["${jsonpFunction}"]||[])`;
-                  const sourcePrefix3 = `(${globalObject}.${jsonpFunction}=${globalObject}.${jsonpFunction}||[])`;
-                  const newSourcePrefix1 = `(${newGlobalObject}['${jsonpFunction}']=${newGlobalObject}['${jsonpFunction}']||[])`;
-                  if (!libraryTarget || libraryTarget === 'var') {
-                    if (source.startsWith(sourcePrefix1)) sourcePrefix = sourcePrefix1;
-                    else if (source.startsWith(sourcePrefix2)) sourcePrefix = sourcePrefix2;
-                    else if (source.startsWith(sourcePrefix3)) sourcePrefix = sourcePrefix3;
-                    if (sourcePrefix) source = newSourcePrefix1 + source.substr(sourcePrefix.length);
-                  } else {
-                    let idx = -1;
-                    [sourcePrefix1, sourcePrefix2, sourcePrefix3].some(prefix => {
-                      idx = source.indexOf(prefix);
-                      if (~idx) sourcePrefix = prefix;
-                      return ~idx;
-                    });          
-                    if (sourcePrefix) {
-                      source = source.substr(0, idx) + newSourcePrefix1 + source.substr(idx + sourcePrefix.length, source.length); 
-                    } 
+                let sourcePrefix;
+                if (jsonpSourceRegx) {
+                  let match = source.match(jsonpSourceRegx);
+                  [sourcePrefix] = match || []
+                  if (sourcePrefix) {
+                    const newSourcePrefix1 = `(${newGlobalObject}['${jsonpFunction}']=${newGlobalObject}['${jsonpFunction}']||[])`;
+                    source = (match.index ? source.substr(0, match.index) : '') 
+                      + newSourcePrefix1 + source.substr(match.index + sourcePrefix.length);
                   }
                 }
 
-                if (hotUpdateGlobal) {
-                  let hotSourcePrefix = `${globalObject}["${hotUpdateGlobal}"]`;
-                  if (source.startsWith(hotSourcePrefix)) {
-                    source = hotUpdateGlobal + source.substr(hotSourcePrefix.length);
+                if (!sourcePrefix && hotSourceRegx) {
+                  let match = source.match(hotSourceRegx);
+                  let [hotSourcePrefix] = match || []
+                  if (hotSourcePrefix) {
+                    source = (match.index ? source.substr(0, match.index) : '') 
+                      + hotUpdateGlobal + source.substr(match.index + hotSourcePrefix.length);
                   }
                 }
 
