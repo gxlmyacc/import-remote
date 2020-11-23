@@ -1001,7 +1001,7 @@ function createRuntime({
   };
 
   const hasJsMatcher = webpackVersion <= 5
-    ? (chunkId) => jsChunks[chunkId]
+    ? chunkId => jsChunks[chunkId]
     : typeof remotes.hasJsMatcher === 'string'
       ? chunkId => !(new RegExp(remotes.hasJsMatcher).test(chunkId))
       : () => remotes.hasJsMatcher == null || remotes.hasJsMatcher;
@@ -1474,7 +1474,7 @@ function createRuntime({
     }
   };
       
-  __webpack_require__.hmrM = (requestTimeout) => {
+  __webpack_require__.hmrM = requestTimeout => {
     requestTimeout = requestTimeout || 10000;
     return new Promise(async function (resolve, reject) {
       const requestPath = __webpack_require__.p + __webpack_require__.hmrF();
