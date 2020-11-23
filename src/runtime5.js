@@ -115,7 +115,14 @@ function createRuntime({
     
   /* webpack/runtime/define property getters */
   // define getter functions for harmony exports
-  __webpack_require__.d = (exports, definition) => {
+  __webpack_require__.d = (exports, definition, getter) => {
+    if (getter) {
+      if (!__webpack_require__.o(exports, definition)) {
+        Object.defineProperty(exports, definition, { enumerable: true, get: getter });
+      }
+      return;
+    }
+
     for (let key in definition) {
       if (__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
         Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
