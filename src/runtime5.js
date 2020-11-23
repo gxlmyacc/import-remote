@@ -8,6 +8,7 @@ function createRuntime({
   publicPath = '',
   host = '',
   devtool = false,
+  hot,
   hash = '',
   uniqueName = '',
   scopeName = '',
@@ -15,6 +16,7 @@ function createRuntime({
   cssChunks = {},
   jsChunks = {},
   context = {},
+  webpackVersion = 4,
   initCodePerScope = {},
   cached = globalCached,
   timeout = DEFAULT_TIMEOUT,
@@ -61,8 +63,10 @@ function createRuntime({
     execOptions.factory.call(module.exports, module, module.exports, execOptions.require);
     
     // Flag the module as loaded
-    module.loaded = true;
-    
+    if (Object.getOwnPropertyDescriptor(module, 'loaded').value !== undefined) {
+      module.loaded = true;
+    }
+ 
     // Return the exports of the module
     return module.exports;
   }
@@ -181,7 +185,7 @@ function createRuntime({
     let onScriptComplete = ex => {
       let doneFns = inProgress[url] || [];
       delete inProgress[url];
-      doneFns && doneFns.forEach(fn => fn(ex));
+      doneFns && doneFns.forEach(fn => fn && fn(ex));
     };
     if (!Array.isArray(url)) url = [url];
     return Promise.all(url.map(u => importJs(u, { timeout, global: context, cached, scopeName, host, devtool, beforeSource }))) 
@@ -333,17 +337,19 @@ function createRuntime({
     let queuedInvalidatedModules;
       
     __webpack_require__.hmrD = currentModuleData;
-      
-    __webpack_require__.i.push(function (options) {
-      let module = options.module;
-      let require = createRequire(options.require, options.id);
-      module.hot = createModuleHotObject(options.id, module);
-      module.parents = currentParents;
-      module.children = [];
-      currentParents = [];
-      options.require = require;
-    });
-      
+    
+    if (hot) {
+      __webpack_require__.i.push(function (options) {
+        let module = options.module;
+        let require = createRequire(options.require, options.id);
+        module.hot = createModuleHotObject(options.id, module);
+        module.parents = currentParents;
+        module.children = [];
+        currentParents = [];
+        options.require = require;
+      });
+    }
+
     __webpack_require__.hmrC = {};
     __webpack_require__.hmrI = {};
       
@@ -538,7 +544,7 @@ function createRuntime({
         }
       
         setStatus('prepare');
-      
+
         let updatedModules = [];
         blockingPromises = [];
         currentUpdateApplyHandlers = [];
@@ -994,9 +1000,11 @@ function createRuntime({
     }
   };
 
-  const hasJsMatcher = typeof remotes.hasJsMatcher === 'string'
-    ? chunkId => !(new RegExp(remotes.hasJsMatcher).test(chunkId))
-    : () => remotes.hasJsMatcher == null || remotes.hasJsMatcher;
+  const hasJsMatcher = webpackVersion <= 5
+    ? (chunkId) => jsChunks[chunkId]
+    : typeof remotes.hasJsMatcher === 'string'
+      ? chunkId => !(new RegExp(remotes.hasJsMatcher).test(chunkId))
+      : () => remotes.hasJsMatcher == null || remotes.hasJsMatcher;
       
   if (remotes.withPrefetch && remotes.hasJsMatcher !== false) {
     __webpack_require__.F.j = chunkId => {
@@ -1466,12 +1474,17 @@ function createRuntime({
     }
   };
       
-  __webpack_require__.hmrM = () => {
-    if (typeof fetch === 'undefined') throw new Error('No browser support: need fetch API');
-    return fetch(__webpack_require__.p + __webpack_require__.hmrF()).then(response => {
-      if (response.status === 404) return; // no update available
-      if (!response.ok) throw new Error('Failed to fetch update manifest ' + response.statusText);
-      return response.json();
+  __webpack_require__.hmrM = (requestTimeout) => {
+    requestTimeout = requestTimeout || 10000;
+    return new Promise(async function (resolve, reject) {
+      const requestPath = __webpack_require__.p + __webpack_require__.hmrF();
+      try {
+        let update = JSON.parse(await fetch(requestPath, { timeout: requestTimeout }));
+        resolve(webpackVersion >= 5 ? update : undefined);
+      } catch (e) {
+        if (e && e.xhr && e.xhr.status === 404) return resolve();
+        reject(e);
+      }
     });
   };
       
@@ -1504,6 +1517,10 @@ function createRuntime({
   // install a JSONP callback for chunk loading
   function webpackJsonpCallback(data) {
     let [chunkIds, moreModules, runtime, executeModules] = data;
+    if (webpackVersion < 5) {
+      executeModules = runtime;
+      runtime = undefined;
+    }
     // add "moreModules" to the modules object,
     // then flag all "chunkIds" as loaded and fire callback
     let moduleId; let chunkId; 

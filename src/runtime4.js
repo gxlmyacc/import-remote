@@ -131,7 +131,7 @@ function createRuntime({
     return new Promise(async function (resolve, reject) {
       const requestPath = __webpack_require__.p + '' + hotCurrentHash + '.hot-update.json';
       try {
-        let update = JSON.parse(await fetch(requestPath));
+        let update = JSON.parse(await fetch(requestPath, { timeout: requestTimeout }));
         resolve(update);
       } catch (e) {
         if (e && e.xhr && e.xhr.status === 404) return resolve();

@@ -4,7 +4,6 @@ import {
   joinUrl, isFunction, getHostFromUrl, resolveRelativeUrl,
   innumerable, isPlainObject, globalCached, checkRemoteModuleWebpack
 } from './utils';
-import createRuntime4 from './runtime4';
 import createRuntime5 from './runtime5';
 import importJs from './importJs';
 import importJson from './importJson';
@@ -274,7 +273,7 @@ function remote(url, options = {}) {
           Object.assign(ctx, remote.globals, globals);
           ctx.__HOST__ = host;
           ctx.__windowProxy__ = createWindowProxy(windowProxy, manifest.scopeName);
-          ctx.require = (manifest.webpackVersion >= 5 ? createRuntime5 : createRuntime4)({ 
+          ctx.require = createRuntime5({ 
             ...manifest, 
             scopeName,
             host, 
