@@ -854,7 +854,7 @@ function createRuntime({
     });
     let installedModules = {};
     let moduleToHandlerMapping = {};
-    Object.keys(remotes.moduleIdToSourceMapping).forEach(id => {
+    Object.keys(remotes.moduleIdToSourceMapping || {}).forEach(id => {
       let [shareScope, shareKey, version, chunkIds, entryId] = remotes.moduleIdToSourceMapping[id];
       moduleToHandlerMapping[id] = () => loadSingletonVersionCheckFallback(
         shareScope, 
