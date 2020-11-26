@@ -1,5 +1,5 @@
 
-import { decode, encode } from 'js-base64';
+import base64 from 'base-64';
 import { globalCached, fetch, innumerable, requireFromStr, DEFAULT_TIMEOUT } from './utils';
 
 const scopeNameRegx = /\(import-remote\)\/((?:@[^/]+\/[^/]+)|(?:[^@][^/]+))/;
@@ -24,12 +24,12 @@ function importJs(href, {
             );
           }
           if (host) {
-            const regx = new RegExp(`\\/\\/# sourceMappingURL=data:application\\/json;charset=utf-8;base64,([0-9A-Za-z=]+)${
+            const regx = new RegExp(`\\/\\/# sourceMappingURL=data:application\\/json;charset=utf-8;base64,([0-9A-Za-z=/]+)${
               isEval ? '\\\\n' : '(?:\\n|$)'
             }`, 'g');
             source = source.replace(regx, 
               (m, p1) => {
-                let sourcemap = JSON.parse(decode(p1));
+                let sourcemap = JSON.parse(base64.decode(p1));
                 sourcemap.sources = sourcemap.sources.map(src => {
                   if (scopeName) {
                     let [, srcScopeName] = src.match(scopeNameRegx) || [];
@@ -39,7 +39,7 @@ function importJs(href, {
                   }
                   return /^https?:/.test(src) ? src : (host + src);
                 });
-                return `//# sourceMappingURL=data:application/json;charset=utf-8;base64,${encode(JSON.stringify(sourcemap))}${
+                return `//# sourceMappingURL=data:application/json;charset=utf-8;base64,${base64.encode(JSON.stringify(sourcemap))}${
                   isEval ? '\\n' : m.endsWith('\n') ? '\n' : ''
                 }`;
               });
