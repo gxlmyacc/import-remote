@@ -8,7 +8,8 @@
     "import",
     "remote",
     "module",
-    "import-remote"
+    "import-remote",
+    "micro-frontend"
   ],
   "bugs": "https://github.com/gxlmyacc/import-remote/issues",
   "homepage": "https://github.com/gxlmyacc/import-remote",
