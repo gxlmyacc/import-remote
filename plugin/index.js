@@ -103,15 +103,15 @@ function resolveModuleFile(compilation, module) {
 * @param {ProcessedModuleWebpackOptions} options
 * @returns 
 */
-function resolveShared(self, compilation, options) {
-  if (!options.shared || !options.shared.length) return [];
-  const shared = options.shared.map(v => {
+function resolveShareModules(self, compilation, options) {
+  if (!options.shareModules || !options.shareModules.length) return [];
+  const shareModules = options.shareModules.map(v => {
     if (typeof v === 'object') return;
     return { name: v };
   });
   const ret = [];
   [...compilation.modules].filter(m => m.type === 'javascript/auto').forEach(m => {
-    let shareItem = shared.find(v => {
+    let shareItem = shareModules.find(v => {
       // @ts-ignore
       if (!m.rawRequest) return;
       // @ts-ignore
@@ -995,7 +995,7 @@ class ModuleWebpackPlugin {
       // is hot
       hot: Boolean(compilation.compiler.watchMode),
       remotes: {},
-      shared: [],
+      shareModules: [],
       // the webpack externals
       externals: [],
       // Will contian all chunk files
@@ -1041,7 +1041,7 @@ class ModuleWebpackPlugin {
     });
     // if (~runtimeChunkIdx) compilation.chunks.splice(runtimeChunkIdx, 1);
 
-    assets.shared = resolveShared(this, compilation, this.options);
+    assets.shareModules = resolveShareModules(this, compilation, this.options);
     assets.remotes = resolveRemotes(this, compilation, this.options);
     assets.externals = resolveExternals(compilation, this.options);
 

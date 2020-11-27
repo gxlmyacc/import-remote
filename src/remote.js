@@ -361,10 +361,14 @@ function remote(url, options = {}) {
           __require__.m[external.id] = fn;
         });
 
-        manifest.shared && manifest.shared.forEach(item => {
-          if (!__require__.m[item.id]) return;
+        manifest.shareModules && manifest.shareModules.forEach(item => {
+          if (__require__.m[item.id] && __require__.m[item.id].__import_remote_shared__) return;
           let newModule = requireExternal(item);
-          if (newModule !== undefined) __require__.m[item.id] = newModule;
+          if (newModule !== undefined) {
+            const fn = module => module.exports = newModule;
+            fn.__import_remote_shared__ = true;
+            __require__.m[item.id] = fn;
+          }
         });
 
         let result = __require__(manifest.entryId || manifest.entryFile, manifest.entryFile);

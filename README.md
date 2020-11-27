@@ -272,7 +272,8 @@ plugins: [
 
 |属性名|类型|默认值|说明|
 |:--:|:--:|:-----:|:----------|
-|**`commonModules`**|`[{ name: string, url: string, scoped?: boolean }]`|`[]`|依赖的公共模块，如果配置了公共模块，则模块的依赖将场上从这些公共模块中加载依赖|
+|**`commonModules`**|`[{ name: string, url: string, scoped?: boolean }]`|`[]`|依赖的公共模块，如果配置了公共模块，则模块的依赖将尝试从这些公共模块中加载依赖。该功能依赖于webpack的externals|
+|**`shareModules`**|`[string|{ name: string, var: string }]`|`[]`|共享模块列表，如果配置了共享模块，则模块的这些依赖将优先使用宿主应用externals参数中传递的依赖，如果未在宿主应用中找到，才使用自己的该模块。该功能不依赖webpack的externals。
 |**`globalToScopes`**|`string[]`|`[]`|需要局部化的全局变量，该数组中声明的名称，在加载资源时将会从源代码中将其替换为从某个私有变量中读取这些值|
 
 
@@ -371,6 +372,50 @@ module.exports = {
   1. 首先从宿主使用加载方法`remote`中配置的`externals`中寻找依赖；
 
   2. 第一步没找到依赖，将会从模块中寻找依赖；
+
+#### 共享模块
+
+通过共享模块，使多个远程应用间使用共同的依赖。
+
+这是一个共享模块包的配置示例：
+
+**webpack.config.js**
+
+```js
+const ImportRemotePlugin = require('import-remote/plugin')
+
+module.exports = {
+  entry: {
+    index: 'index.js'
+  }
+  output: {
+    filename: '[name]-[chunkhash:5].js'
+  },
+  plugins: [
+    new ImportRemotePlugin({
+      shareModules: [
+        { name: 'react', var: 'react' },
+        { name: 'react-dom', var: 'ReactDOM' }
+      ]
+    })
+  ]
+}
+```
+
+宿主传递共享模块的方式：
+
+```js
+import remote from 'import-remote';
+
+// 通过await等待模块加载完毕
+const testIndex = await remote('http://localhost:3000/test/index.js', {
+  // 共享模块也可以通过externals来传递
+  externals: { 
+    react: require('react'), 
+    'react-dom': require('react-dom'),
+  }
+});
+```
 
 #### 全局变量私有化
 
