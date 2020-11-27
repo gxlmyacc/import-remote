@@ -76,6 +76,58 @@ function resolveModulePath(compilation, moduleName) {
   return path.relative(compilation.options.context, v).replace(/\\/g, '/');
 }
 
+function resolveModuleFile(compilation, module) {
+  // @ts-ignore
+  let request = module.request;
+  if (!request
+    // @ts-ignore
+    && module._identifier
+    // @ts-ignore
+    && module._identifier.startsWith('multi ')) {
+    // @ts-ignore
+    module = module.dependencies[module.dependencies.length - 1];
+    // @ts-ignore
+    request = module && module.request;
+  }
+  if (!request) return '';
+  if (request) request = request.split('?')[0];
+  return path.isAbsolute(request) 
+    ? path.relative(compilation.options.context, request).replace(/\\/g, '/')
+    : request;
+}
+
+/**
+ * resolve webpack remotes
+ * @param {ModuleWebpackPlugin} self
+ * @param {WebpackCompilation} compilation
+* @param {ProcessedModuleWebpackOptions} options
+* @returns 
+*/
+function resolveShared(self, compilation, options) {
+  if (!options.shared || !options.shared.length) return [];
+  const shared = options.shared.map(v => {
+    if (typeof v === 'object') return;
+    return { name: v };
+  });
+  const ret = [];
+  [...compilation.modules].filter(m => m.type === 'javascript/auto').forEach(m => {
+    let shareItem = shared.find(v => {
+      // @ts-ignore
+      if (!m.rawRequest) return;
+      // @ts-ignore
+      if (typeof v.name === 'string') return v.name === m.rawRequest;
+      // @ts-ignore
+      if (v.name instanceof RegExp) return v.name.test(m.rawRequest);
+    });
+    if (!shareItem) return;
+    // @ts-ignore
+    let item = { name: m.rawRequest, id: m.id };
+    if (shareItem.var) item.var = shareItem.var;
+    ret.push(item);
+  });
+  return ret;
+}
+
 /**
  * resolve webpack remotes
  * @param {ModuleWebpackPlugin} self
@@ -86,8 +138,6 @@ function resolveModulePath(compilation, moduleName) {
 function resolveRemotes(self, compilation, options) { 
   const remotes = { 
     withBaseURI: self.withBaseURI,
-    withPreload: self.withPreload,
-    withPrefetch: self.withPrefetch,
     hasJsMatcher: self.hasJsMatcher,
     chunkMapping: {}, 
     idToExternalAndNameMapping: {},
@@ -235,8 +285,6 @@ class ModuleWebpackPlugin {
       base: false,
     };
 
-    this.withPreload = false;
-    this.withPrefetch = false;
     this.hasJsMatcher = null;
     this.withBaseURI = false;
     this.initCodePerScope = {}; 
@@ -335,14 +383,6 @@ class ModuleWebpackPlugin {
           const withBaseURI = set.has(RuntimeGlobals.baseURI);
           if (withBaseURI) self.withBaseURI = true;
 
-          const withPrefetch = set.has(
-            RuntimeGlobals.prefetchChunkHandlers
-          );
-          if (withPrefetch) self.withPrefetch = true;
-          const withPreload = set.has(
-            RuntimeGlobals.preloadChunkHandlers
-          );
-          if (withPreload) self.withPreload = true;
           let hasJsMatcher = compileBooleanMatcher(
             // @ts-ignore
             compilation.chunkGraph.getChunkConditionMap(chunk, chunkHasJs)
@@ -955,6 +995,7 @@ class ModuleWebpackPlugin {
       // is hot
       hot: Boolean(compilation.compiler.watchMode),
       remotes: {},
+      shared: [],
       // the webpack externals
       externals: [],
       // Will contian all chunk files
@@ -1000,6 +1041,7 @@ class ModuleWebpackPlugin {
     });
     // if (~runtimeChunkIdx) compilation.chunks.splice(runtimeChunkIdx, 1);
 
+    assets.shared = resolveShared(this, compilation, this.options);
     assets.remotes = resolveRemotes(this, compilation, this.options);
     assets.externals = resolveExternals(compilation, this.options);
 
@@ -1025,24 +1067,8 @@ class ModuleWebpackPlugin {
         return assets.entryId;
       }
       if (entryModule.buildMeta.providedExports || entryModule.buildMeta.exportsType) {
-        // @ts-ignore
-        let request = entryModule.request;
-        if (!request
-          // @ts-ignore
-          && entryModule._identifier
-          // @ts-ignore
-          && entryModule._identifier.startsWith('multi ')) {
-          // @ts-ignore
-          entryModule = entryModule.dependencies[entryModule.dependencies.length - 1];
-          // @ts-ignore
-          request = entryModule && entryModule.request;
-        }
-        if (!request) return;
-        if (request) request = request.split('?')[0];
-        assets.entryFile = path.isAbsolute(request) 
-          ? path.relative(compilation.options.context, request).replace(/\\/g, '/')
-          : request;
-        return true;
+        assets.entryFile = resolveModuleFile(compilation, entryModule);
+        return Boolean(assets.entryFile);
       }
     };
     const entryChunk = compilation.chunks.find(c => {

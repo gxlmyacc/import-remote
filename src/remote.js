@@ -360,6 +360,13 @@ function remote(url, options = {}) {
           fn.__import_remote_external__ = true;
           __require__.m[external.id] = fn;
         });
+
+        manifest.shared && manifest.shared.forEach(item => {
+          if (!__require__.m[item.id]) return;
+          let newModule = requireExternal(item);
+          if (newModule !== undefined) __require__.m[item.id] = newModule;
+        });
+
         let result = __require__(manifest.entryId || manifest.entryFile, manifest.entryFile);
 
         if (useEsModuleDefault && result && result.__esModule) result = result.default;

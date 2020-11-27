@@ -2,6 +2,7 @@
 import { DEFAULT_TIMEOUT, joinUrl, fetch, globalCached } from './utils';
 import importCss from './importCss';
 import importJs from './importJs';
+import { versionLt, rangeToString, satisfy } from './semver';
 
 function createRuntime({
   jsonpFunction = 'webpackJsonp',
@@ -687,72 +688,6 @@ function createRuntime({
     
   /* webpack/runtime/consumes */
   (() => {
-    let parseVersion = str => {
-    // see webpack/lib/util/semver.js for original code
-      let p = p => p.split('.').map((p => (+p == p ? +p : p))); 
-      let n = /^([^-+]+)?(?:-([^+]+))?(?:\+(.+))?$/.exec(str); 
-      let r = n[1] ? p(n[1]) : [];
-      // eslint-disable-next-line no-sequences
-      return n[2] && (r.length++, r.push.apply(r, p(n[2]))), n[3] && (r.push([]), r.push.apply(r, p(n[3]))), r;
-    };
-    let versionLt = (a, b) => {
-    // see webpack/lib/util/semver.js for original code
-      a = parseVersion(a); 
-      b = parseVersion(b); 
-      for (let r = 0; ;) {
-        if (r >= a.length) return r < b.length && (typeof b[r])[0] != 'u'; let e = a[r]; 
-        let n = (typeof e)[0]; if (r >= b.length) return n == 'u'; let t = b[r]; 
-        let f = (typeof t)[0]; 
-        if (n != f) return (n == 'o' && f == 'n') || (f == 's' || n == 'u'); 
-        if (n != 'o' && n != 'u' && e != t) return e < t; r++; 
-      }
-    };
-    let rangeToString = range => {
-      // see webpack/lib/util/semver.js for original code
-      if (range.length === 1) return '*'; if (0 in range) {
-        let r = ''; 
-        let n = range[0]; 
-        r += n == 0 ? '>=' : n == -1 ? '<' : n == 1 ? '^' : n == 2 ? '~' : n > 0 ? '=' : '!='; 
-        for (let e = 1, a = 1; a < range.length; a++) { 
-          e--; 
-          let t = range[a];
-          r += (typeof t)[0] == 'u' ? '-' : (e > 0 ? '.' : '') + (e = 2, t); 
-        } 
-        return r; 
-      } let g = []; 
-      for (let a = 1; a < range.length; a++) { 
-        let t = range[a]; 
-        g.push(t === 0 ? 'not(' + o() + ')' : t === 1 ? '(' + o() + ' || ' + o() + ')' : t === 2 ? g.pop() + ' ' + g.pop() : rangeToString(t)); 
-      } 
-      return o(); function o() { return g.pop().replace(/^\((.+)\)$/, '$1'); }
-    };
-    let satisfy = (range, version) => {
-      // see webpack/lib/util/semver.js for original code
-      if (0 in range) {
-        version = parseVersion(version); let e = range[0]; 
-        let r = e < 0; r && (e = -e - 1); 
-        for (let n = 0, i = 1, a = !0; ;i++, n++) {
-          let f; let s; 
-          let g = i < range.length ? (typeof range[i])[0] : ''; 
-          if (n >= version.length || (s = (typeof (f = version[n]))[0]) == 'o') {
-            // eslint-disable-next-line no-mixed-operators
-            return !a || (g == 'u' ? i > e && !r : g == '' != r); 
-          }
-          // eslint-disable-next-line max-len
-          if (s == 'u') { if (!a || g != 'u') return !1; } else if (a) if (g == s) if (i <= e) { if (f != range[i]) return !1; } else { if (r ? f > range[i] : f < range[i]) return !1; f != range[i] && (a = !1); } 
-          // eslint-disable-next-line no-unused-expressions, no-mixed-operators
-          else if (g != 's' && g != 'n') { if (r || i <= e) return !1; a = !1; i--; } else { if (i <= e || s < g != r) return !1; a = !1; } 
-          // eslint-disable-next-line no-unused-expressions
-          else g != 's' && g != 'n' && (a = !1, i--); 
-        } 
-      } 
-      let t = []; 
-      let o = t.pop.bind(t); 
-      for (let n = 1; n < range.length; n++) { 
-        let u = range[n]; t.push(u == 1 ? o() | o() : u == 2 ? o() & o() : u ? satisfy(u, version) : !o()); 
-      } 
-      return !!o();
-    };
     let ensureExistence = (scopeName, key) => {
       let scope = __webpack_require__.S[scopeName];
       if (!scope || !__webpack_require__.o(scope, key)) throw new Error('Shared module ' + key + " doesn't exist in shared scope " + scopeName);
@@ -1013,28 +948,6 @@ function createRuntime({
       ? chunkId => !(new RegExp(remotes.hasJsMatcher).test(chunkId))
       : () => remotes.hasJsMatcher == null || remotes.hasJsMatcher;
       
-  if (remotes.withPrefetch && remotes.hasJsMatcher !== false) {
-    __webpack_require__.F.j = chunkId => {
-      if ((!__webpack_require__.o(installedChunks, chunkId) || installedChunks[chunkId] === undefined) 
-        && hasJsMatcher(chunkId)) {
-        installedChunks[chunkId] = null;
-        let href = __webpack_require__.p + __webpack_require__.u(chunkId);
-        importJs(href, { timeout, global: context, cached, scopeName, host, devtool, beforeSource });
-      }
-    };
-  }
-      
-  if (remotes.withPreload && remotes.hasJsMatcher !== false) {
-    __webpack_require__.H.j = chunkId => {
-      if ((!__webpack_require__.o(installedChunks, chunkId) || installedChunks[chunkId] === undefined) 
-        && hasJsMatcher(chunkId)) {
-        installedChunks[chunkId] = null;
-        let href = __webpack_require__.p + __webpack_require__.u(chunkId);
-        importJs(href, { timeout, global: context, cached, scopeName, host, devtool, beforeSource });
-      }
-    };
-  }
-      
   let currentUpdatedModulesList;
   let waitingUpdateResolves = {};
   function loadUpdateChunk(chunkId) {
@@ -1059,7 +972,12 @@ function createRuntime({
       __webpack_require__.l(url, loadingEnded);
     });
   }
-      
+
+  let currentUpdate;
+  let currentUpdateChunks;
+  let currentUpdateRemovedChunks;
+  let currentUpdateRuntime;
+
   context[hotUpdateGlobal || 'webpackHotUpdate'] = (chunkId, moreModules, runtime) => {
     if (currentUpdate) {
       for (let moduleId in moreModules) {
@@ -1076,10 +994,7 @@ function createRuntime({
     }
   };
       
-  let currentUpdateChunks;
-  let currentUpdate;
-  let currentUpdateRemovedChunks;
-  let currentUpdateRuntime;
+
   function applyHandler(options) {
     if (__webpack_require__.f) delete __webpack_require__.f.jsonpHmr;
     currentUpdateChunks = undefined;
@@ -1541,7 +1456,8 @@ function createRuntime({
       installedChunks[chunkId] = 0;
     }
     for (moduleId in moreModules) {
-      if (__webpack_require__.o(moreModules, moduleId)) {
+      if (__webpack_require__.o(moreModules, moduleId) 
+        && !__webpack_require__.o(__webpack_require__.m, moduleId)) {
         __webpack_require__.m[moduleId] = moreModules[moduleId];
       }
     }

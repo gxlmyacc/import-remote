@@ -25,8 +25,8 @@ declare namespace ModuleWebpackPlugin {
     hash: string,
     jsonpFunction: string,
     hot: boolean,
-    remotes: {
-    },
+    shared: Array<any>,
+    remotes: {},
     externals: Array<any>,
     chunks: {
       files: {

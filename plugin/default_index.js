@@ -8,7 +8,7 @@ module.exports = function ({
   webpackVersion,
   webpackConfig,
   moduleWebpackPlugin: {
-    scopeName, entryFile, entryId, hash, modulesMapFile, jsonpFunction, remotes,
+    scopeName, entryFile, entryId, hash, modulesMapFile, jsonpFunction, remotes, shared,
     hot, chunks, externals, publicPath, entrys, options 
   }
 }) {
@@ -35,6 +35,7 @@ module.exports = function ({
     uniqueName: webpackConfig.output.uniqueName || '',
     scopeName,
     publicPath,
+    shared,
     remotes,
     externals,
     jsChunks: chunks.files.js,
