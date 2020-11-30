@@ -2,6 +2,7 @@
 import { DEFAULT_TIMEOUT, joinUrl, fetch, globalCached } from './utils';
 import importCss from './importCss';
 import importJs from './importJs';
+import jsonp from './jsonp';
 import { versionLt, rangeToString, satisfy } from './semver';
 
 function createRuntime({
@@ -196,8 +197,20 @@ function createRuntime({
       doneFns && doneFns.forEach(fn => fn && fn(ex));
     };
     if (!Array.isArray(url)) url = [url];
-    return Promise.all(url.map(u => importJs(u, { timeout, global: context, cached, scopeName, host, devtool, beforeSource }))) 
-      .then(() => onScriptComplete())
+    let fn = webpackVersion < 5 || !key || key.startsWith('chunk-')
+      ? importJs
+      : jsonp;
+    return Promise.all(url.map(u => fn(u, { 
+      timeout,
+      global: context,
+      cached,
+      scopeName,
+      host,
+      devtool,
+      beforeSource, 
+      key: key ? `${uniqueName}:${key}` : ''
+    }))) 
+      .then(onScriptComplete)
       .catch(onScriptComplete);
   };
     

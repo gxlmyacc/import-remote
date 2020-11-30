@@ -5,13 +5,17 @@ import { innumerable, mergeObject } from './utils';
 import importJs from './importJs';
 import importJson from './importJson';
 import importCss from './importCss';
+import jsonp from './jsonp';
 
 export {
   RemoteModule,
   createRequireFactory,
   importJs,
   importJson,
-  importCss
+  importCss,
+  jsonp,
+  mergeObject,
+  innumerable
 };
 
 const remoteExternal = {
@@ -20,7 +24,9 @@ const remoteExternal = {
   importJs,
   importJson,
   importCss,
+  jsonp,
   mergeObject,
+  innumerable,
   default: remote
 };
 

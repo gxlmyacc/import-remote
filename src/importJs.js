@@ -4,6 +4,7 @@ import { globalCached, fetch, innumerable, requireFromStr, DEFAULT_TIMEOUT } fro
 
 const scopeNameRegx = /\(import-remote\)\/((?:@[^/]+\/[^/]+)|(?:[^@][^/]+))/;
 
+
 function importJs(href, { 
   cached = globalCached, timeout = DEFAULT_TIMEOUT, global, sync, scopeName, host, devtool, nocache, beforeSource 
 } = {}) {

@@ -76,6 +76,12 @@ function resolveModulePath(compilation, moduleName) {
   return path.relative(compilation.options.context, v).replace(/\\/g, '/');
 }
 
+function resolveModuleResource(compilation, resource = '') {
+  resource = path.relative(compilation.options.context, resource).replace(/\\/g, '/');
+  if (!/^\.\.?\//.test(resource)) resource = './' + resource;
+  return resource;
+}
+
 function resolveModuleFile(compilation, module) {
   // @ts-ignore
   let request = module.request;
@@ -112,24 +118,26 @@ function resolveShareModules(self, compilation, options) {
   const ret = [];
   [...compilation.modules].filter(m => m.type === 'javascript/auto').forEach(m => {
     let isRegx;
+    // @ts-ignore
+    let rawRequest = m.rawRequest || '';
+    // @ts-ignore
+    let resource = m.resource || '';
+    if (resource) resource = resolveModuleResource(compilation, resource);
     let shareItem = shareModules.find(v => {
       isRegx = false;
-      // @ts-ignore
-      if (!m.rawRequest) return;
-      // @ts-ignore
-      if (typeof v.name === 'string') return v.name === m.rawRequest;
+      if (!rawRequest) return;
+      if (typeof v.name === 'string') return v.name === rawRequest;
       if (v.name instanceof RegExp) {
         isRegx = true;
-        // @ts-ignore
-        return v.name.test(m.resource);
+        return v.name.test(resource);
       }
+      if (typeof v.name === 'function') return v.name(resource, rawRequest, m);
     });
     if (!shareItem) return;
-    // @ts-ignore
-    let name = m.rawRequest;
+    let name = rawRequest;
     if (isRegx) {
       // @ts-ignore
-      const packageFile = findUp.sync('package.json', { cwd: m.resource });
+      const packageFile = findUp.sync('package.json', { cwd: path.dirname(m.resource) });
       if (!packageFile || !packageFile.includes('node_modules')) return;
       const pkg = require(packageFile);
       // @ts-ignore
@@ -697,44 +705,25 @@ class ModuleWebpackPlugin {
    */
   getModulesMapAsset(compilation) {
     const assets = {};
-
-    function resolvePath(modulePath = '') {
-      if (modulePath.includes('!')) {
-        let paths = modulePath.split('!').filter(Boolean);
-        modulePath = paths[paths.length - 1] || '';
-      }
-      return modulePath.split('?')[0];
-    }
     // @ts-ignore
     compilation.modules.forEach(module => {
       // @ts-ignore
-      if (module.externalType || ['runtime', 'remote-module'].includes(module.type) || !module.id) return;
-      let moduleId = module.id;
+      if (module.external || module.externalType || !module.resource
+        || ['runtime', 'remote-module'].includes(module.type) 
+        || module.id != null
+      ) return;
       const asset = {};
       // @ts-ignore
-      let request = resolvePath((module.userRequest || ''));
-      let modulePath = '';
+      let resource = resolveModuleResource(compilation, module.resource);
       // @ts-ignore
-      if (module.external) {
-        modulePath = resolveModulePath(compilation, request);
-      } else {
-        // @ts-ignore
-        if (module.resource) {
-          // @ts-ignore
-          modulePath = path.relative(compilation.options.context, module.resource).replace(/\\/g, '/');
-        }
-        if (!modulePath) return;
-        if (!/^\.\.?\//.test(modulePath)) modulePath = './' + modulePath;
-        // @ts-ignore
-        const packageFile = findUp.sync('package.json', { cwd: path.dirname(module.resource) });
-        if (packageFile && packageFile.includes('node_modules')) {
-          const pkg = require(packageFile);
-          asset.id = moduleId;
-          asset.name = pkg.name;
-          // asset.version = pkg.version;
-        }
-        assets[modulePath] = asset;
+      const packageFile = findUp.sync('package.json', { cwd: path.dirname(module.resource) });
+      if (packageFile && packageFile.includes('node_modules')) {
+        const pkg = require(packageFile);
+        asset.id = module.id;
+        asset.name = pkg.name;
       }
+      // asset.version = pkg.version;
+      assets[resource] = asset;
     });
     const assetStr = JSON.stringify(assets);
     return { 
