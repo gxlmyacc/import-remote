@@ -106,23 +106,38 @@ function resolveModuleFile(compilation, module) {
 function resolveShareModules(self, compilation, options) {
   if (!options.shareModules || !options.shareModules.length) return [];
   const shareModules = options.shareModules.map(v => {
-    if (typeof v === 'object') return;
-    return { name: v };
-  });
+    if (isPlainObject(v)) return v.name ? v : undefined;
+    return v ? { name: v } : undefined;
+  }).filter(Boolean);
   const ret = [];
   [...compilation.modules].filter(m => m.type === 'javascript/auto').forEach(m => {
+    let isRegx;
     let shareItem = shareModules.find(v => {
+      isRegx = false;
       // @ts-ignore
       if (!m.rawRequest) return;
       // @ts-ignore
       if (typeof v.name === 'string') return v.name === m.rawRequest;
-      // @ts-ignore
-      if (v.name instanceof RegExp) return v.name.test(m.rawRequest);
+      if (v.name instanceof RegExp) {
+        isRegx = true;
+        // @ts-ignore
+        return v.name.test(m.resource);
+      }
     });
     if (!shareItem) return;
     // @ts-ignore
-    let item = { name: m.rawRequest, id: m.id };
+    let name = m.rawRequest;
+    if (isRegx) {
+      // @ts-ignore
+      const packageFile = findUp.sync('package.json', { cwd: m.resource });
+      if (!packageFile || !packageFile.includes('node_modules')) return;
+      const pkg = require(packageFile);
+      // @ts-ignore
+      name = path.join(pkg.name, path.relative(path.dirname(packageFile), m.resource)).replace(/\\/g, '/');
+    }
+    let item = { name, id: m.id };
     if (shareItem.var) item.var = shareItem.var;
+    if (shareItem.version) item.version = shareItem.version;
     ret.push(item);
   });
   return ret;
@@ -693,7 +708,7 @@ class ModuleWebpackPlugin {
     // @ts-ignore
     compilation.modules.forEach(module => {
       // @ts-ignore
-      if (module.externalType || ['runtime', 'remote-module'].includes(module.type) || module.id === '') return;
+      if (module.externalType || ['runtime', 'remote-module'].includes(module.type) || !module.id) return;
       let moduleId = module.id;
       const asset = {};
       // @ts-ignore
@@ -703,32 +718,23 @@ class ModuleWebpackPlugin {
       if (module.external) {
         modulePath = resolveModulePath(compilation, request);
       } else {
-        if (!request) {
+        // @ts-ignore
+        if (module.resource) {
           // @ts-ignore
-          if (module._identifier && !module._identifier.startsWith('remote (default) ')) request = resolvePath(module._identifier.split(' ')[
-            // @ts-ignore
-            module._identifier.startsWith('multi ') ? 1 : 0
-          ]);
+          modulePath = path.relative(compilation.options.context, module.resource).replace(/\\/g, '/');
         }
-        if (!request) return;
-        
-        modulePath = (path.isAbsolute(request) 
-          ? path.relative(compilation.options.context, request)
-          : request).replace(/\\/g, '/');
-      }
-      if (modulePath) {
-        modulePath = modulePath.split('?')[0];
+        if (!modulePath) return;
         if (!/^\.\.?\//.test(modulePath)) modulePath = './' + modulePath;
-        const packageFile = findUp.sync('package.json', { cwd: path.resolve(compilation.compiler.context, modulePath) });
+        // @ts-ignore
+        const packageFile = findUp.sync('package.json', { cwd: path.dirname(module.resource) });
         if (packageFile && packageFile.includes('node_modules')) {
           const pkg = require(packageFile);
-          // if (modulePath !== moduleId) 
           asset.id = moduleId;
           asset.name = pkg.name;
           // asset.version = pkg.version;
         }
-      } 
-      assets[modulePath] = asset;
+        assets[modulePath] = asset;
+      }
     });
     const assetStr = JSON.stringify(assets);
     return { 
