@@ -35,7 +35,7 @@
 
 ### 和`webpack library`打包的区别
 
-  - `webpack library`的入口JS可以直接通过`script`标签加载；`import-remote`的入口JS需要专门提供的加载方法(`remote`)加载；
+  - `webpack library`的入口JS可以直接通过`script`标签加载，支持资源跨域；`import-remote`的入口JS需要专门提供的加载方法(`remote`)加载，该方法通过`ajax`请求加载资源，所以资源间的跨域问题需要使用者自行解决；
 
   - `webpack library`的模块依赖需要通过从`window`变量获取；`import-remote`的模块依赖只需在加载方法(`remote`)中传递进去即可；
 

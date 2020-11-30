@@ -5,6 +5,7 @@ import {
   innumerable, isPlainObject, globalCached, checkRemoteModuleWebpack
 } from './utils';
 import createRuntime5 from './runtime5';
+import { transformStyleHost, ATTR_CSS_TRANSFORMED } from './importCss';
 import importJs from './importJs';
 import importJson from './importJson';
 import { isRequireFactory } from './requireFactory';
@@ -49,7 +50,7 @@ function resolveModule(external, useId, modulesMap, __require__, nodeModulesPath
   if (__require__.m[moduleId]) return __require__(moduleId);
 }
 
-function createWindowProxy(windowProxy, scopeName) {
+function createWindowProxy(windowProxy, { scopeName, host, beforeSource } = {}) {
   const {
     // eslint-disable-next-line no-unused-vars
     context,
@@ -71,6 +72,12 @@ function createWindowProxy(windowProxy, scopeName) {
       const _appendChild = el.appendChild;
       el.appendChild = function appendChildProxy(node, scoped) {
         if (scoped === true && node && node.id && !node.id.startsWith(scopeName)) node.id = `${scopeName}-${node.id}`;
+        if (host && node.nodeName === 'STYLE' && node.getAttribute(ATTR_CSS_TRANSFORMED) == null) {
+          const text = node.innerText;
+          let newText = transformStyleHost(text, host);
+          if (beforeSource) newText = beforeSource(text, 'css');
+          if (text !== newText) node.innerText = newText;
+        }
         return _appendChild.call(this, node);
       };
       innumerable(el.appendChild, '_import_remote_proxy_', true);
@@ -272,7 +279,9 @@ function remote(url, options = {}) {
           ctx.__remoteModuleWebpack__ = __remoteModuleWebpack__;
           Object.assign(ctx, remote.globals, globals);
           ctx.__HOST__ = host;
-          ctx.__windowProxy__ = createWindowProxy(windowProxy, manifest.scopeName);
+          ctx.__windowProxy__ = createWindowProxy(windowProxy, {
+            scoped: manifest.scopeName, host, beforeSource
+          });
           ctx.require = createRuntime5({ 
             ...manifest, 
             scopeName,
@@ -280,7 +289,7 @@ function remote(url, options = {}) {
             context: ctx,
             cached,
             requireExternal,
-            beforeSource(source, type, href) {
+            beforeSource(source, type) {
               if (type === 'js') {
                 let sourcePrefix;
                 if (jsonpSourceRegx) {
@@ -303,7 +312,8 @@ function remote(url, options = {}) {
                 }
 
                 const checkOffset = (source, offset, match, replaceStr) => {
-                  if (offset && !match.startsWith('window.') && source[offset - 1] === '.') return match;
+                  if (/^ ?=/.test(source.substr(offset + match.length, 2))) return match;
+                  if (offset && !/^(window|self|global)\./.test(match) && source[offset - 1] === '.') return match;
                   return replaceStr;
                 };
                 const sources = splitSource(source, /[\s<>|&{}:,;()"'+=*![\]/\\]/);
@@ -335,7 +345,7 @@ function remote(url, options = {}) {
                 return sources.join('');
               }
 
-              if (beforeSource) source = beforeSource(source, type, href, manifest);
+              if (beforeSource) source = beforeSource(source, type, manifest);
 
               return source;
             } 

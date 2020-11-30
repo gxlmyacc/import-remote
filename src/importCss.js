@@ -1,5 +1,7 @@
 import { ATTR_SCOPE_NAME, fetch, globalCached, innumerable, DEFAULT_TIMEOUT, joinUrl } from './utils';
 
+const ATTR_CSS_TRANSFORMED = 'data-import-remote-transformed';
+
 function hasFetched(href, head) {
   if (!head) head = document.documentElement.getElementsByTagName('head')[0];
   let existingLinkTags = head.getElementsByTagName('link');
@@ -17,45 +19,10 @@ function hasFetched(href, head) {
   return false;
 }
 
-function fetchLink(href, { timeout = DEFAULT_TIMEOUT, head, scopeName } = {}) {
-  return new Promise(((resolve, reject) => {
-    if (!head) head = document.getElementsByTagName('head')[0];
-    if (hasFetched(href, head)) return resolve();
-
-    let timerId;
-    let linkTag = document.createElement('link');
-
-    let onStyleLoadError = function (event) {
-      // avoid mem leaks in IE.
-      linkTag.onerror = linkTag.onload = null;
-      clearTimeout(timerId);
-
-      let errorType = event && (event.type === 'load' ? 'missing' : event.type);
-      // eslint-disable-next-line no-mixed-operators
-      let realSrc = event && event.target && event.target.src || href;
-      let err = new Error('Loading CSS [' + href + '] failed.\n(' + errorType + ': ' + realSrc + ')');
-      err.code = 'CSS_CHUNK_LOAD_FAILED';
-      err.type = errorType;
-      err.request = realSrc;
-
-      linkTag.parentNode.removeChild(linkTag);
-      reject(err);
-    };
-
-    linkTag.rel = 'stylesheet';
-    linkTag.type = 'text/css';
-    linkTag.onload = resolve;
-    linkTag.onerror = onStyleLoadError;
-    if (scopeName) linkTag.setAttribute(ATTR_SCOPE_NAME, scopeName);
-    linkTag.href = href;
-
-
-    head.appendChild(linkTag);
-
-    timerId = setTimeout(function () {
-      onStyleLoadError({ type: 'timeout', target: linkTag });
-    }, timeout);
-  }));
+function transformStyleHost(source, host) {
+  if (!host || !source) return source;
+  if (/\/$/.test(host)) host = host.substr(0, host.length - 1);
+  return source.replace(/url\(([^)]+)\)/ig, (m, p1) => `url(${joinUrl(host, p1)})`);
 }
 
 function fetchStyle(href, { cached = globalCached, timeout = DEFAULT_TIMEOUT, sync, head, scopeName, host, beforeSource } = {}) {
@@ -67,15 +34,13 @@ function fetchStyle(href, { cached = globalCached, timeout = DEFAULT_TIMEOUT, sy
     if (hasFetched(href, head)) return resolve();
     fetch(href, { timeout, sync }).then(source => {
       try {
-        if (host && source) {
-          if (/\/$/.test(host)) host = host.substr(0, host.length - 1);
-          source = source.replace(/url\(([^)]+)\)/ig, (m, p1) => `url(${joinUrl(host, p1)})`);
-        }
+        transformStyleHost(source, host);
         if (beforeSource) source = beforeSource(source, 'css', href);
 
         let styleTag = document.createElement('style');
         styleTag.type = 'text/css';
         styleTag.setAttribute('data-href', href);
+        styleTag.setAttribute(ATTR_CSS_TRANSFORMED, '');
         if (scopeName) styleTag.setAttribute(ATTR_SCOPE_NAME, scopeName);
         styleTag.innerHTML = source;
         head.appendChild(styleTag);
@@ -89,8 +54,11 @@ function fetchStyle(href, { cached = globalCached, timeout = DEFAULT_TIMEOUT, sy
   });
 }
 
-export default function (href, { useStyle = true, ...options } = {}) {
-  return useStyle
-    ? fetchStyle(href, options)
-    : fetchLink(href, options);
+export {
+  transformStyleHost,
+  ATTR_CSS_TRANSFORMED
+};
+
+export default function (href, options = {}) {
+  return fetchStyle(href, options);
 }
