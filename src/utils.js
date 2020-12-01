@@ -138,6 +138,7 @@ function joinUrl(host, path) {
   if (!host || isAbsoluteUrl(path)) return path;
   if (/^\/[A-Za-z]/.test(host) && path.startsWith(host)) return path;
   if (/\/$/.test(host)) host = host.substr(0, host.length - 1);
+  if (/^\.\//.test(path)) path = path.substr(1, path.length);
   return `${host}${/^\//.test(path) ? path : `/${path}`}`;
 }
 

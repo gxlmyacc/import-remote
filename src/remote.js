@@ -9,6 +9,7 @@ import { transformStyleHost, ATTR_CSS_TRANSFORMED } from './importCss';
 import importJs from './importJs';
 import importJson from './importJson';
 import { isRequireFactory } from './requireFactory';
+import { versionLt, satisfy } from './semver';
 
 function createContext(context) {
   if (!context) context = {};
@@ -226,7 +227,7 @@ function remote(url, options = {}) {
         const moduleManifest = __remoteModuleWebpack__.__moduleManifests__[scopeName];
         moduleManifest.entrys[manifest.entryFile] = manifest;
 
-        const requireExternal = externalOrModuleId => {
+        const requireExternal = (externalOrModuleId, isShare) => {
           let external = externalOrModuleId;
           if (!isPlainObject(external)) external = { name: external };
           let result = externals[external.name];
@@ -251,7 +252,7 @@ function remote(url, options = {}) {
             });
           }
           if (result === undefined && external.var) result = window[external.var];
-          if (result === undefined) {
+          if (!isShare && result === undefined) {
             console.error(`warning:[import-remote:remote]module "${scopeName}" need external "${external.name}" !`);
           }
           return result;
@@ -312,7 +313,7 @@ function remote(url, options = {}) {
                 }
 
                 const checkOffset = (source, offset, match, replaceStr) => {
-                  if (/^ ?=/.test(source.substr(offset + match.length, 2))) return match;
+                  // if (/^ ?=/.test(source.substr(offset + match.length, 2))) return match;
                   if (offset && !/^(window|self|global)\./.test(match) && source[offset - 1] === '.') return match;
                   return replaceStr;
                 };
@@ -373,8 +374,36 @@ function remote(url, options = {}) {
 
         manifest.shareModules && manifest.shareModules.forEach(item => {
           if (__require__.m[item.id] && __require__.m[item.id].__import_remote_shared__) return;
-          let newModule = requireExternal(item);
+          let newModule = requireExternal(item, true);
           if (newModule !== undefined) {
+            let itemVersion = item.version;
+            if (itemVersion) {
+              let moduleVersion = newModule.version || '';
+              if (!moduleVersion && moduleVersion.__esModule && newModule.default && newModule.default.version) {
+                moduleVersion = newModule.default.version;
+              }
+              if (isPlainObject(itemVersion)) {
+                if (itemVersion === 'func') {
+                  const [args, body, bracket] = itemVersion.value;
+                  // eslint-disable-next-line no-new-func
+                  itemVersion = new Function(
+                    ...args, 
+                    `${bracket ? '' : 'return '}(\n${body}\n)`
+                  );
+                } else if (itemVersion.type === 'regx') {
+                  itemVersion = new RegExp(itemVersion.value);
+                }
+              }
+              if (isFunction(itemVersion) && !itemVersion(moduleVersion, newModule, { versionLt, satisfy })) return;
+              if (!moduleVersion) return;
+              if (typeof itemVersion === 'string' && versionLt(moduleVersion, itemVersion)) return;
+              if (Array.isArray(itemVersion)) {
+                const [ver1, ver2] = itemVersion;
+                if (ver1 && versionLt(moduleVersion, ver1)) return;
+                if (ver2 && versionLt(ver2, moduleVersion, true)) return;
+              }
+              if (itemVersion instanceof RegExp && !itemVersion.test(moduleVersion)) return;
+            }
             const fn = module => module.exports = newModule;
             fn.__import_remote_shared__ = true;
             __require__.m[item.id] = fn;

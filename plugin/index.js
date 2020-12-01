@@ -554,7 +554,6 @@ class ModuleWebpackPlugin {
       });
     }
 
-
     compiler.hooks.emit.tapAsync('ModuleWebpackPlugin',
       /**
        * Hook into the webpack emit phase

@@ -6,6 +6,10 @@ import importJs from './importJs';
 import importJson from './importJson';
 import importCss from './importCss';
 import jsonp from './jsonp';
+import { satisfy } from './semver';
+
+// eslint-disable-next-line no-undef
+const version = __packageversion;
 
 export {
   RemoteModule,
@@ -15,7 +19,9 @@ export {
   importCss,
   jsonp,
   mergeObject,
-  innumerable
+  innumerable,
+  satisfy,
+  version
 };
 
 const remoteExternal = {
@@ -27,7 +33,10 @@ const remoteExternal = {
   jsonp,
   mergeObject,
   innumerable,
-  default: remote
+  satisfy,
+  version,
+  
+  default: remote,
 };
 
 remote.use = function (plugin) {
