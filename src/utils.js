@@ -180,6 +180,46 @@ function mergeObject(target) {
   return ret;
 }
 
+function walkMainifest(target) {
+  let copied = [];
+  let _getItem = function (ret) {
+    if (ret && ret._t && ret._v) {
+      if (ret._t === 'f') {
+        const [args, body, bracket] = ret._v;
+        // eslint-disable-next-line no-new-func
+        ret = new Function(
+          ...args, 
+          `"use strict";${bracket ? '' : 'return ('}\n${body}${bracket ? '' : '\n)'}`
+        );
+      } else if (ret._t === 'r') {
+        ret = new RegExp(ret._v);
+      } else if (ret._t === 'd') {
+        ret = new Date(ret._v);
+      }
+    }
+    return ret;
+  };
+  function _walk(target, copied) {
+    if (!target || ~copied.indexOf(target)) return target;
+    let isObject;
+    if (isPlainObject(target)) {
+      if (target._t && target._v) return _getItem(target);
+      isObject = true;
+    }
+    if (isObject || Array.isArray(target)) {
+      copied.push(target);
+      Object.keys(target).forEach(key => {
+        target[key] = _walk(target[key], copied);
+      });
+    }
+
+    return target;
+  }
+
+
+  return _walk(target, copied);
+}
+
 function innumerable(
   obj,
   key,
@@ -202,6 +242,8 @@ export {
   DEFAULT_TIMEOUT,
   ATTR_SCOPE_NAME,
   globalCached,
+
+  walkMainifest,
 
   checkRemoteModuleWebpack,
   fetch,

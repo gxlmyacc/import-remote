@@ -53,17 +53,23 @@ module.exports = function ({
       let str = value.toString();
       let [, args = '', body = '', bracket] = str.match(/^(?:(?:function)?\s?[A-Za-z0-9_$]*\s?)?\(([A-Za-z0-9_$\s,]*)\)\s*(?:=>\s*)?{((?:.|\n)*)(})$/) || [];
       return {
-        type: 'func',
-        value: [
-          args.replace(/\s/g, '').split(',').map(a => a.trim()).filter(Boolean),  
+        _t: 'f',
+        _v: [
+          args.replace(/\s+/g, '').split(',').map(a => a.trim()).filter(Boolean),  
           body.trim().replace(/\b(let|const)\b/g, 'var'), 
           bracket].filter(Boolean)
       };
     }
     if (value instanceof RegExp) {
       return {
-        type: 'regx',
-        value: value.toString()
+        _t: 'r',
+        _v: value.toString()
+      };
+    }
+    if (value instanceof Date) {
+      return {
+        _t: 'd',
+        _v: value.toISOString()
       };
     }
     return value;

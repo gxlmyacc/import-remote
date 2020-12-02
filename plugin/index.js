@@ -20,6 +20,7 @@ const path = require('path');
 const findUp = require('find-up');
 // const webpack = require('webpack');
 const loaderUtils = require('loader-utils');
+// const { sync: getBabelOptionsSync } = require('read-babelrc-up');
 
 // @ts-ignore
 const WebPackError = require('webpack/lib/WebpackError.js');
@@ -146,6 +147,18 @@ function resolveShareModules(self, compilation, options) {
     let item = { name, id: m.id };
     if (shareItem.var) item.var = shareItem.var;
     if (shareItem.version) item.version = shareItem.version;
+    // if (typeof item.version === 'function') {
+    //   // const { babel } = getBabelOptionsSync();
+    //   let fnStr = item.version.toString();
+    //   if (/^[A-Za-z0-9_$]*\s?\(([A-Za-z0-9_$\s,]*)\)\s*{/.test(fnStr)) fnStr = `function ${fnStr}`;
+    //   let str = require('@babel/core').transformSync(fnStr, {
+    //     babelrc: true,
+    //     configFile: true,
+    //     plugins: ['@babel/plugin-transform-arrow-functions', '@babel/plugin-transform-destructuring']
+    //   });
+    //   console.log(str);
+    // }
+    if (shareItem.getVersion) item.getVersion = shareItem.getVersion;
     ret.push(item);
   });
   return ret;

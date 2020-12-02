@@ -1,7 +1,7 @@
 import escapeStringRegexp from 'escape-string-regexp';
 import { 
   DEFAULT_TIMEOUT, ATTR_SCOPE_NAME, 
-  joinUrl, isFunction, getHostFromUrl, resolveRelativeUrl,
+  joinUrl, isFunction, getHostFromUrl, resolveRelativeUrl, walkMainifest,
   innumerable, isPlainObject, globalCached, checkRemoteModuleWebpack
 } from './utils';
 import createRuntime5 from './runtime5';
@@ -162,7 +162,9 @@ function remote(url, options = {}) {
       };
       try {
         let manifest = await importJs(url, { timeout, global: window, nocache: true, sync, cached });
-        if (isFunction(manifest)) manifest = manifest(remote, options);
+        if (isFunction(manifest)) {
+          manifest = (manifest.iref ? walkMainifest : v => v)(manifest(remote, options));
+        }
         
         if (!manifest.scopeName) throw new Error('[import-remote:remote]scopeName can not be empty!');
         let scopeName = getScopeName(__remoteModuleWebpack__, manifest.scopeName, host);
@@ -379,25 +381,19 @@ function remote(url, options = {}) {
           if (newModule !== undefined) {
             let itemVersion = item.version;
             if (itemVersion) {
-              let moduleVersion = newModule.version || '';
-              if (!moduleVersion && moduleVersion.__esModule && newModule.default && newModule.default.version) {
-                moduleVersion = newModule.default.version;
-              }
-              if (isPlainObject(itemVersion)) {
-                if (itemVersion === 'func') {
-                  const [args, body, bracket] = itemVersion.value;
-                  // eslint-disable-next-line no-new-func
-                  itemVersion = new Function(
-                    ...args, 
-                    `"use strict";${bracket ? '' : 'return '}(\n${body}\n)`
-                  );
-                } else if (itemVersion.type === 'regx') {
-                  itemVersion = new RegExp(itemVersion.value);
+              let getVersion = item.getVersion;
+              let moduleVersion;
+              if (getVersion) {
+                moduleVersion = getVersion.call(item, newModule, __require__.m[item.id]);
+              } else {
+                moduleVersion = newModule.version || '';
+                if (!moduleVersion && newModule.__esModule && newModule.default && newModule.default.version) {
+                  moduleVersion = newModule.default.version;
                 }
-              }
-              if (isFunction(itemVersion) && !itemVersion(moduleVersion, newModule, { versionLt, satisfy })) return;
+              }    
+              if (isFunction(itemVersion) && !itemVersion.call(item, moduleVersion, newModule, { versionLt, satisfy })) return;
               if (!moduleVersion) return;
-              if (typeof itemVersion === 'string' && versionLt(moduleVersion, itemVersion)) return;
+              if (typeof itemVersion === 'string' && (moduleVersion === itemVersion)) return;
               if (Array.isArray(itemVersion)) {
                 const [ver1, ver2] = itemVersion;
                 if (ver1 && versionLt(moduleVersion, ver1)) return;

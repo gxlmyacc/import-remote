@@ -9,7 +9,7 @@ import jsonp from './jsonp';
 import { satisfy } from './semver';
 
 // eslint-disable-next-line no-undef
-const version = __packageversion;
+const version = typeof __packageversion === 'undefined' ? undefined : __packageversion;
 
 export {
   RemoteModule,
