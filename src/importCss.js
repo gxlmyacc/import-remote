@@ -34,7 +34,7 @@ function fetchStyle(href, { cached = globalCached, timeout = DEFAULT_TIMEOUT, sy
     if (hasFetched(href, head)) return resolve();
     fetch(href, { timeout, sync }).then(source => {
       try {
-        transformStyleHost(source, host);
+        source = transformStyleHost(source, host);
         if (beforeSource) source = beforeSource(source, 'css', href);
 
         let styleTag = document.createElement('style');
