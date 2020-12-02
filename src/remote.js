@@ -78,6 +78,7 @@ function createWindowProxy(windowProxy, { scopeName, host, beforeSource } = {}) 
           let newText = transformStyleHost(text, host);
           if (beforeSource) newText = beforeSource(text, 'css');
           if (text !== newText) node.innerText = newText;
+          node.setAttribute(ATTR_CSS_TRANSFORMED, '');
         }
         return _appendChild.call(this, node);
       };
@@ -172,7 +173,7 @@ function remote(url, options = {}) {
   
         Object.assign(externals, remote.externals);
   
-        let manifestExternals = manifest.externals.filter(v => !(v.name in externals));
+        let manifestExternals = manifest.externals.filter(v => !(v.name in externals) && (!v.var || !window[v.var]));
 
         let commonModuleOptions = manifest.commonModules || [];
         let commonModules = manifestExternals.length
@@ -388,7 +389,7 @@ function remote(url, options = {}) {
                   // eslint-disable-next-line no-new-func
                   itemVersion = new Function(
                     ...args, 
-                    `${bracket ? '' : 'return '}(\n${body}\n)`
+                    `"use strict";${bracket ? '' : 'return '}(\n${body}\n)`
                   );
                 } else if (itemVersion.type === 'regx') {
                   itemVersion = new RegExp(itemVersion.value);
