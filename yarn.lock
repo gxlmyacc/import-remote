@@ -1343,10 +1343,12 @@ babel-messages@^6.23.0:
   dependencies:
     babel-runtime "^6.22.0"
 
-babel-plugin-define-variables@^0.0.2:
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/babel-plugin-define-variables/-/babel-plugin-define-variables-0.0.2.tgz#c156baffed4aedc16c2560c785f06f97c22d6a99"
-  integrity sha512-XZ93TYg4UMfIDS4ZJW8RG/v9S2srDYuakSo3E9QJabPy/CnClrZd2rNkWGSKdQa8Kly6DgycCZP7S4VDHtmuYg==
+babel-plugin-define-variables@^0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/babel-plugin-define-variables/-/babel-plugin-define-variables-0.0.3.tgz#6c53bc39bcd87ed4675fe63ddd9a23143e9d3f21"
+  integrity sha512-+6EJ+7ur9XNvcX3WKg7+Jot1y2fUKQ4VckqvVgF4ZtsW+y+5e/ttLbg5A215OiAsI8UUHcGXZpiAEbDnp/VF4w==
+  dependencies:
+    hash-sum "^2.0.0"
 
 babel-plugin-dynamic-import-node@^2.3.3:
   version "2.3.3"
