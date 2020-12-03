@@ -1,6 +1,6 @@
 import escapeStringRegexp from 'escape-string-regexp';
 import { 
-  DEFAULT_TIMEOUT, ATTR_SCOPE_NAME, 
+  DEFAULT_TIMEOUT, ATTR_SCOPE_NAME,
   joinUrl, isFunction, getHostFromUrl, resolveRelativeUrl, walkMainifest,
   innumerable, isPlainObject, globalCached, checkRemoteModuleWebpack
 } from './utils';
@@ -62,6 +62,32 @@ function createWindowProxy(windowProxy, { scopeName, host, beforeSource } = {}) 
     }, 
     ...windowOthers 
   } = windowProxy;
+
+  const attachIframeLoad = el => {
+    if (!el || el.__import_remote_iframe_load__) return;
+    el.addEventListener && el.addEventListener('load', () => {
+      try {
+        if (el.src && !/^data:/.test(el.src)) return;
+        if (el.contentWindow && !el.contentWindow.__windowProxy__) {
+          el.contentWindow.__windowProxy__ = {
+            doc: {
+              html: el.contentDocument, 
+              body: el.contentDocument.body, 
+              head: el.contentDocument.head,
+              createElement() {
+                return el.contentDocument.createElement(...arguments);
+              },
+              getElementById() {
+                return el.contentDocument.getElementById(...arguments);
+              }
+            }
+          };
+        }
+      } catch (ex) { console.error(ex); }
+    }, true);
+    el.__import_remote_iframe_load__ = true;
+  };
+
   doc.getElementById = function getElementByIdProxy(id, scoped) {
     if (scoped === true && !id.startsWith(scopeName)) id = `${scopeName}-${id}`;
     return document.getElementById(id);
@@ -69,16 +95,19 @@ function createWindowProxy(windowProxy, { scopeName, host, beforeSource } = {}) 
   doc.createElement = function (tagName, options) {
     let el = document.createElement(tagName, options);
     if (scopeName) el.setAttribute(ATTR_SCOPE_NAME, scopeName);
+    if (el.nodeName === 'IFRAME') attachIframeLoad(el);
     if (!el.appendChild._import_remote_proxy_) {
       const _appendChild = el.appendChild;
       el.appendChild = function appendChildProxy(node, scoped) {
-        if (scoped === true && node && node.id && !node.id.startsWith(scopeName)) node.id = `${scopeName}-${node.id}`;
-        if (host && node.nodeName === 'STYLE' && node.getAttribute(ATTR_CSS_TRANSFORMED) == null) {
-          const text = node.innerText;
-          let newText = transformStyleHost(text, host);
-          if (beforeSource) newText = beforeSource(text, 'css');
-          if (text !== newText) node.innerText = newText;
-          node.setAttribute(ATTR_CSS_TRANSFORMED, '');
+        if (node) {
+          if (scoped === true && node.id && !node.id.startsWith(scopeName)) node.id = `${scopeName}-${node.id}`;
+          if (host && node.nodeName === 'STYLE' && node.getAttribute(ATTR_CSS_TRANSFORMED) == null) {
+            const text = node.innerText;
+            let newText = transformStyleHost(text, host);
+            if (beforeSource) newText = beforeSource(text, 'css');
+            if (text !== newText) node.innerText = newText;
+            node.setAttribute(ATTR_CSS_TRANSFORMED, '');
+          } else if (node.nodeName === 'IFRAME') attachIframeLoad(el);
         }
         return _appendChild.call(this, node);
       };
@@ -248,7 +277,7 @@ function remote(url, options = {}) {
               result = commonModuleContext && commonModuleManifest && resolveModule(external,
                 commonModuleManifest.useId,
                 commonModuleManifest.__modulesMap__, 
-                commonModuleContext.__require__,
+                commonModuleContext.require || commonModuleContext.__require__,
                 commonModuleManifest.nodeModulesPath,
                 manifest.nodeModulesPath);
               return result !== undefined;
@@ -263,7 +292,7 @@ function remote(url, options = {}) {
   
         if (!__remoteModuleWebpack__[scopeName]) {
           const globalObject = manifest.windowObject || 'window';
-          const newGlobalObject = manifest.globalObject;
+          const newGlobalObject = manifest.globalObject || '__context__';
           const libraryTarget = manifest.libraryTarget;
 
           const hotUpdateGlobal = manifest.hotUpdateGlobal || 'webpackHotUpdate';
@@ -278,6 +307,14 @@ function remote(url, options = {}) {
               globalObject}((\\[")|\\.)${jsonpFunction}("\\])?\\s?=\\s?${
               globalObject}((\\[")|\\.)${jsonpFunction}("\\])?\\s?\\|\\|\\s?\\[\\]\\)`)
             : null;
+
+          const batchReplaces = manifest.batchReplaces && manifest.batchReplaces.map(v => {
+            if (!Array.isArray(v)) return v;
+            return v.map(w => {
+              if (typeof w !== 'string') return w;
+              return w.replace(/%SCOPE_NAME%/g, scopeName);
+            });
+          });
 
           const ctx = __remoteModuleWebpack__[scopeName] = createContext(windowProxy.context);
           ctx.__remoteModuleWebpack__ = __remoteModuleWebpack__;
@@ -335,13 +372,17 @@ function remote(url, options = {}) {
                       : null,
                     ctx.__windowProxy__.removeEventListener
                       ? [/\bwindow\.removeEventListener\b/g, '__windowProxy__.removeEventListener']
-                      : null
+                      : null,
                   ]);
+                  if (batchReplaces) src = batchReplace(src, batchReplaces);
                   if (manifest.globalToScopes) {
-                    src = batchReplace(src, manifest.globalToScopes.map(varName => ([
-                      new RegExp(`\\b(?:global|window)\\.${escapeStringRegexp(varName)}\\b`),
-                      `__windowProxy__.globals.${varName}`
-                    ])));
+                    src = batchReplace(src, manifest.globalToScopes.map(varName => {
+                      if (Array.isArray(varName)) return varName;
+                      return [
+                        new RegExp(`\\b(?:global|window)\\.${escapeStringRegexp(varName)}\\b`),
+                        `__windowProxy__.globals.${varName}`
+                      ];
+                    }));
                   }
                   sources[i] = src;
                 });
@@ -384,7 +425,7 @@ function remote(url, options = {}) {
               let getVersion = item.getVersion;
               let moduleVersion;
               if (getVersion) {
-                moduleVersion = getVersion.call(item, newModule, __require__.m[item.id]);
+                moduleVersion = getVersion.call(item, newModule, __require__.m[item.id], __require__.m);
               } else {
                 moduleVersion = newModule.version || '';
                 if (!moduleVersion && newModule.__esModule && newModule.default && newModule.default.version) {

@@ -26,6 +26,7 @@ declare namespace ModuleWebpackPlugin {
     jsonpFunction: string,
     hot: boolean,
     shareModules: Array<any>,
+    batchReplaces: Array<any>,
     remotes: {},
     externals: Array<any>,
     chunks: {
@@ -117,8 +118,6 @@ declare namespace ModuleWebpackPlugin {
     ) => { [option: string]: any } | Promise<{ [option: string]: any }>)
     | { [option: string]: any };
 
-    replaceGlobalObject: boolean;
-
     globalToScopes: string[];
     /**
      * In addition to the options actually used by this plugin, you can use this hash to pass arbitrary data through
@@ -136,7 +135,6 @@ declare namespace ModuleWebpackPlugin {
     version: number,
     compilation: any;
     pkg: any;
-    globalObject: string;
     moduleWebpackPlugin: {
       scopeName: string,
       options: Options;

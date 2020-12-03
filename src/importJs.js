@@ -1,6 +1,6 @@
 
 import base64 from 'base-64';
-import { globalCached, fetch, innumerable, requireFromStr, DEFAULT_TIMEOUT } from './utils';
+import { globalCached, fetch, innumerable, requireFromStr, isEvalDevtool, DEFAULT_TIMEOUT } from './utils';
 
 const scopeNameRegx = /\(import-remote\)\/((?:@[^/]+\/[^/]+)|(?:[^@][^/]+))/;
 
@@ -14,7 +14,7 @@ function importJs(href, {
   return cached._js[href] = new Promise((resolve, reject) => {
     fetch(href, { timeout, sync, nocache, beforeSource }).then(source => {
       try {
-        if (devtool && (typeof devtool === 'string' && /^(eval|inline)/.test(String(devtool))) && host && source) {
+        if (devtool && isEvalDevtool(devtool) && host && source) {
           if (!/\/$/.test(host)) host += '/';
           const isEval = /^eval/.test(String(devtool));
           if (isEval) {

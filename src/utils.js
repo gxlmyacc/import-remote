@@ -148,6 +148,10 @@ function isPlainObject(obj) {
   return _toString.call(obj) === '[object Object]';
 }
 
+function isRegExp(obj) {
+  return _toString.call(obj) === '[object RegExp]';
+}
+
 function isFunction(fn) {
   return fn 
     && typeof fn === 'function'
@@ -192,7 +196,8 @@ function walkMainifest(target) {
           `"use strict";${bracket ? '' : 'return ('}\n${body}${bracket ? '' : '\n)'}`
         );
       } else if (ret._t === 'r') {
-        ret = new RegExp(ret._v);
+        // eslint-disable-next-line no-eval
+        ret = eval(ret._v);
       } else if (ret._t === 'd') {
         ret = new Date(ret._v);
       }
@@ -238,6 +243,10 @@ function getHostFromUrl(url) {
   return urls.join('/');
 }
 
+function isEvalDevtool(devtool) {
+  return typeof devtool === 'string' && /^(eval|inline)/.test(String(devtool));
+}
+
 export {
   DEFAULT_TIMEOUT,
   ATTR_SCOPE_NAME,
@@ -251,9 +260,11 @@ export {
   isAbsoluteUrl,
   resolveRelativeUrl,
   joinUrl,
+  isRegExp,
   isPlainObject,
   isFunction,
   mergeObject,
   innumerable,
-  getHostFromUrl
+  getHostFromUrl,
+  isEvalDevtool
 };

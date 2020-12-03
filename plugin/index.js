@@ -37,7 +37,7 @@ const fsReadFileAsync = promisify(fs.readFile);
 
 
 /**
- * resolve globalObject
+ * resolve scopeName
   * @param {ProcessedModuleWebpackOptions} options
   * @returns {string}
   */
@@ -46,20 +46,6 @@ function resolveScopeName(options) {
   let scopeName = options.scopeName;
   if (typeof scopeName === 'function') scopeName = scopeName(options);
   return scopeName;
-}
-
-/**
- * resolve globalObject
- * @param {WebpackCompilation} compilation
-  * @param {ProcessedModuleWebpackOptions} options
-  * @returns {string}
-  */
-function resolveGlobalObject(compilation, options) {
-  const outputOptions = compilation.mainTemplate.outputOptions;
-  const scopeName = resolveScopeName(options);
-  return scopeName
-    ? `${options.globalObject || '__context__'}.__remoteModuleWebpack__['${scopeName}']`
-    : outputOptions.globalObject;
 }
 
 /**
@@ -101,6 +87,33 @@ function resolveModuleFile(compilation, module) {
   return path.isAbsolute(request) 
     ? path.relative(compilation.options.context, request).replace(/\\/g, '/')
     : request;
+}
+
+function isEvalDevtool(devtool) {
+  return typeof devtool === 'string' && /^(eval|inline)/.test(String(devtool));
+}
+
+/**
+ * resolve batch replaces
+ * @param {ModuleWebpackPlugin} self
+ * @param {WebpackCompilation} compilation
+* @param {ProcessedModuleWebpackOptions} options
+* @returns 
+*/
+function resolveBatchReplaces(self, compilation, options) {
+  let ret = [];
+  const isEval = isEvalDevtool(compilation.options.devtool);
+  [...compilation.modules].filter(m => m.type === 'javascript/auto').forEach(m => {
+    // @ts-ignore
+    let rawRequest = m.rawRequest || '';
+    if (rawRequest === 'react-error-overlay') {
+      ret.push(...[
+        [/\bwindow\.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__\b/g, '__windowProxy__.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__'],
+        [/\bwindow\.parent\.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__\b/g, `window.parent.__remoteModuleWebpack__[${isEval ? '\\' : ''}"%SCOPE_NAME%${isEval ? '\\' : ''}"].__windowProxy__.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__`]
+      ]);
+    }
+  });
+  return ret;
 }
 
 /**
@@ -259,7 +272,6 @@ function templateParametersGenerator(compilation, assets, options, version) {
   return {
     version,
     compilation,
-    globalObject: resolveGlobalObject(compilation, options),
     pkg: options.package,
     webpackVersion: webpackMajorVersion,
     outputOptions: compilation.outputOptions,
@@ -315,7 +327,6 @@ class ModuleWebpackPlugin {
       chunks: 'all',
       excludeChunks: [],
       chunksSortMode: 'auto',
-      replaceGlobalObject: false,
       globalToScopes: [],
       scopeName: options => options.package.name,
       base: false,
@@ -950,42 +961,6 @@ class ModuleWebpackPlugin {
     const assetKeys = Object.keys(compilation.assets);
     const jsonpFunction = compilation.mainTemplate.outputOptions.chunkLoadingGlobal
       || compilation.mainTemplate.outputOptions.jsonpFunction;
-    if (this.options.replaceGlobalObject) {
-      const globalObject = compilation.mainTemplate.outputOptions.globalObject;
-      const newGlobalObject = resolveGlobalObject(compilation, this.options);
-      if (newGlobalObject !== globalObject) {
-        const jsRegexp = /\.(js)(\?|$)/;
-        const sourcePrefix1 = `(${globalObject}["${jsonpFunction}"] = ${globalObject}["${jsonpFunction}"] || [])`;
-        const sourcePrefix2 = `(${globalObject}.${jsonpFunction}=${globalObject}.${jsonpFunction}||[])`;
-        const newSourcePrefix1 = `(${newGlobalObject}['${jsonpFunction}']=${newGlobalObject}['${jsonpFunction}']||[])`;
-        const handleSource = source => {
-          if (!source || typeof source !== 'string') return source;
-          if (source.startsWith(sourcePrefix1)) return newSourcePrefix1 + source.substr(sourcePrefix1.length);
-          if (source.startsWith(sourcePrefix2)) return newSourcePrefix1 + source.substr(sourcePrefix2.length);
-          return source;
-        };
-        assetKeys.forEach(key => {
-          if (!jsRegexp.test(key)) return;
-          const asset = compilation.assets[key];
-          // @ts-ignore
-          if (asset.children) {
-            // @ts-ignore
-            asset.children.forEach(source => {
-              const value = handleSource(source._value);
-              if (value === source._value) return;
-              source._value = value;
-            });
-          } else if (asset.source) {
-            // @ts-ignore
-            let source = asset.source();
-            const value = handleSource(source);
-            if (value === source) return;
-            asset.source = () => value;
-            asset.size = () => value.length;
-          }
-        });
-      }
-    }
 
     const assets = {
       modulesMapFile: this.options.modulesMapFile,
@@ -1003,6 +978,7 @@ class ModuleWebpackPlugin {
       hot: Boolean(compilation.compiler.watchMode),
       remotes: {},
       shareModules: [],
+      batchReplaces: [],
       // the webpack externals
       externals: [],
       // Will contian all chunk files
@@ -1048,6 +1024,7 @@ class ModuleWebpackPlugin {
     });
     // if (~runtimeChunkIdx) compilation.chunks.splice(runtimeChunkIdx, 1);
 
+    assets.batchReplaces = resolveBatchReplaces(this, compilation, this.options);
     assets.shareModules = resolveShareModules(this, compilation, this.options);
     assets.remotes = resolveRemotes(this, compilation, this.options);
     assets.externals = resolveExternals(compilation, this.options);

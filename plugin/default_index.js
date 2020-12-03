@@ -1,4 +1,7 @@
-
+const _toString = Object.prototype.toString;
+function isRegExp(obj) {
+  return _toString.call(obj) === '[object RegExp]';
+}
 
 module.exports = function ({
   globalObject,
@@ -8,7 +11,7 @@ module.exports = function ({
   webpackVersion,
   webpackConfig,
   moduleWebpackPlugin: {
-    scopeName, entryFile, entryId, hash, modulesMapFile, jsonpFunction, remotes, shareModules,
+    scopeName, entryFile, entryId, hash, modulesMapFile, jsonpFunction, remotes, shareModules, batchReplaces, globalToScopes,
     hot, chunks, externals, publicPath, entrys, options 
   }
 }) {
@@ -25,11 +28,9 @@ module.exports = function ({
     hash,
     hot,
     nodeModulesPath: options.nodeModulesPath,
-    globalToScopes: options.globalToScopes || [],
     entryFile,
     entryId,
     windowObject: webpackConfig.output.globalObject,
-    globalObject,
     jsonpFunction,
     hotUpdateGlobal: outputOptions.hotUpdateGlobal,
     uniqueName: webpackConfig.output.uniqueName || '',
@@ -47,6 +48,8 @@ module.exports = function ({
     },
     meta: options.meta || {}
   };
+  if (globalToScopes && globalToScopes.length) data.globalToScopes = globalToScopes;
+  if (batchReplaces && batchReplaces.length) data.batchReplaces = batchReplaces;
   if (options.commonModules) data.commonModules = options.commonModules;
   return `module.exports=function(){return ${JSON.stringify(data, (key, value) => {
     if (typeof value === 'function') {
@@ -60,7 +63,7 @@ module.exports = function ({
           bracket].filter(Boolean)
       };
     }
-    if (value instanceof RegExp) {
+    if (isRegExp(value)) {
       return {
         _t: 'r',
         _v: value.toString()
