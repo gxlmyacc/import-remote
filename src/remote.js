@@ -434,7 +434,7 @@ function remote(url, options = {}) {
               }    
               if (isFunction(itemVersion) && !itemVersion.call(item, moduleVersion, newModule, { versionLt, satisfy })) return;
               if (!moduleVersion) return;
-              if (typeof itemVersion === 'string' && (moduleVersion === itemVersion)) return;
+              if (typeof itemVersion === 'string' && !satisfy(itemVersion, moduleVersion)) return;
               if (Array.isArray(itemVersion)) {
                 const [ver1, ver2] = itemVersion;
                 if (ver1 && versionLt(moduleVersion, ver1)) return;

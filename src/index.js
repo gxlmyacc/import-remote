@@ -6,7 +6,7 @@ import importJs from './importJs';
 import importJson from './importJson';
 import importCss from './importCss';
 import jsonp from './jsonp';
-import { satisfy } from './semver';
+import { satisfy, versionLt } from './semver';
 
 // eslint-disable-next-line no-undef
 const version = typeof __packageversion__ === 'undefined' ? undefined : __packageversion__;
@@ -21,6 +21,7 @@ export {
   mergeObject,
   innumerable,
   satisfy,
+  versionLt,
   version
 };
 
@@ -34,6 +35,7 @@ const remoteExternal = {
   mergeObject,
   innumerable,
   satisfy,
+  versionLt,
   version,
   
   default: remote,

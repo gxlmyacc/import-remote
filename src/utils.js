@@ -196,8 +196,7 @@ function walkMainifest(target) {
           `"use strict";${bracket ? '' : 'return ('}\n${body}${bracket ? '' : '\n)'}`
         );
       } else if (ret._t === 'r') {
-        // eslint-disable-next-line no-eval
-        ret = eval(ret._v);
+        ret = new RegExp(ret._v, ret._f);
       } else if (ret._t === 'd') {
         ret = new Date(ret._v);
       }

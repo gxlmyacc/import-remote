@@ -64,10 +64,9 @@ module.exports = function ({
       };
     }
     if (isRegExp(value)) {
-      return {
-        _t: 'r',
-        _v: value.toString()
-      };
+      let ret = { _t: 'r', _v: value.source };
+      if (value.flags) ret._f = value.flags;
+      return ret;
     }
     if (value instanceof Date) {
       return {
