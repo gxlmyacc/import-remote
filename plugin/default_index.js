@@ -31,6 +31,7 @@ module.exports = function ({
     entryFile,
     entryId,
     windowObject: webpackConfig.output.globalObject,
+    globalObject: '__context__',
     jsonpFunction,
     hotUpdateGlobal: outputOptions.hotUpdateGlobal,
     uniqueName: webpackConfig.output.uniqueName || '',

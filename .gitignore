@@ -6,7 +6,8 @@ analyzer/
 */analyzer/
 .DS_Store
 */.DS_Store
-esm
-dist
+/esm
+/dist
+/analyzer
 
 

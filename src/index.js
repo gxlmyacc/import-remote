@@ -1,12 +1,13 @@
 import remote from './remote';
 import RemoteModule from './module';
 import createRequireFactory from './requireFactory';
-import { innumerable, mergeObject } from './utils';
+import { innumerable, mergeObject, requireWithVersion } from './utils';
 import importJs from './importJs';
 import importJson from './importJson';
 import importCss from './importCss';
 import jsonp from './jsonp';
 import { satisfy, versionLt } from './semver';
+import fetch, { requireJs } from './fetch';
 
 // eslint-disable-next-line no-undef
 const version = typeof __packageversion__ === 'undefined' ? undefined : __packageversion__;
@@ -14,6 +15,8 @@ const version = typeof __packageversion__ === 'undefined' ? undefined : __packag
 export {
   RemoteModule,
   createRequireFactory,
+  fetch,
+  requireJs,
   importJs,
   importJson,
   importCss,
@@ -22,12 +25,15 @@ export {
   innumerable,
   satisfy,
   versionLt,
+  requireWithVersion,
   version
 };
 
 const remoteExternal = {
   RemoteModule,
   createRequireFactory,
+  fetch,
+  requireJs,
   importJs,
   importJson,
   importCss,
@@ -36,6 +42,7 @@ const remoteExternal = {
   innumerable,
   satisfy,
   versionLt,
+  requireWithVersion,
   version,
   
   default: remote,

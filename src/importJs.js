@@ -1,6 +1,7 @@
 
 import base64 from 'base-64';
-import { globalCached, fetch, innumerable, requireFromStr, isEvalDevtool, DEFAULT_TIMEOUT } from './utils';
+import { innumerable, requireFromStr, isEvalDevtool, DEFAULT_TIMEOUT } from './utils';
+import fetch, { globalCached } from './fetch';
 
 const scopeNameRegx = /\(import-remote\)\/((?:@[^/]+\/[^/]+)|(?:[^@][^/]+))/;
 

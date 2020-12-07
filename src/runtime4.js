@@ -1,5 +1,6 @@
 /* eslint-disable camelcase */
-import { DEFAULT_TIMEOUT, joinUrl, fetch, globalCached } from './utils';
+import { DEFAULT_TIMEOUT, joinUrl } from './utils';
+import fetch, { globalCached } from './fetch';
 import importCss from './importCss';
 import importJs from './importJs';
 

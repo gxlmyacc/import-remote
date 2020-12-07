@@ -2,8 +2,9 @@ import escapeStringRegexp from 'escape-string-regexp';
 import { 
   DEFAULT_TIMEOUT, ATTR_SCOPE_NAME,
   joinUrl, isFunction, getHostFromUrl, resolveRelativeUrl, walkMainifest,
-  innumerable, isPlainObject, globalCached, checkRemoteModuleWebpack
+  innumerable, isPlainObject, checkRemoteModuleWebpack
 } from './utils';
+import { globalCached } from './fetch';
 import createRuntime5 from './runtime5';
 import { transformStyleHost, ATTR_CSS_TRANSFORMED } from './importCss';
 import importJs from './importJs';
