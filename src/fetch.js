@@ -89,7 +89,7 @@ function fetch(url, { timeout = 120000, sync, nocache, } = {}) {
 
 fetch.queue = queue;
 
-function requireJs(url, options) {
+function requireJs(url, options = {}) {
   if (requireJs.modules[url]) return requireJs.modules[url].exports;
   return fetch(url, options).then(src => {
     if (requireJs.modules[url]) return requireJs.modules[url].exports;
@@ -97,14 +97,18 @@ function requireJs(url, options) {
     // eslint-disable-next-line no-new-func
     const fn = new Function('module', 'exports', 'require', src);
     const _module = requireJs.modules[url] = { exports: {} };
-
-    fn(
-      _module, 
-      _module.exports, 
-      options.require || (name => {
-        throw new Error(`[import-remote:requireJs]module [${name}] cannot be found!`);
-      })
-    );
+    try {
+      fn(
+        _module, 
+        _module.exports, 
+        options.require || (name => {
+          throw new Error(`[import-remote:requireJs]module [${name}] cannot be found!`);
+        })
+      );
+    } catch (ex) {
+      delete requireJs.modules[url];
+      throw ex;
+    }
 
     return _module.exports;
   });
