@@ -13,12 +13,7 @@
  */
 
 
-const NodeTemplatePlugin = require('webpack/lib/node/NodeTemplatePlugin');
-const NodeTargetPlugin = require('webpack/lib/node/NodeTargetPlugin');
-const LoaderTargetPlugin = require('webpack/lib/LoaderTargetPlugin');
-const LibraryTemplatePlugin = require('webpack/lib/LibraryTemplatePlugin');
-const SingleEntryPlugin = require('webpack/lib/SingleEntryPlugin');
-
+let instanceId = 0;
 /**
  * The ModuleWebpackChildCompiler is a helper to allow reusing one childCompiler
  * for multiple ModuleWebpackPlugin instances to improve the compilation performance.
@@ -30,6 +25,8 @@ class ModuleWebpackChildCompiler {
    * @param {string[]} templates
    */
   constructor(templates) {
+    /** Id for this ChildCompiler */
+    this.id = instanceId++;
     /**
      * @type {string[]} templateIds
      * The template array will allow us to keep track which input generated which output
@@ -73,10 +70,17 @@ class ModuleWebpackChildCompiler {
    * This function will start the template compilation
    * once it is started no more templates can be added
    *
-   * @param {WebpackCompilation} mainCompilation
+   * @param {import('Webpack').Compilation} mainCompilation
    * @returns {Promise<{[templatePath: string]: { content: string, hash: string, entry: WebpackChunk }}>}
    */
   compileTemplates(mainCompilation) {
+    const webpack = mainCompilation.compiler.webpack;
+    const Compilation = webpack.Compilation;
+
+    const NodeTargetPlugin = webpack.node.NodeTargetPlugin;
+    const LoaderTargetPlugin = webpack.LoaderTargetPlugin;
+    const EntryPlugin = webpack.EntryPlugin;
+
     // To prevent multiple compilations for the same template
     // the compilation is cached in a promise.
     // If it already exists return
@@ -84,44 +88,73 @@ class ModuleWebpackChildCompiler {
       return this.compilationPromise;
     }
 
-    // The entry file is just an empty helper as the dynamic template
-    // require is added in "loader.js"
     const outputOptions = {
       filename: '__child-[name]',
-      publicPath: mainCompilation.outputOptions.publicPath
+      publicPath: mainCompilation.outputOptions.publicPath === 'auto'
+        ? ''
+        : mainCompilation.outputOptions.publicPath,
+      library: {
+        type: 'var',
+        name: 'MODULE_WEBPACK_PLUGIN_RESULT'
+      },
+      /** @type {'text/javascript'} */
+      scriptType: (/** @type {'text/javascript'} */'text/javascript')
     };
     const compilerName = 'ModuleWebpackCompiler';
     // Create an additional child compiler which takes the template
     // and turns it into an Node.JS module factory.
     // This allows us to use loaders during the compilation
     // @ts-ignore
-    const childCompiler = mainCompilation.createChildCompiler(compilerName, outputOptions);
+    const childCompiler = mainCompilation.createChildCompiler(compilerName, outputOptions, [
+      // Compile the template to nodejs javascript
+      // @ts-ignore
+      new NodeTargetPlugin(),
+      // @ts-ignore
+      new LoaderTargetPlugin('node'),
+      // @ts-ignore
+      new webpack.library.EnableLibraryPlugin('var')
+    ]);
     // The file path context which webpack uses to resolve all relative files to
     childCompiler.context = mainCompilation.compiler.context;
-    // Compile the template to nodejs javascript
-    new NodeTemplatePlugin(outputOptions).apply(childCompiler);
-    new NodeTargetPlugin().apply(childCompiler);
-    // @ts-ignore
-    new LibraryTemplatePlugin('MODULE_WEBPACK_PLUGIN_RESULT', 'var').apply(childCompiler);
-    new LoaderTargetPlugin('node').apply(childCompiler);
+
+    // Generate output file names
+    const temporaryTemplateNames = this.templates.map((template, index) => `__child-ModuleWebpackPlugin_${index}-${this.id}`);
 
     // Add all templates
     this.templates.forEach((template, index) => {
-      new SingleEntryPlugin(childCompiler.context, template, `ModuleWebpackPlugin_${index}`).apply(childCompiler);
+      new EntryPlugin(childCompiler.context, template, `ModuleWebpackPlugin_${index}-${this.id}`).apply(childCompiler);
     });
 
     this.compilationStartedTimestamp = new Date().getTime();
     this.compilationPromise = new Promise((resolve, reject) => {
+      const extractedAssets = [];
+      childCompiler.hooks.thisCompilation.tap('ModuleWebpackPlugin', compilation => {
+        compilation.hooks.processAssets.tap(
+          {
+            name: 'ModuleWebpackPlugin',
+            stage: Compilation.PROCESS_ASSETS_STAGE_ADDITIONS
+          },
+          assets => {
+            temporaryTemplateNames.forEach(temporaryTemplateName => {
+              if (assets[temporaryTemplateName]) {
+                extractedAssets.push(assets[temporaryTemplateName]);
+                compilation.deleteAsset(temporaryTemplateName);
+              }
+            });
+          }
+        );
+      });
+
       childCompiler.runAsChild((err, entries, childCompilation) => {
         // Extract templates
         const compiledTemplates = entries
-          ? extractHelperFilesFromCompilation(mainCompilation, childCompilation, outputOptions.filename, entries)
+          ? extractedAssets.map(asset => asset.source())
           : [];
         // Extract file dependencies
-        if (entries) {
+        if (entries && childCompilation) {
           this.fileDependencies = { 
             fileDependencies: Array.from(childCompilation.fileDependencies), 
-            contextDependencies: Array.from(childCompilation.contextDependencies),
+            contextDependencies: Array.from(childCompilation.contextDependencies), 
             missingDependencies: Array.from(childCompilation.missingDependencies) 
           };
         }
@@ -129,7 +162,8 @@ class ModuleWebpackChildCompiler {
         if (childCompilation && childCompilation.errors && childCompilation.errors.length) {
           const errorDetails = childCompilation.errors.map(error => {
             let message = error.message;
-            if (error.error) {
+            if ('error' in error) {
+              // @ts-ignore
               message += ':\n' + error.error;
             }
             if (error.stack) {
@@ -145,6 +179,10 @@ class ModuleWebpackChildCompiler {
           reject(err);
           return;
         }
+        if (!childCompilation || !entries) {
+          reject(new Error('Empty child compilation'));
+          return;
+        }
         /**
          * @type {{[templatePath: string]: { content: string, hash: string, entry: WebpackChunk }}}
          */
@@ -156,6 +194,7 @@ class ModuleWebpackChildCompiler {
           result[this.templates[entryIndex]] = {
             content: templateSource,
             hash: childCompilation.hash,
+            // @ts-ignore
             entry: entries[entryIndex]
           };
         });
@@ -167,38 +206,6 @@ class ModuleWebpackChildCompiler {
     return this.compilationPromise;
   }
 
-}
-
-/**
- * The webpack child compilation will create files as a side effect.
- * This function will extract them and clean them up so they won't be written to disk.
- *
- * Returns the source code of the compiled templates as string
- *
- * @returns Array<string>
- */
-function extractHelperFilesFromCompilation(mainCompilation, childCompilation, filename, childEntryChunks) {
-  const webpackMajorVersion = Number(require('webpack/package.json').version.split('.')[0]);
-
-  const helperAssetNames = childEntryChunks.map((entryChunk, index) => {
-    const entryConfig = {
-      hash: childCompilation.hash,
-      chunk: entryChunk,
-      name: `ModuleWebpackPlugin_${index}`
-    };
-
-    return webpackMajorVersion === 4
-      ? mainCompilation.mainTemplate.getAssetPath(filename, entryConfig)
-      : mainCompilation.getAssetPath(filename, entryConfig);
-  });
-
-  helperAssetNames.forEach(helperFileName => {
-    delete mainCompilation.assets[helperFileName];
-  });
-
-  const helperContents = helperAssetNames.map(helperFileName => childCompilation.assets[helperFileName].source());
-
-  return helperContents;
 }
 
 module.exports = {

@@ -9,8 +9,7 @@
 /** @typedef {import("webpack/lib/Compilation.js")} WebpackCompilation */
 /** @typedef {import("webpack/lib/WebpackError.js")} WebpackError */
 
-// use Polyfill for util.promisify in node versions < v8
-const promisify = require('util.promisify');
+const promisify = require('util').promisify;
 
 const vm = require('vm');
 const fs = require('fs');
