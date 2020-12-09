@@ -325,7 +325,6 @@ class ModuleWebpackPlugin {
       templateContent: false,
       templateParameters: null,
       filename: 'index.js',
-      modulesMapFile: 'module.map.json',
       runtime: /(manifest|runtime~).+[.]js$/,
       hash: false,
       compile: true,
@@ -345,6 +344,7 @@ class ModuleWebpackPlugin {
     this.initialConsumes = []; 
     this.moduleIdToSourceMapping = {};
     this.chunkToModuleMapping = {};
+    this.previousEmittedAssets = [];
 
     /** @type {ProcessedModuleWebpackOptions} */
     this.options = Object.assign(defaultOptions, userOptions);
@@ -372,6 +372,7 @@ class ModuleWebpackPlugin {
    */
   apply(compiler) {
     const self = this;
+    const webpack = compiler.webpack;
 
     if (!compiler.options.optimization.runtimeChunk) {
       compiler.options.optimization.runtimeChunk = true;
@@ -585,153 +586,191 @@ class ModuleWebpackPlugin {
       });
     }
 
-    compiler.hooks.emit.tapAsync('ModuleWebpackPlugin',
+    /**
+     * Hook into the webpack emit phase
+     * @param {WebpackCompilation} compilation
+     * @param {(err?: Error) => void} callback
+    */
+    const processAssets = (compilation, callback, emitAsset) => {
+      // Get all entry point names for this html file
+      // @ts-ignore
+      const entryNames = Array.from(compilation.entrypoints.keys());
+      const filteredEntryNames = self.filterChunks(entryNames, self.options.chunks, self.options.excludeChunks);
+      const sortedEntryNames = self.sortEntryChunks(filteredEntryNames, this.options.chunksSortMode, compilation);
+
+      const templateResult = this.options.templateContent
+        ? { mainCompilationHash: compilation.hash }
+        : childCompilerPlugin.getCompilationEntryResult(this.options.template);
+
+      this.childCompilerHash = templateResult.mainCompilationHash;
+
+      if ('error' in templateResult) {
+        compilation.errors.push(prettyError(templateResult.error, compiler.context).toString());
+      }
+
+      const compiledEntries = 'compiledEntry' in templateResult ? {
+        hash: templateResult.compiledEntry.hash,
+        chunk: templateResult.compiledEntry.entry
+      } : {
+        hash: templateResult.mainCompilationHash
+      };
+
+      const childCompilationOutputName = webpackMajorVersion === 4
+        ? compilation.mainTemplate.getAssetPath(this.options.filename, compiledEntries)
+      // @ts-ignore
+        : compilation.getAssetPath(this.options.filename, compiledEntries);
+
+      // If the child compilation was not executed during a previous main compile run
+      // it is a cached result
+      const isCompilationCached = templateResult.mainCompilationHash !== compilation.hash;
+
+      // Turn the entry point names into file paths
+      const assets = self.moduleWebpackPluginAssets(compilation, childCompilationOutputName, sortedEntryNames, this.options.publicPath);
+
+      // If the template and the assets did not change we don't have to emit the html
+      const newAssetJson = JSON.stringify(self.getAssetFiles(assets));
+      if (isCompilationCached && self.options.cache && self.assetJson === newAssetJson) {
+        if (webpackMajorVersion >= 5) {
+          self.previousEmittedAssets.forEach(({ name, source }) => emitAsset(name, source));
+        }
+        return callback();
+      } 
+      self.previousEmittedAssets = [];
+      self.assetJson = newAssetJson;
+
+      // The html-webpack plugin uses a object representation for the html-tags which will be injected
+      // to allow altering them more easily
+      // Just before they are converted a third-party-plugin author might change the order and content
+
+      // Turn the compiled template into a nodejs function or into a nodejs string
+      const templateEvaluationPromise = (Promise.resolve())
+        .then(() => {
+          if ('error' in templateResult) {
+            return self.options.showErrors ? prettyError(templateResult.error, compiler.context).toHtml() : 'ERROR';
+          }
+          // Allow to use a custom function / string instead
+          if (self.options.templateContent !== false) {
+            return self.options.templateContent;
+          }
+          // Once everything is compiled evaluate the html factory
+          // and replace it with its content
+          return ('compiledEntry' in templateResult)
+            ? self.evaluateCompilationResult(compilation, templateResult.compiledEntry.content)
+            : Promise.reject(new Error('Child compilation contained no compiledEntry'));
+        });
+
+      const templateExectutionPromise = templateEvaluationPromise
+      // Execute the template
+        .then(compilationResult => (typeof compilationResult !== 'function'
+          ? compilationResult
+          : self.executeTemplate(compilationResult, assets, compilation)));
+
+      const injectedTemplatePromise = templateExectutionPromise
+      // Allow plugins to change the html before assets are injected
+        .then(html => {
+          const pluginArgs = { html, plugin: self, outputName: childCompilationOutputName };
+          return getModuleWebpackPluginHooks(compilation).afterTemplateExecution.promise(pluginArgs);
+        });
+
+      const emitHtmlPromise = injectedTemplatePromise
+      // Allow plugins to change the html after assets are injected
+        .then(html => {
+          const pluginArgs = { html: isPlainObject(html) ? html.html : html, plugin: self, outputName: childCompilationOutputName };
+          // @ts-ignore
+          return getModuleWebpackPluginHooks(compilation).beforeEmit.promise(pluginArgs)
+            .then(result => result.html);
+        })
+        .catch(err => {
+          // In case anything went wrong the promise is resolved
+          // with the error message and an error is logged
+          compilation.errors.push(prettyError(err, compiler.context).toString());
+          // Prevent caching
+          self.hash = null;
+          return self.options.showErrors ? prettyError(err, compiler.context).toHtml() : 'ERROR';
+        })
+        .then(source => {
+          // Allow to use [templatehash] as placeholder for the import-remote name
+          // See also https://survivejs.com/webpack/optimizing/adding-hashes-to-filenames/
+          // eslint-disable-next-line max-len
+          // From https://github.com/webpack-contrib/extract-text-webpack-plugin/blob/8de6558e33487e7606e7cd7cb2adc2cccafef272/src/index.js#L212-L214
+          const finalOutputName = childCompilationOutputName.replace(
+            /\[(?:(\w+):)?templatehash(?::([a-z]+\d*))?(?::(\d+))?\]/ig,
+            (_, hashType, digestType, maxLength) => loaderUtils.getHashDigest(
+              Buffer.from(source, 'utf8'),
+              hashType,
+              digestType,
+              // eslint-disable-next-line radix
+              parseInt(maxLength, 10)
+            )
+          );
+          // Add the evaluated html code to the webpack assets
+          emitAsset(finalOutputName, source);
+          self.previousEmittedAssets.push({ name: finalOutputName, source });
+
+          return finalOutputName;
+        })
+        .then(finalOutputName => getModuleWebpackPluginHooks(compilation).afterEmit.promise({
+          outputName: finalOutputName,
+          plugin: self
+        }).catch(err => {
+          console.error(err);
+          return null;
+        }).then(() => null));
+
+      // Once all files are added to the webpack compilation
+      // let the webpack compiler continue
+      emitHtmlPromise.then(() => {
+        callback();
+      });
+    };
+
+    if (webpackMajorVersion < 5) {
+      compiler.hooks.emit.tapAsync('ModuleWebpackPlugin',
       /**
        * Hook into the webpack emit phase
        * @param {WebpackCompilation} compilation
        * @param {(err?: Error) => void} callback
       */
-      (compilation, callback) => {
-        // Get all entry point names for this html file
-        // @ts-ignore
-        const entryNames = Array.from(compilation.entrypoints.keys());
-        const filteredEntryNames = self.filterChunks(entryNames, self.options.chunks, self.options.excludeChunks);
-        const sortedEntryNames = self.sortEntryChunks(filteredEntryNames, this.options.chunksSortMode, compilation);
-
-        const templateResult = this.options.templateContent
-          ? { mainCompilationHash: compilation.hash }
-          : childCompilerPlugin.getCompilationEntryResult(this.options.template);
-
-        this.childCompilerHash = templateResult.mainCompilationHash;
-
-        if ('error' in templateResult) {
-          compilation.errors.push(prettyError(templateResult.error, compiler.context).toString());
-        }
-
-        const compiledEntries = 'compiledEntry' in templateResult ? {
-          hash: templateResult.compiledEntry.hash,
-          chunk: templateResult.compiledEntry.entry
-        } : {
-          hash: templateResult.mainCompilationHash
-        };
-
-        const childCompilationOutputName = webpackMajorVersion === 4
-          ? compilation.mainTemplate.getAssetPath(this.options.filename, compiledEntries)
+        (compilation, callback) => processAssets(compilation, callback, (name, source) => {
           // @ts-ignore
-          : compilation.getAssetPath(this.options.filename, compiledEntries);
-
-        // If the child compilation was not executed during a previous main compile run
-        // it is a cached result
-        const isCompilationCached = templateResult.mainCompilationHash !== compilation.hash;
-
-        // Turn the entry point names into file paths
-        const assets = self.moduleWebpackPluginAssets(compilation, childCompilationOutputName, sortedEntryNames, this.options.publicPath);
-
-        // If the template and the assets did not change we don't have to emit the html
-        const assetJson = JSON.stringify(self.getAssetFiles(assets));
-        if (isCompilationCached && self.options.cache && assetJson === self.assetJson) {
-          return callback();
-        }
-        self.assetJson = assetJson;
-
-        // The html-webpack plugin uses a object representation for the html-tags which will be injected
-        // to allow altering them more easily
-        // Just before they are converted a third-party-plugin author might change the order and content
-
-        // Turn the compiled template into a nodejs function or into a nodejs string
-        const templateEvaluationPromise = (Promise.resolve())
-          .then(() => {
-            if ('error' in templateResult) {
-              return self.options.showErrors ? prettyError(templateResult.error, compiler.context).toHtml() : 'ERROR';
-            }
-            // Allow to use a custom function / string instead
-            if (self.options.templateContent !== false) {
-              return self.options.templateContent;
-            }
-            // Once everything is compiled evaluate the html factory
-            // and replace it with its content
-            return ('compiledEntry' in templateResult)
-              ? self.evaluateCompilationResult(compilation, templateResult.compiledEntry.content)
-              : Promise.reject(new Error('Child compilation contained no compiledEntry'));
-          });
-
-        const templateExectutionPromise = templateEvaluationPromise
-          // Execute the template
-          .then(compilationResult => (typeof compilationResult !== 'function'
-            ? compilationResult
-            : self.executeTemplate(compilationResult, assets, compilation)));
-
-        const injectedTemplatePromise = templateExectutionPromise
-          // Allow plugins to change the html before assets are injected
-          .then(html => {
-            const pluginArgs = { html, plugin: self, outputName: childCompilationOutputName };
-            return getModuleWebpackPluginHooks(compilation).afterTemplateExecution.promise(pluginArgs);
-          });
-
-        const emitHtmlPromise = injectedTemplatePromise
-          // Allow plugins to change the html after assets are injected
-          .then(html => {
-            const pluginArgs = { html: isPlainObject(html) ? html.html : html, plugin: self, outputName: childCompilationOutputName };
+          compilation.assets[name] = {
+            source: () => source,
+            size: () => source.length
+          };
+        }));
+    } else {
+      compiler.hooks.thisCompilation.tap('ModuleWebpackPlugin',
+      /**
+         * Hook into the webpack compilation
+         * @param {WebpackCompilation} compilation
+        */
+        compilation => {
+          compilation.hooks.processAssets.tapAsync(
+            {
+              name: 'ModuleWebpackPlugin',
+              /**
+               * Generate the html after minification and dev tooling is done
+               */
+              stage: webpack.Compilation.PROCESS_ASSETS_STAGE_OPTIMIZE_INLINE
+            },
+            /**
+           * Hook into the process assets hook
+           * @param {WebpackCompilation} compilationAssets
+           * @param {(err?: Error) => void} callback
+           */
             // @ts-ignore
-            return getModuleWebpackPluginHooks(compilation).beforeEmit.promise(pluginArgs)
-              .then(result => result.html);
-          })
-          .catch(err => {
-            // In case anything went wrong the promise is resolved
-            // with the error message and an error is logged
-            compilation.errors.push(prettyError(err, compiler.context).toString());
-            // Prevent caching
-            self.hash = null;
-            return self.options.showErrors ? prettyError(err, compiler.context).toHtml() : 'ERROR';
-          })
-          .then(html => {
-            // Allow to use [templatehash] as placeholder for the import-remote name
-            // See also https://survivejs.com/webpack/optimizing/adding-hashes-to-filenames/
-            // eslint-disable-next-line max-len
-            // From https://github.com/webpack-contrib/extract-text-webpack-plugin/blob/8de6558e33487e7606e7cd7cb2adc2cccafef272/src/index.js#L212-L214
-            const finalOutputName = childCompilationOutputName.replace(
-              /\[(?:(\w+):)?templatehash(?::([a-z]+\d*))?(?::(\d+))?\]/ig,
-              (_, hashType, digestType, maxLength) => loaderUtils.getHashDigest(
-                Buffer.from(html, 'utf8'),
-                hashType,
-                digestType,
-                // eslint-disable-next-line radix
-                parseInt(maxLength, 10)
-              )
-            );
-            // Add the evaluated html code to the webpack assets
-            // @ts-ignore
-            compilation.assets[finalOutputName] = {
-              source: () => html,
-              size: () => html.length
-            };
-
-            if (this.options.modulesMapFile) {
-              // @ts-ignore
-              compilation.assets[this.options.modulesMapFile] = self.getModulesMapAsset(compilation);
-            }
-            return finalOutputName;
-          })
-          .then(finalOutputName => getModuleWebpackPluginHooks(compilation).afterEmit.promise({
-            outputName: finalOutputName,
-            plugin: self
-          }).catch(err => {
-            console.error(err);
-            return null;
-          }).then(() => null));
-
-        // Once all files are added to the webpack compilation
-        // let the webpack compiler continue
-        emitHtmlPromise.then(() => {
-          callback();
-        });
-      });
+            (compilationAssets, callback) => processAssets(compilation, callback, (name, source) => {
+              compilation.emitAsset(name, new webpack.sources.RawSource(source, false));
+            })
+          );
+        });  
+    }
   }
 
   /**
    * Evaluates the child compilation result
    * @param {WebpackCompilation} compilation
-   * @returns { { source: () => string, size: () => number } }
+   * @returns {string}
    */
   getModulesMapAsset(compilation) {
     const assets = {};
@@ -755,11 +794,7 @@ class ModuleWebpackPlugin {
       // asset.version = pkg.version;
       assets[resource] = asset;
     });
-    const assetStr = JSON.stringify(assets);
-    return { 
-      source: () => assetStr,
-      size: () => assetStr.length
-    };
+    return JSON.stringify(assets);
   }
 
   /**
@@ -970,7 +1005,6 @@ class ModuleWebpackPlugin {
       || compilation.outputOptions.jsonpFunction;
 
     const assets = {
-      modulesMapFile: this.options.modulesMapFile,
       // The public path
       publicPath,
       // the entry file

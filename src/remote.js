@@ -1,14 +1,13 @@
 import escapeStringRegexp from 'escape-string-regexp';
 import { 
   DEFAULT_TIMEOUT, ATTR_SCOPE_NAME,
-  joinUrl, isFunction, getHostFromUrl, resolveRelativeUrl, walkMainifest,
+  isFunction, getHostFromUrl, resolveRelativeUrl, walkMainifest,
   innumerable, isPlainObject, checkRemoteModuleWebpack
 } from './utils';
 import { globalCached } from './fetch';
 import createRuntime5 from './runtime5';
 import { transformStyleHost, ATTR_CSS_TRANSFORMED } from './importCss';
 import importJs from './importJs';
-import importJson from './importJson';
 import { isRequireFactory } from './requireFactory';
 import { versionLt, satisfy } from './semver';
 
@@ -37,19 +36,11 @@ function resolveModulePath(modulePath, nodeModulesPath, currentNodeModulesPath) 
   return nodeModulesPath;
 }
 
-function resolveModule(external, useId, modulesMap, __require__, nodeModulesPath, currentNodeModulesPath) {
+function resolveModule(external, __require__, nodeModulesPath, currentNodeModulesPath) {
   if (!__require__.m) return;
-  if (!useId) {
-    if (__require__.m[external.name]) return __require__.m[external.name];
-    let modulePath = resolveModulePath(external.path, nodeModulesPath, currentNodeModulesPath);
-    if (__require__.m[modulePath]) return __require__(modulePath);
-    return;
-  }
-  let modulePath = resolveModulePath(external.path, nodeModulesPath, currentNodeModulesPath);
-  let moduleAsset = modulesMap[modulePath];
-  let moduleId = moduleAsset && (moduleAsset.id === undefined ? modulePath : moduleAsset.id);
-  if (moduleId === undefined) return;
-  if (__require__.m[moduleId]) return __require__(moduleId);
+  if (__require__.m[external.name]) return __require__.m[external.name];
+  let modulePath = external.path && resolveModulePath(external.path, nodeModulesPath, currentNodeModulesPath);
+  if (modulePath && __require__.m[modulePath]) return __require__(modulePath);
 }
 
 function createWindowProxy(windowProxy, { scopeName, host, beforeSource } = {}) {
@@ -167,7 +158,6 @@ function remote(url, options = {}) {
     timeout = DEFAULT_TIMEOUT,
     externals = {},
     globals = {},
-    isCommonModule = false,
     getManifestCallback = null,
     host = getHostFromUrl(url),
     sync = false,
@@ -271,13 +261,11 @@ function remote(url, options = {}) {
               return result !== undefined;
             });
           }
-          if (result === undefined && external.path) {
+          if (result === undefined) {
             commonModuleOptions.some(option => {
               const commonModuleContext = __remoteModuleWebpack__[option.name];
               const commonModuleManifest = __remoteModuleWebpack__.__moduleManifests__[option.name]; 
               result = commonModuleContext && commonModuleManifest && resolveModule(external,
-                commonModuleManifest.useId,
-                commonModuleManifest.__modulesMap__, 
                 commonModuleContext.require || commonModuleContext.__require__,
                 commonModuleManifest.nodeModulesPath,
                 manifest.nodeModulesPath);
@@ -398,10 +386,6 @@ function remote(url, options = {}) {
   
         const context = __remoteModuleWebpack__[scopeName];
   
-        if (isCommonModule && moduleManifest.useId && !moduleManifest.__modulesMap__) {
-          moduleManifest.__modulesMap__ = await importJson(joinUrl(host, manifest.modulesMapFile), { timeout, nocache: true, sync });
-        }
-      
         const __require__ = context.require || context.__require__;
         await Promise.all(manifest.entrys.ids.map(id => __require__.e(id)));
         manifest.externals.forEach(external => {

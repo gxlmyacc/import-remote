@@ -19,6 +19,13 @@ const LoaderTargetPlugin = require('webpack/lib/LoaderTargetPlugin');
 const LibraryTemplatePlugin = require('webpack/lib/LibraryTemplatePlugin');
 const SingleEntryPlugin = require('webpack/lib/SingleEntryPlugin');
 
+function lazySetToArray(set) {
+  if (!set) return [];
+  return set.length !== undefined
+    ? Array.from(set)
+    : [...set.values()];
+}
+
 /**
  * The ModuleWebpackChildCompiler is a helper to allow reusing one childCompiler
  * for multiple ModuleWebpackPlugin instances to improve the compilation performance.
@@ -120,16 +127,17 @@ class ModuleWebpackChildCompiler {
         // Extract file dependencies
         if (entries) {
           this.fileDependencies = { 
-            fileDependencies: Array.from(childCompilation.fileDependencies), 
-            contextDependencies: Array.from(childCompilation.contextDependencies),
-            missingDependencies: Array.from(childCompilation.missingDependencies) 
+            fileDependencies: lazySetToArray(childCompilation.fileDependencies), 
+            contextDependencies: lazySetToArray(childCompilation.contextDependencies),
+            missingDependencies: lazySetToArray(childCompilation.missingDependencies) 
           };
         }
         // Reject the promise if the childCompilation contains error
         if (childCompilation && childCompilation.errors && childCompilation.errors.length) {
           const errorDetails = childCompilation.errors.map(error => {
             let message = error.message;
-            if (error.error) {
+            if ('error' in error) {
+              // @ts-ignore
               message += ':\n' + error.error;
             }
             if (error.stack) {

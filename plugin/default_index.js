@@ -11,7 +11,7 @@ module.exports = function ({
   webpackVersion,
   webpackConfig,
   moduleWebpackPlugin: {
-    scopeName, entryFile, entryId, hash, modulesMapFile, jsonpFunction, remotes, shareModules, batchReplaces, globalToScopes,
+    scopeName, entryFile, entryId, hash, jsonpFunction, remotes, shareModules, batchReplaces, globalToScopes,
     hot, chunks, externals, publicPath, entrys, options 
   }
 }) {
@@ -24,7 +24,6 @@ module.exports = function ({
     devtool: webpackConfig.devtool,
     libraryTarget: webpackConfig.output.libraryTarget,
     moduleVersion: pkg.version,
-    modulesMapFile,
     hash,
     hot,
     nodeModulesPath: options.nodeModulesPath,
