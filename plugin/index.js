@@ -371,16 +371,41 @@ class ModuleWebpackPlugin {
    */
   apply(compiler) {
     const self = this;
+    // Wait for configuration preset plugions to apply all configure webpack defaults
+    compiler.hooks.initialize.tap('HtmlWebpackPlugin', () => {
+      if (!compiler.options.optimization.runtimeChunk) {
+        compiler.options.optimization.runtimeChunk = true;
+      }
+  
+      const packageFile = findUp.sync('package.json', { cwd: compiler.context || process.cwd() });
+      self.options.package = require(packageFile);
+      self.options.projectPath = path.dirname(packageFile);
+      self.options.nodeModulesPath = path.relative(compiler.context, path.resolve(self.options.projectPath, './node_modules')).replace(/\\/g, '/');
+      self.options.template = self.getFullTemplatePath(self.options.template, compiler.context);
+    
+    
+      // entryName to fileName conversion function
+      const userOptionFilename = self.options.filename;
+      const filenameFunction = typeof userOptionFilename === 'function'
+        ? userOptionFilename
+      // Replace '[name]' with entry name
+        : entryName => userOptionFilename.replace(/\[name\]/g, entryName);
+    
+      /** output filenames for the given entry names */
+      const outputFileNames = new Set(Object.keys(compiler.options.entry).map(filenameFunction));
+    
+      /** Option for every entry point */
+      const entryOptions = Array.from(outputFileNames).map(filename => ({
+        ...self.options,
+        filename
+      }));
+    
+      // Hook all options into the webpack compiler
+      entryOptions.forEach(instanceOptions => {
+        hookIntoCompiler(compiler, instanceOptions, this);
+      });
+    });
 
-    if (!compiler.options.optimization.runtimeChunk) {
-      compiler.options.optimization.runtimeChunk = true;
-    }
-
-    const packageFile = findUp.sync('package.json', { cwd: compiler.context || process.cwd() });
-    this.options.package = require(packageFile);
-    this.options.projectPath = path.dirname(packageFile);
-    this.options.nodeModulesPath = path.relative(compiler.context, path.resolve(this.options.projectPath, './node_modules')).replace(/\\/g, '/');
-    this.options.template = this.getFullTemplatePath(this.options.template, compiler.context);
 
     // Inject child compiler plugin
     const childCompilerPlugin = new CachedChildCompilation(compiler);
