@@ -116,6 +116,12 @@ function resolveBatchReplaces(self, compilation, options) {
   return ret;
 }
 
+function getModuleId(compilation, module) {
+  return compilation.chunkGraph
+    ? compilation.chunkGraph.getModuleId(module)
+    : module.id;
+}
+
 /**
  * resolve webpack remotes
  * @param {ModuleWebpackPlugin} self
@@ -157,7 +163,7 @@ function resolveShareModules(self, compilation, options) {
       // @ts-ignore
       name = path.join(pkg.name, path.relative(path.dirname(packageFile), m.resource)).replace(/\\/g, '/');
     }
-    let item = { name, id: m.id };
+    let item = { name, id: getModuleId(compilation, m) };
     if (shareItem.var) item.var = shareItem.var;
     if (shareItem.version) item.version = shareItem.version;
     // if (typeof item.version === 'function') {
@@ -207,11 +213,12 @@ function resolveRemotes(self, compilation, options) {
 
   [...compilation.modules].forEach(m => {
     if (m.type === 'remote-module') {
+      const mid = getModuleId(compilation, m);
       // @ts-ignore
-      remotes.idToExternalAndNameMapping[m.id] = [m.shareScope, m.internalRequest, m.externalRequests[0]];
+      remotes.idToExternalAndNameMapping[mid] = [m.shareScope, m.internalRequest, m.externalRequests[0]];
       m.chunksIterable.forEach(c => {
         if (!remotes.chunkMapping[c.id]) remotes.chunkMapping[c.id] = [];
-        remotes.chunkMapping[c.id].push(m.id);
+        remotes.chunkMapping[c.id].push(mid);
       });
     }
     if (m.type === 'consume-shared-module') {
@@ -239,7 +246,7 @@ function resolveExternals(compilation, options) {
     return m.externalType === 'var';
   }).map(m => {
     // @ts-ignore
-    let v = { id: m.id, type: m.externalType };
+    let v = { id: getModuleId(compilation, m), type: m.externalType };
     // @ts-ignore
     if (isPlainObject(m.request)) {
       // @ts-ignore
@@ -733,7 +740,7 @@ class ModuleWebpackPlugin {
       // @ts-ignore
       if (module.external || module.externalType || !module.resource
         || ['runtime', 'remote-module'].includes(module.type) 
-        || module.id != null
+        || getModuleId(compilation, module) != null
       ) return;
       const asset = {};
       // @ts-ignore
@@ -742,7 +749,7 @@ class ModuleWebpackPlugin {
       const packageFile = findUp.sync('package.json', { cwd: path.dirname(module.resource) });
       if (packageFile && packageFile.includes('node_modules')) {
         const pkg = require(packageFile);
-        asset.id = module.id;
+        asset.id = getModuleId(compilation, module);
         asset.name = pkg.name;
       }
       // asset.version = pkg.version;
@@ -959,8 +966,8 @@ class ModuleWebpackPlugin {
     }
 
     const assetKeys = Object.keys(compilation.assets);
-    const jsonpFunction = compilation.mainTemplate.outputOptions.chunkLoadingGlobal
-      || compilation.mainTemplate.outputOptions.jsonpFunction;
+    const jsonpFunction = compilation.outputOptions.chunkLoadingGlobal
+      || compilation.outputOptions.jsonpFunction;
 
     const assets = {
       modulesMapFile: this.options.modulesMapFile,
@@ -1046,7 +1053,7 @@ class ModuleWebpackPlugin {
 
     const checkEntryModule = entryModule => {
       // @ts-ignore
-      assets.entryId = entryModule.id;
+      assets.entryId = getModuleId(compilation, entryModule);
       if (webpackMajorVersion >= 5) {
         return assets.entryId;
       }
@@ -1055,7 +1062,8 @@ class ModuleWebpackPlugin {
         return Boolean(assets.entryFile);
       }
     };
-    const entryChunk = compilation.chunks.find(c => {
+    const chunks = compilation.chunks instanceof Set ? Array.from(compilation.chunks) : compilation.chunks;
+    const entryChunk = chunks.find(c => {
       if (webpackMajorVersion < 5) {
         // @ts-ignore
         if (!c.entryModule || !entryNames.includes(c.entryModule.name)) return; 
@@ -1064,10 +1072,12 @@ class ModuleWebpackPlugin {
       }
       // @ts-ignore
       if (!c.id || !entryNames.includes(c.id)) return;
-      if (assets.hot) {
-        const entryModule = [...c.modulesIterable].find(m => m.type === 'javascript/auto');
-        checkEntryModule(entryModule);
-      } else checkEntryModule(c.entryModule);
+      const entryModule = compilation.chunkGraph.getChunkRootModules(c).find(m => m.type === 'javascript/auto');
+      if (entryModule) checkEntryModule(entryModule);
+      // if (assets.hot) {
+      //   const entryModule = [...c.modulesIterable].find(m => m.type === 'javascript/auto');
+      //   checkEntryModule(entryModule);
+      // } else checkEntryModule(c.entryModule);
       return true;
     });
 
@@ -1097,6 +1107,9 @@ class ModuleWebpackPlugin {
         isRuntime: runtimeChunk === c
       })));
 
+      const entryFiles = entryChunk.files instanceof Set ? Array.from(entryChunk.files) : entryChunk.files;
+      const runtimeFiles = runtimeChunk.files instanceof Set ? Array.from(runtimeChunk.files) : runtimeChunk.files;
+
       // Prepend the publicPath and append the hash depending on the
       // webpack.output.publicPath and hashOptions
       // E.g. bundle.js -> /bundle.js?hash
@@ -1104,12 +1117,13 @@ class ModuleWebpackPlugin {
         .map(chunkFile => {
           const entryPointPublicPath = publicPath + this.urlencodePath(chunkFile);
           const isJs = /\.(js|mjs)(\?|$)/.test(chunkFile);
-          const isEntry = Boolean(entryChunk && ~entryChunk.files.indexOf(chunkFile));
+        
+          const isEntry = Boolean(entryChunk && entryFiles.includes(chunkFile));
           let item = {
             file: this.options.hash
               ? this.appendHash(entryPointPublicPath, compilationHash)
               : entryPointPublicPath,
-            isRuntime: Boolean(runtimeChunk && runtimeChunk.files.includes(chunkFile)),
+            isRuntime: Boolean(runtimeChunk && runtimeFiles.includes(chunkFile)),
             isEntry
           };
           if (isEntry && isJs) {
