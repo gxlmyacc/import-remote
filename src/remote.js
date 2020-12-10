@@ -148,6 +148,13 @@ function splitSource(source, splitRegx, len = splitSourceSize) {
   return ret;
 }
 
+function requireModule(__require__, manifest, options = {}) {
+  if (!__require__) return;
+  let result = __require__(manifest.entryId || manifest.entryFile, manifest.entryFile);
+  if (options.useEsModuleDefault && result && result.__esModule) result = result.default;
+  return result;
+}
+
 function remote(url, options = {}) {
   url = resolveRelativeUrl(url, {
     host: options.host,
@@ -163,7 +170,6 @@ function remote(url, options = {}) {
     sync = false,
     beforeSource,
     windowProxy = { document: { html: document.documentElement, body: document.body, head: document.head } },
-    useEsModuleDefault = false
   } = options;
   const __remoteModuleWebpack__ = checkRemoteModuleWebpack(windowProxy.context);
   let cached = (windowProxy.context && windowProxy.context.cached) || globalCached;
@@ -192,6 +198,12 @@ function remote(url, options = {}) {
 
         cached[url] && (cached[url].manifest = manifest);
         getManifestCallback && (await getManifestCallback(manifest));
+
+        if (__remoteModuleWebpack__[scopeName]) {
+          const ctx = __remoteModuleWebpack__[scopeName];
+          const m = requireModule(ctx.require, manifest, options);
+          if (m) return resolve(m);
+        }
   
         Object.assign(externals, remote.externals);
   
@@ -431,11 +443,7 @@ function remote(url, options = {}) {
           }
         });
 
-        let result = __require__(manifest.entryId || manifest.entryFile, manifest.entryFile);
-
-        if (useEsModuleDefault && result && result.__esModule) result = result.default;
-        
-        resolve(result);
+        resolve(requireModule(__require__, manifest, options));
       } catch (ex) {
         reject(ex);
         throw ex;

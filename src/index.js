@@ -48,12 +48,12 @@ const remoteExternal = {
   default: remote,
 };
 
+innumerable(remoteExternal, '__esModule', true);
+
 remote.use = function (plugin) {
   plugin && plugin.install(remote);
 };
 
 remote.externals['import-remote'] = remoteExternal;
-
-innumerable(remote.externals['import-remote'], '__esModule', true);
 
 export default remote;

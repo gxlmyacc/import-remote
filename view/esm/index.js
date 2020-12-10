@@ -37,6 +37,8 @@ var _app = _interopRequireWildcard(require("./app"));
 
 var _view = _interopRequireDefault(require("./view"));
 
+var _utils = require("./utils");
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
@@ -48,6 +50,7 @@ var external = {
   requireApp: _app.default,
   default: _view.default
 };
+(0, _utils.innumerable)(external, '__esModule', true);
 
 _view.default.install = function (remote) {
   var remoteExternal = remote.externals && remote.externals['import-remote'];

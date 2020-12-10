@@ -1,11 +1,13 @@
 import requireApp, { createAppView } from './app';
 import RemoteView from './view';
+import { innumerable } from './utils';
 
 const external = {
   createAppView,
   requireApp,
   default: RemoteView
 };
+innumerable(external, '__esModule', true);
 
 RemoteView.install = function (remote) {
   const remoteExternal = remote.externals && remote.externals['import-remote'];

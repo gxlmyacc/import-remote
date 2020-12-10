@@ -770,36 +770,6 @@ class ModuleWebpackPlugin {
   /**
    * Evaluates the child compilation result
    * @param {WebpackCompilation} compilation
-   * @returns {string}
-   */
-  getModulesMapAsset(compilation) {
-    const assets = {};
-    // @ts-ignore
-    compilation.modules.forEach(module => {
-      // @ts-ignore
-      if (module.external || module.externalType || !module.resource
-        || ['runtime', 'remote-module'].includes(module.type) 
-        || getModuleId(compilation, module) != null
-      ) return;
-      const asset = {};
-      // @ts-ignore
-      let resource = resolveModuleResource(compilation, module.resource);
-      // @ts-ignore
-      const packageFile = findUp.sync('package.json', { cwd: path.dirname(module.resource) });
-      if (packageFile && packageFile.includes('node_modules')) {
-        const pkg = require(packageFile);
-        asset.id = getModuleId(compilation, module);
-        asset.name = pkg.name;
-      }
-      // asset.version = pkg.version;
-      assets[resource] = asset;
-    });
-    return JSON.stringify(assets);
-  }
-
-  /**
-   * Evaluates the child compilation result
-   * @param {WebpackCompilation} compilation
    * @param {string} source
    * @returns {Promise<string | (() => string | Promise<string>)>}
    */
