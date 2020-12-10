@@ -275,7 +275,7 @@ plugins: [
 |属性名|类型|默认值|说明|
 |:--:|:--:|:-----:|:----------|
 |**`commonModules`**|`[{ name: string, url: string, scoped?: boolean }]`|`[]`|依赖的公共模块，如果配置了公共模块，则模块的依赖将尝试从这些公共模块中加载依赖。该功能依赖于webpack的externals|
-|**`shareModules`**|`[string|{ name: string, var: string }]`|`[]`|共享模块列表，如果配置了共享模块，则模块的这些依赖将优先使用宿主应用externals参数中传递的依赖，如果未在宿主应用中找到，才使用自己的该模块。该功能不依赖webpack的externals。
+|**`shareModules`**|`[string or { name: string, var: string }]`|`[]`|共享模块列表，如果配置了共享模块，则模块的这些依赖将优先使用宿主应用externals参数中传递的依赖，如果未在宿主应用中找到，才使用自己的该模块。该功能不依赖webpack的externals。
 |**`globalToScopes`**|`string[]`|`[]`|需要局部化的全局变量，该数组中声明的名称，在加载资源时将会从源代码中将其替换为从某个私有变量中读取这些值|
 
 
