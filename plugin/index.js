@@ -216,7 +216,7 @@ function resolveRemotes(self, compilation, options) {
       const mid = getModuleId(compilation, m);
       // @ts-ignore
       remotes.idToExternalAndNameMapping[mid] = [m.shareScope, m.internalRequest, m.externalRequests[0]];
-      m.chunksIterable.forEach(c => {
+      compilation.chunkGraph.getModuleChunksIterable(m).forEach(c => {
         if (!remotes.chunkMapping[c.id]) remotes.chunkMapping[c.id] = [];
         remotes.chunkMapping[c.id].push(mid);
       });

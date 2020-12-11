@@ -255,7 +255,6 @@ function remote(url, options = {}) {
           moduleManifest.jsChunks = manifest.jsChunks;
           moduleManifest.cssChunks = manifest.cssChunks;
           moduleManifest.hot = manifest.hot;
-          moduleManifest.useId = Boolean(manifest.entryId);
           moduleManifest.nodeModulesPath = manifest.nodeModulesPath;
           moduleManifest.entrys = {};
         }
