@@ -207,7 +207,10 @@ function remote(url, options = {}) {
   
         Object.assign(externals, remote.externals);
   
-        let manifestExternals = manifest.externals.filter(v => !(v.name in externals) && (!v.var || !window[v.var]));
+        let manifestExternals = [
+          ...manifest.externals,
+          ...(manifest.shareModules || []).filter(v => v.shareCommon)
+        ].filter(v => v && !(v.name in externals) && (!v.var || !window[v.var]));
 
         let commonModuleOptions = manifest.commonModules || [];
         let commonModules = manifestExternals.length
@@ -411,7 +414,8 @@ function remote(url, options = {}) {
         });
 
         manifest.shareModules && manifest.shareModules.forEach(item => {
-          if (__require__.m[item.id] && __require__.m[item.id].__import_remote_shared__) return;
+          let oldModule = __require__.m[item.id];
+          if (oldModule && (oldModule.__import_remote_shared__ || oldModule.__import_remote_external__)) return;
           let newModule = requireExternal(item, true);
           if (newModule !== undefined) {
             let itemVersion = item.version;

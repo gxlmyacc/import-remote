@@ -136,50 +136,54 @@ function resolveShareModules(self, compilation, options) {
     return v ? { name: v } : undefined;
   }).filter(Boolean);
   const ret = [];
-  [...compilation.modules].filter(m => m.type === 'javascript/auto').forEach(m => {
-    let isRegx;
+  [...compilation.modules]
     // @ts-ignore
-    let rawRequest = m.rawRequest || '';
-    // @ts-ignore
-    let resource = m.resource || '';
-    if (resource) resource = resolveModuleResource(compilation, resource);
-    let shareItem = shareModules.find(v => {
-      isRegx = false;
-      if (!rawRequest) return;
-      if (typeof v.name === 'string') return v.name === rawRequest;
-      if (v.name instanceof RegExp) {
-        isRegx = true;
-        return v.name.test(resource);
+    .filter(m => m.type === 'javascript/auto' /* || m.external || m.externalType === 'var' */)
+    .forEach(m => {
+      let isRegx;
+      // @ts-ignore
+      let rawRequest = m.rawRequest || m.userRequest || '';
+      // @ts-ignore
+      let resource = m.resource || '';
+      if (resource) resource = resolveModuleResource(compilation, resource);
+      let shareItem = shareModules.find(v => {
+        isRegx = false;
+        if (!rawRequest) return;
+        if (typeof v.name === 'string') return v.name === rawRequest;
+        if (v.name instanceof RegExp) {
+          isRegx = true;
+          return v.name.test(resource);
+        }
+        if (typeof v.name === 'function') return v.name(resource, rawRequest, m);
+      });
+      if (!shareItem) return;
+      let name = rawRequest;
+      if (isRegx) {
+      // @ts-ignore
+        const packageFile = findUp.sync('package.json', { cwd: path.dirname(m.resource) });
+        if (!packageFile || !packageFile.includes('node_modules')) return;
+        const pkg = require(packageFile);
+        // @ts-ignore
+        name = path.join(pkg.name, path.relative(path.dirname(packageFile), m.resource)).replace(/\\/g, '/');
       }
-      if (typeof v.name === 'function') return v.name(resource, rawRequest, m);
+      let item = { name, id: getModuleId(compilation, m) };
+      if (shareItem.var) item.var = shareItem.var;
+      if (shareItem.version) item.version = shareItem.version;
+      if (shareItem.shareCommon) item.shareCommon = shareItem.shareCommon;
+      // if (typeof item.version === 'function') {
+      //   // const { babel } = getBabelOptionsSync();
+      //   let fnStr = item.version.toString();
+      //   if (/^[A-Za-z0-9_$]*\s?\(([A-Za-z0-9_$\s,]*)\)\s*{/.test(fnStr)) fnStr = `function ${fnStr}`;
+      //   let str = require('@babel/core').transformSync(fnStr, {
+      //     babelrc: true,
+      //     configFile: true,
+      //     plugins: ['@babel/plugin-transform-arrow-functions', '@babel/plugin-transform-destructuring']
+      //   });
+      //   console.log(str);
+      // }
+      if (shareItem.getVersion) item.getVersion = shareItem.getVersion;
+      ret.push(item);
     });
-    if (!shareItem) return;
-    let name = rawRequest;
-    if (isRegx) {
-      // @ts-ignore
-      const packageFile = findUp.sync('package.json', { cwd: path.dirname(m.resource) });
-      if (!packageFile || !packageFile.includes('node_modules')) return;
-      const pkg = require(packageFile);
-      // @ts-ignore
-      name = path.join(pkg.name, path.relative(path.dirname(packageFile), m.resource)).replace(/\\/g, '/');
-    }
-    let item = { name, id: getModuleId(compilation, m) };
-    if (shareItem.var) item.var = shareItem.var;
-    if (shareItem.version) item.version = shareItem.version;
-    // if (typeof item.version === 'function') {
-    //   // const { babel } = getBabelOptionsSync();
-    //   let fnStr = item.version.toString();
-    //   if (/^[A-Za-z0-9_$]*\s?\(([A-Za-z0-9_$\s,]*)\)\s*{/.test(fnStr)) fnStr = `function ${fnStr}`;
-    //   let str = require('@babel/core').transformSync(fnStr, {
-    //     babelrc: true,
-    //     configFile: true,
-    //     plugins: ['@babel/plugin-transform-arrow-functions', '@babel/plugin-transform-destructuring']
-    //   });
-    //   console.log(str);
-    // }
-    if (shareItem.getVersion) item.getVersion = shareItem.getVersion;
-    ret.push(item);
-  });
   return ret;
 }
 
@@ -216,6 +220,7 @@ function resolveRemotes(self, compilation, options) {
       const mid = getModuleId(compilation, m);
       // @ts-ignore
       remotes.idToExternalAndNameMapping[mid] = [m.shareScope, m.internalRequest, m.externalRequests[0]];
+      // @ts-ignore
       compilation.chunkGraph.getModuleChunksIterable(m).forEach(c => {
         if (!remotes.chunkMapping[c.id]) remotes.chunkMapping[c.id] = [];
         remotes.chunkMapping[c.id].push(mid);
@@ -245,8 +250,9 @@ function resolveExternals(compilation, options) {
     // @ts-ignore
     return m.externalType === 'var';
   }).map(m => {
+    let v = { id: getModuleId(compilation, m) };
     // @ts-ignore
-    let v = { id: getModuleId(compilation, m), type: m.externalType };
+    if (m.externalType) v.type = m.externalTyp; 
     // @ts-ignore
     if (isPlainObject(m.request)) {
       // @ts-ignore
