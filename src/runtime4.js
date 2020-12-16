@@ -1,6 +1,6 @@
 /* eslint-disable camelcase */
+import fetch, { globalCached, objectDefineProperty } from './fetch';
 import { DEFAULT_TIMEOUT, joinUrl } from './utils';
-import fetch, { globalCached } from './fetch';
 import importCss from './importCss';
 import importJs from './importJs';
 
@@ -180,7 +180,7 @@ function createRuntime({
         _hasOwnProperty.call(__webpack_require__, name)
         && name !== 'e'
         && name !== 't') {
-        Object.defineProperty(fn, name, ObjectFactory(name));
+        objectDefineProperty(fn, name, ObjectFactory(name));
       }
     }
     fn.e = function (chunkId) {
@@ -889,16 +889,16 @@ function createRuntime({
   // define getter function for harmony exports
   __webpack_require__.d = function (exports, name, getter) {
     if (!__webpack_require__.o(exports, name)) {
-      Object.defineProperty(exports, name, { enumerable: true, get: getter });
+      objectDefineProperty(exports, name, { enumerable: true, get: getter });
     }
   };
 
   // define __esModule on exports
   __webpack_require__.r = function (exports) {
     if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-      Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+      objectDefineProperty(exports, Symbol.toStringTag, { value: 'Module' });
     }
-    Object.defineProperty(exports, '__esModule', { value: true });
+    objectDefineProperty(exports, '__esModule', { value: true });
   };
 
   // create a fake namespace object
@@ -912,7 +912,7 @@ function createRuntime({
     if ((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
     let ns = Object.create(null);
     __webpack_require__.r(ns);
-    Object.defineProperty(ns, 'default', { enumerable: true, value });
+    objectDefineProperty(ns, 'default', { enumerable: true, value });
     if (mode & 2 && typeof value != 'string') {
       // eslint-disable-next-line guard-for-in,no-restricted-syntax
       for (let key in value) __webpack_require__.d(ns, key, function (key) { return value[key]; }.bind(null, key));

@@ -1,6 +1,6 @@
 
 /* eslint-disable camelcase */
-import fetch, { globalCached } from './fetch';
+import fetch, { globalCached, objectDefineProperty } from './fetch';
 import { DEFAULT_TIMEOUT, joinUrl } from './utils';
 import importCss from './importCss';
 import importJs from './importJs';
@@ -122,14 +122,14 @@ function createRuntime({
   __webpack_require__.d = (exports, definition, getter) => {
     if (getter) {
       if (!__webpack_require__.o(exports, definition)) {
-        Object.defineProperty(exports, definition, { enumerable: true, get: getter });
+        objectDefineProperty(exports, definition, { enumerable: true, get: getter });
       }
       return;
     }
 
     for (let key in definition) {
       if (__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-        Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+        objectDefineProperty(exports, key, { enumerable: true, get: definition[key] });
       }
     }
   };
@@ -220,9 +220,9 @@ function createRuntime({
   // define __esModule on exports
   __webpack_require__.r = exports => {
     if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-      Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+      objectDefineProperty(exports, Symbol.toStringTag, { value: 'Module' });
     }
-    Object.defineProperty(exports, '__esModule', { value: true });
+    objectDefineProperty(exports, '__esModule', { value: true });
   };
     
   /* webpack/runtime/node module decorator */
@@ -418,7 +418,7 @@ function createRuntime({
       };
       for (let name in require) {
         if (Object.prototype.hasOwnProperty.call(require, name) && name !== 'e') {
-          Object.defineProperty(fn, name, createPropertyDescriptor(name));
+          objectDefineProperty(fn, name, createPropertyDescriptor(name));
         }
       }
       fn.e = function (chunkId) {

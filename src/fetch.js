@@ -1,4 +1,15 @@
-require('object-defineproperty-ie8');
+import { objectDefineProperty } from './_objdp';
+
+function checkRemoteModuleWebpack(context = global) {
+  if (!context.__remoteModuleWebpack__) {
+    context.__remoteModuleWebpack__ = { 
+      __moduleManifests__: {}, 
+      cached: {},
+    };
+  }
+  return context.__remoteModuleWebpack__;
+}
+checkRemoteModuleWebpack();
 
 const globalCached = window.__remoteModuleWebpack__.cached;
 const queue = [];
@@ -28,7 +39,7 @@ function innumerable(
   value,
   options = { configurable: true }
 ) {
-  Object.defineProperty(obj, key, { value, ...options });
+  objectDefineProperty(obj, key, { value, ...options });
   return obj;
 }
 
@@ -119,7 +130,9 @@ requireJs.modules = {};
 
 export {
   globalCached,
-  requireJs
+  requireJs,
+  checkRemoteModuleWebpack,
+  objectDefineProperty
 };
 
 export default fetch;

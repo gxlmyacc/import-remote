@@ -1,17 +1,8 @@
+import { objectDefineProperty } from './_objdp';
+
 const DEFAULT_TIMEOUT = 120000;
 
 const ATTR_SCOPE_NAME = 'data-remote-scope';
-
-function checkRemoteModuleWebpack(context = global) {
-  if (!context.__remoteModuleWebpack__) {
-    context.__remoteModuleWebpack__ = { 
-      __moduleManifests__: {}, 
-      cached: {},
-    };
-  }
-  return context.__remoteModuleWebpack__;
-}
-checkRemoteModuleWebpack();
 
 function requireFromStr(source, { global: context = global, moduleProps = {}, } = {}) {
   // eslint-disable-next-line no-useless-catch
@@ -149,7 +140,7 @@ function innumerable(
   value,
   options = { configurable: true }
 ) {
-  Object.defineProperty(obj, key, { value, ...options });
+  objectDefineProperty(obj, key, { value, ...options });
   return obj;
 }
 
@@ -176,7 +167,6 @@ export {
 
   walkMainifest,
 
-  checkRemoteModuleWebpack,
   requireFromStr,
   isAbsoluteUrl,
   resolveRelativeUrl,

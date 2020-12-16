@@ -1,9 +1,9 @@
 import escapeStringRegexp from 'escape-string-regexp';
-import { globalCached } from './fetch';
+import { globalCached, checkRemoteModuleWebpack } from './fetch';
 import { 
   DEFAULT_TIMEOUT, ATTR_SCOPE_NAME,
   isFunction, getHostFromUrl, resolveRelativeUrl, walkMainifest,
-  innumerable, isPlainObject, checkRemoteModuleWebpack
+  innumerable, isPlainObject
 } from './utils';
 import createRuntime5 from './runtime5';
 import { transformStyleHost, ATTR_CSS_TRANSFORMED } from './importCss';

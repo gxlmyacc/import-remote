@@ -1,5 +1,4 @@
-
-require('object-defineproperty-ie8');
+const { objectDefineProperty } = require('../esm/_objdp');
 
 const hasSymbol = typeof Symbol === 'function' && Symbol.for;
 const REACT_FORWARD_REF_TYPE = hasSymbol ? Symbol.for('react.forward_ref') : 0xead0;
@@ -38,7 +37,7 @@ function innumerable(
   value,
   options = { configurable: true }
 ) {
-  Object.defineProperty(obj, key, { value, ...options });
+  objectDefineProperty(obj, key, { value, ...options });
   return obj;
 }
 
