@@ -305,9 +305,10 @@ function remote(url, options = {}) {
             : null;
 
           const jsonpFunction = manifest.jsonpFunction || 'webpackJsonp';
-          const jsonpSourceRegx = new RegExp(`${(!libraryTarget || libraryTarget === 'var') ? '^(\\/\\*[A-z\\s*():/.",-]+\\*\\/\\n)?' : ''}\\(${
-            globalObject}((\\[")|\\.)${jsonpFunction}("\\])?\\s?=\\s?${
-            globalObject}((\\[")|\\.)${jsonpFunction}("\\])?\\s?\\|\\|\\s?\\[\\]\\)`);
+          const jsonpSourceRegx = new RegExp(`${
+              (!libraryTarget || libraryTarget === 'var') ? '^(?:\\/\\*[A-z\\s*():/.",-]+\\*\\/\\n)?' : ''
+            }(?:var ([A-Za-z0-9]+);[A-Za-z0-9_$\\s=]+\\n)?\\(${globalObject}(?:(?:\\[")|\\.)${jsonpFunction}(?:"\\])?\\s?=\\s?${
+            globalObject}(?:(?:\\[")|\\.)${jsonpFunction}(?:"\\])?\\s?\\|\\|\\s?\\[\\]\\)`);
 
           const batchReplaces = manifest.batchReplaces && manifest.batchReplaces.map(v => {
             if (!Array.isArray(v)) return v;
@@ -338,9 +339,12 @@ function remote(url, options = {}) {
                   let match = source.match(jsonpSourceRegx);
                   [sourcePrefix] = match || [];
                   if (sourcePrefix) {
+                    const appVar = match[1] || '';
                     const newSourcePrefix1 = `(${newGlobalObject}['${jsonpFunction}']=${newGlobalObject}['${jsonpFunction}']||[])`;
-                    source = (match.index ? source.substr(0, match.index) : '') 
-                      + newSourcePrefix1 + source.substr(match.index + sourcePrefix.length);
+                    source = (match.index ? source.substr(0, match.index) : '')
+                      + (appVar ? `var ${appVar}=\n` : '')
+                      + newSourcePrefix1 
+                      + source.substr(match.index + sourcePrefix.length);
                   }
                 }
 

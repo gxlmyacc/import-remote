@@ -1,7 +1,7 @@
 
 /* eslint-disable camelcase */
 import fetch, { globalCached, objectDefineProperty } from './fetch';
-import { DEFAULT_TIMEOUT, joinUrl } from './utils';
+import { DEFAULT_TIMEOUT, isFunction, joinUrl } from './utils';
 import importCss from './importCss';
 import importJs from './importJs';
 import jsonp from './jsonp';
@@ -254,7 +254,7 @@ function createRuntime({
         };
         let handleFunction = (fn, arg1, arg2, d, next, first) => {
           try {
-            let promise = fn(arg1, arg2);
+            let promise = isFunction(fn) ? fn(arg1, arg2) : fn;
             if (promise && promise.then) {
               let p = promise.then(result => next(result, d), onError);
               if (first) promises.push(data.p = p); else return p;
@@ -268,7 +268,7 @@ function createRuntime({
         let onFactory = factory => {
           data.p = 1;
           __webpack_modules__[id] = module => {
-            module.exports = factory();
+            module.exports = isFunction(factory) ? factory() : factory;
           };
         };
         let onInitialized = (_, external, first) => handleFunction(external.get, data[1], getScope, 0, onFactory, first);
