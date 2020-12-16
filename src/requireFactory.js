@@ -1,5 +1,7 @@
 import { innumerable, isPlainObject } from './utils';
 
+require('object-defineproperty-ie8');
+
 function defaultRequireFactory(modulesMap) {
   return async function _requireFactory(externals) {
     let moduleExternals = externals.filter(external => modulesMap[external.name]);

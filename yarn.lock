@@ -4001,6 +4001,11 @@ object-copy@^0.1.0:
     define-property "^0.2.5"
     kind-of "^3.0.3"
 
+object-defineproperty-ie8@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/object-defineproperty-ie8/-/object-defineproperty-ie8-1.0.1.tgz#06daa37926b40d77fa22b0deb533727a08f5734c"
+  integrity sha1-BtqjeSa0DXf6IrDetTNyegj1c0w=
+
 object-hash@^1.1.4:
   version "1.3.1"
   resolved "https://registry.yarnpkg.com/object-hash/-/object-hash-1.3.1.tgz#fde452098a951cb145f039bb7d455449ddc126df"

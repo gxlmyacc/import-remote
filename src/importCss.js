@@ -1,5 +1,5 @@
-import { ATTR_SCOPE_NAME, innumerable, DEFAULT_TIMEOUT, joinUrl } from './utils';
 import fetch, { globalCached } from './fetch';
+import { ATTR_SCOPE_NAME, innumerable, DEFAULT_TIMEOUT, joinUrl } from './utils';
 
 const ATTR_CSS_TRANSFORMED = 'data-import-remote-transformed';
 

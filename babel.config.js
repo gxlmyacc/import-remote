@@ -6,7 +6,7 @@ module.exports = {
         modules: 'commonjs',
         useBuiltIns: 'usage',
         corejs: 2,
-        targets: { browsers: ['Chrome >= 31'] }
+        targets: { browsers: ['Chrome >= 31', 'ie >= 8'] }
       }
     ],
   ],

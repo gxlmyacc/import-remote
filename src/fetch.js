@@ -1,3 +1,5 @@
+require('object-defineproperty-ie8');
+
 const globalCached = window.__remoteModuleWebpack__.cached;
 const queue = [];
 function pushQueue(url, resolve, reject) {

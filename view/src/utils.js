@@ -1,4 +1,6 @@
 
+require('object-defineproperty-ie8');
+
 const hasSymbol = typeof Symbol === 'function' && Symbol.for;
 const REACT_FORWARD_REF_TYPE = hasSymbol ? Symbol.for('react.forward_ref') : 0xead0;
 

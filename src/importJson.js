@@ -1,6 +1,6 @@
 
-import { innumerable, DEFAULT_TIMEOUT } from './utils';
 import fetch, { globalCached } from './fetch';
+import { innumerable, DEFAULT_TIMEOUT } from './utils';
 
 function importJson(href, { cached = globalCached, timeout = DEFAULT_TIMEOUT, sync, nocache } = {}) {
   if (!cached._json) innumerable(cached, '_json', {});

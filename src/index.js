@@ -1,13 +1,14 @@
+
+import fetch, { requireJs } from './fetch';
+import { innumerable, mergeObject, requireWithVersion } from './utils';
 import remote from './remote';
 import RemoteModule from './module';
 import createRequireFactory from './requireFactory';
-import { innumerable, mergeObject, requireWithVersion } from './utils';
 import importJs from './importJs';
 import importJson from './importJson';
 import importCss from './importCss';
 import jsonp from './jsonp';
 import { satisfy, versionLt } from './semver';
-import fetch, { requireJs } from './fetch';
 
 // eslint-disable-next-line no-undef
 const version = typeof __packageversion__ === 'undefined' ? undefined : __packageversion__;
