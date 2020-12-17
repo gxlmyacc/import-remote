@@ -101,16 +101,22 @@ function isEvalDevtool(devtool) {
 * @returns 
 */
 function resolveBatchReplaces(self, compilation, options) {
-  let ret = [];
   const isEval = isEvalDevtool(compilation.options.devtool);
+  const batchReplacesMap = {
+    'react-error-overlay': [
+      [/\bwindow\.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__\b/g, '__windowProxy__.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__'],
+      [/\bwindow\.parent\.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__\b/g, `window.parent.__remoteModuleWebpack__[${isEval ? '\\' : ''}"%SCOPE_NAME%${isEval ? '\\' : ''}"].__windowProxy__.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__`]
+    ],
+    ...(options.batchReplaces || {})
+  };
+  let ret = [];
   [...compilation.modules].filter(m => m.type === 'javascript/auto').forEach(m => {
     // @ts-ignore
     let rawRequest = m.rawRequest || '';
-    if (rawRequest === 'react-error-overlay') {
-      ret.push(...[
-        [/\bwindow\.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__\b/g, '__windowProxy__.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__'],
-        [/\bwindow\.parent\.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__\b/g, `window.parent.__remoteModuleWebpack__[${isEval ? '\\' : ''}"%SCOPE_NAME%${isEval ? '\\' : ''}"].__windowProxy__.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__`]
-      ]);
+    if (batchReplacesMap[rawRequest]) {
+      let value = batchReplacesMap[rawRequest];
+      if (typeof value === 'function') value = value(self, compilation, options, isEval);
+      if (Array.isArray(value)) ret.push(...value);
     }
   });
   return ret;
@@ -469,6 +475,9 @@ class ModuleWebpackPlugin {
           .for(RuntimeGlobals.hmrDownloadManifest)
           .tap('ModuleWebpackPlugin', handler);
 
+        self.initialConsumes = [];
+        self.moduleIdToSourceMapping = {};
+
         compilation.hooks.runtimeRequirementInTree
           .for(RuntimeGlobals.shareScopeMap)
           .tap('ModuleWebpackPlugin', (chunk, set) => {
@@ -537,7 +546,6 @@ class ModuleWebpackPlugin {
             }
             self.initCodePerScope = initCodePerScope;
 
-            const moduleIdToSourceMapping = {};
             const addModules = (modules, chunk, list) => {
               for (const m of modules) {
                 const module = m;
@@ -551,14 +559,14 @@ class ModuleWebpackPlugin {
                   'consume-shared'
                 // @ts-ignore
                 )._value;
-                moduleIdToSourceMapping[id] = [
+                self.moduleIdToSourceMapping[id] = [
                   module.options.shareScope,
                   module.options.shareKey,
                   module.options.requiredVersion,
                   getChunkIdFormSource(source, true)
                 ];
                 let [entryId] = getChunkIdFormSource(source);
-                if (entryId != null) moduleIdToSourceMapping[id].push(entryId);
+                if (entryId != null) self.moduleIdToSourceMapping[id].push(entryId);
               }
             };
 
@@ -574,7 +582,6 @@ class ModuleWebpackPlugin {
             }
             self.chunkToModuleMapping = chunkToModuleMapping;
           
-            const initialConsumes = [];
             for (const c of chunk.getAllInitialChunks()) {
               // @ts-ignore
               const modules = compilation.chunkGraph.getChunkModulesIterableBySourceType(
@@ -582,10 +589,8 @@ class ModuleWebpackPlugin {
                 'consume-shared'
               );
               if (!modules) continue;
-              addModules(modules, c, initialConsumes);
+              addModules(modules, c, self.initialConsumes);
             }
-            self.initialConsumes = initialConsumes;
-            self.moduleIdToSourceMapping = moduleIdToSourceMapping;
 
             return true;
           });

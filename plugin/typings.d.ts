@@ -55,7 +55,15 @@ declare namespace ModuleWebpackPlugin {
     /**
      * common module
      */
-    commonModules?: { name: string, url: string, scoped?: boolean }
+    commonModules?: { name: string, url: string, scoped?: boolean };
+
+    batchReplaces?: {
+      [key: string]: [RegExp, string][]|((
+        self: ModuleWebpackPlugin, 
+        compilation: WebpackCompilation, 
+        options: ProcessedOptions, 
+        isEval: boolean) => [RegExp, string][])
+    };
     /**
      * List all entries which should be injected
      */
