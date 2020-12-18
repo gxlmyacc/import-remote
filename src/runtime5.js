@@ -761,59 +761,54 @@ function createRuntime({
       if (promise && promise.then) return promise.then(fn.bind(fn, scopeName, __webpack_require__.S[scopeName], a, b, c));
       return fn(scopeName, __webpack_require__.S[scopeName], a, b, c);
     };
+
+    const moduleToHandlerFns = {
+      load: init((scopeName, scope, key) => {
+        ensureExistence(scopeName, key);
+        return get(findVersion(scope, key));
+      }),
+      loadFallback: init((scopeName, scope, key, fallback) => 
+        (scope && __webpack_require__.o(scope, key) ? get(findVersion(scope, key)) : fallback())),
+      loadVersionCheck: init((scopeName, scope, key, version) => {
+        ensureExistence(scopeName, key);
+        return get(findValidVersion(scope, key, version) || warnInvalidVersion(scope, scopeName, key, version) || findVersion(scope, key));
+      }),
+      loadSingletonVersionCheck: init((scopeName, scope, key, version) => {
+        ensureExistence(scopeName, key);
+        return getSingletonVersion(scope, scopeName, key, version);
+      }),
+      loadStrictVersionCheck: init((scopeName, scope, key, version) => {
+        ensureExistence(scopeName, key);
+        return getValidVersion(scope, scopeName, key, version);
+      }),
+      loadStrictSingletonVersionCheck: init((scopeName, scope, key, version) => {
+        ensureExistence(scopeName, key);
+        return getStrictSingletonVersion(scope, scopeName, key, version);
+      }),
+      loadVersionCheckFallback: init((scopeName, scope, key, version, fallback) => {
+        if (!scope || !__webpack_require__.o(scope, key)) return fallback();
+        return get(findValidVersion(scope, key, version) || warnInvalidVersion(scope, scopeName, key, version) || findVersion(scope, key));
+      }),
+      loadSingletonVersionCheckFallback: init((scopeName, scope, key, version, fallback) => {
+        if (!scope || !__webpack_require__.o(scope, key)) return fallback();
+        return getSingletonVersion(scope, scopeName, key, version);
+      }),
+      loadStrictVersionCheckFallback: init((scopeName, scope, key, version, fallback) => {
+        let entry = scope && __webpack_require__.o(scope, key) && findValidVersion(scope, key, version);
+        return entry ? get(entry) : fallback();
+      }),
+      loadStrictSingletonVersionCheckFallback: init((scopeName, scope, key, version, fallback) => {
+        if (!scope || !__webpack_require__.o(scope, key)) return fallback();
+        return getStrictSingletonVersion(scope, scopeName, key, version);
+      })
+    };
       
-    // eslint-disable-next-line no-unused-vars
-    let load = /* #__PURE__ */ init((scopeName, scope, key) => {
-      ensureExistence(scopeName, key);
-      return get(findVersion(scope, key));
-    });
-    // eslint-disable-next-line no-unused-vars
-    let loadFallback = /* #__PURE__ */ init((scopeName, scope, key, fallback) => 
-      (scope && __webpack_require__.o(scope, key) ? get(findVersion(scope, key)) : fallback()));
-    // eslint-disable-next-line no-unused-vars
-    let loadVersionCheck = /* #__PURE__ */ init((scopeName, scope, key, version) => {
-      ensureExistence(scopeName, key);
-      return get(findValidVersion(scope, key, version) || warnInvalidVersion(scope, scopeName, key, version) || findVersion(scope, key));
-    });
-    // eslint-disable-next-line no-unused-vars
-    let loadSingletonVersionCheck = /* #__PURE__ */ init((scopeName, scope, key, version) => {
-      ensureExistence(scopeName, key);
-      return getSingletonVersion(scope, scopeName, key, version);
-    });
-    // eslint-disable-next-line no-unused-vars
-    let loadStrictVersionCheck = /* #__PURE__ */ init((scopeName, scope, key, version) => {
-      ensureExistence(scopeName, key);
-      return getValidVersion(scope, scopeName, key, version);
-    });
-    // eslint-disable-next-line no-unused-vars
-    let loadStrictSingletonVersionCheck = /* #__PURE__ */ init((scopeName, scope, key, version) => {
-      ensureExistence(scopeName, key);
-      return getStrictSingletonVersion(scope, scopeName, key, version);
-    });
-    // eslint-disable-next-line no-unused-vars
-    let loadVersionCheckFallback = /* #__PURE__ */ init((scopeName, scope, key, version, fallback) => {
-      if (!scope || !__webpack_require__.o(scope, key)) return fallback();
-      return get(findValidVersion(scope, key, version) || warnInvalidVersion(scope, scopeName, key, version) || findVersion(scope, key));
-    });
-    let loadSingletonVersionCheckFallback = /* #__PURE__ */ init((scopeName, scope, key, version, fallback) => {
-      if (!scope || !__webpack_require__.o(scope, key)) return fallback();
-      return getSingletonVersion(scope, scopeName, key, version);
-    });
-    // eslint-disable-next-line no-unused-vars
-    let loadStrictVersionCheckFallback = /* #__PURE__ */ init((scopeName, scope, key, version, fallback) => {
-      let entry = scope && __webpack_require__.o(scope, key) && findValidVersion(scope, key, version);
-      return entry ? get(entry) : fallback();
-    });
-    // eslint-disable-next-line no-unused-vars
-    let loadStrictSingletonVersionCheckFallback = /* #__PURE__ */ init((scopeName, scope, key, version, fallback) => {
-      if (!scope || !__webpack_require__.o(scope, key)) return fallback();
-      return getStrictSingletonVersion(scope, scopeName, key, version);
-    });
     let installedModules = {};
     let moduleToHandlerMapping = {};
     Object.keys(remotes.moduleIdToSourceMapping || {}).forEach(id => {
-      let [shareScope, shareKey, version, chunkIds, entryId] = remotes.moduleIdToSourceMapping[id];
-      moduleToHandlerMapping[id] = () => loadSingletonVersionCheckFallback(
+      let [shareScope, shareKey, version, chunkIds, entryId, 
+        methodName = 'loadSingletonVersionCheckFallback'] = remotes.moduleIdToSourceMapping[id];
+      moduleToHandlerMapping[id] = () => moduleToHandlerFns[methodName](
         shareScope, 
         shareKey, 
         version, 
@@ -1006,6 +1001,9 @@ function createRuntime({
     if (waitingUpdateResolves[chunkId]) {
       waitingUpdateResolves[chunkId]();
       waitingUpdateResolves[chunkId] = undefined;
+    } else if (installedChunks[chunkId] && installedChunks[chunkId] !== 0) {
+      installedChunks[chunkId][0]();
+      installedChunks[chunkId] = 0;
     }
   };
       

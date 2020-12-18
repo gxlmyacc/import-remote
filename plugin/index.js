@@ -502,6 +502,11 @@ class ModuleWebpackPlugin {
               if (entryId != null) ret.push(isNumber ? Number(entryId) : entryId);
               return ret;
             };
+
+            const getMapHandlerMethod = src => {
+              const [, ret] = src.match(/^\(\) => ([A-Za-z]+)\(/);
+              return ret;
+            };
                   
             const initCodePerScope = {};
             for (const c of chunk.getAllReferencedChunks()) {
@@ -567,6 +572,8 @@ class ModuleWebpackPlugin {
                 ];
                 let [entryId] = getChunkIdFormSource(source);
                 if (entryId != null) self.moduleIdToSourceMapping[id].push(entryId);
+                let methodName = getMapHandlerMethod(source);
+                if (methodName) self.moduleIdToSourceMapping[id].push(methodName);
               }
             };
 
@@ -751,11 +758,28 @@ class ModuleWebpackPlugin {
         }));
     } else {
       compiler.hooks.thisCompilation.tap('ModuleWebpackPlugin',
-      /**
+       /**
          * Hook into the webpack compilation
          * @param {WebpackCompilation} compilation
         */
         compilation => {
+          compilation.hooks.optimizeChunkModules.tap(
+            'ModuleWebpackPlugin',
+            (chunks, modules) => {
+              const entryNames = Array.from(compilation.entrypoints.keys());
+              entryNames.forEach(entryName => {
+                const entrypoints = compilation.entrypoints.get(entryName);
+                const c = entrypoints.chunks.find(c => c.name === entryName);
+                if (!c) return;
+                const entryModule = compilation.chunkGraph.getChunkRootModules(c).find(m => m.type === 'javascript/auto');
+                if (entryModule && c.runtime) {
+                  const exportsInfo = compilation.moduleGraph.getExportsInfo(entryModule);
+                  if (!exportsInfo.isUsed(c.runtime)) exportsInfo.setUsedWithoutInfo(c.runtime);
+                }
+              });
+            }
+         );
+
           compilation.hooks.processAssets.tapAsync(
             {
               name: 'ModuleWebpackPlugin',
@@ -1086,7 +1110,7 @@ class ModuleWebpackPlugin {
         return true;
       }
       // @ts-ignore
-      if (!c.id || !entryNames.includes(c.id)) return;
+      if (!c.name || !entryNames.includes(c.name)) return;
       const entryModule = compilation.chunkGraph.getChunkRootModules(c).find(m => m.type === 'javascript/auto');
       if (entryModule) checkEntryModule(entryModule);
       // if (assets.hot) {

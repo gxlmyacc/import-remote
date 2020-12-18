@@ -301,13 +301,13 @@ function remote(url, options = {}) {
           const hotUpdateGlobal = manifest.hotUpdateGlobal || 'webpackHotUpdate';
           const hotSourceRegx = hotUpdateGlobal
             ? new RegExp(`${(!libraryTarget || libraryTarget === 'var') ? '^(\\/\\*[A-z\\s*():/.",-]+\\*\\/\\n)?' : ''}${
-              globalObject}\\["${hotUpdateGlobal}"\\]`)
+              globalObject}(?:(?:\\[")|\\.)${hotUpdateGlobal}(?:"\\])?`)
             : null;
 
           const jsonpFunction = manifest.jsonpFunction || 'webpackJsonp';
           const jsonpSourceRegx = new RegExp(`${
-              (!libraryTarget || libraryTarget === 'var') ? '^(?:\\/\\*[A-z\\s*():/.",-]+\\*\\/\\n)?' : ''
-            }(?:var ([A-Za-z0-9]+);[A-Za-z0-9_$\\s=]+\\n)?\\(${globalObject}(?:(?:\\[")|\\.)${jsonpFunction}(?:"\\])?\\s?=\\s?${
+            (!libraryTarget || libraryTarget === 'var') ? '^(?:\\/\\*[A-z\\s*():/.",-]+\\*\\/\\n)?' : ''
+          }(?:var ([A-Za-z0-9]+);[A-Za-z0-9_$\\s=]+\\n?)?\\(${globalObject}(?:(?:\\[")|\\.)${jsonpFunction}(?:"\\])?\\s?=\\s?${
             globalObject}(?:(?:\\[")|\\.)${jsonpFunction}(?:"\\])?\\s?\\|\\|\\s?\\[\\]\\)`);
 
           const batchReplaces = manifest.batchReplaces && manifest.batchReplaces.map(v => {
@@ -342,7 +342,7 @@ function remote(url, options = {}) {
                     const appVar = match[1] || '';
                     const newSourcePrefix1 = `(${newGlobalObject}['${jsonpFunction}']=${newGlobalObject}['${jsonpFunction}']||[])`;
                     source = (match.index ? source.substr(0, match.index) : '')
-                      + (appVar ? `var ${appVar}=\n` : '')
+                      + (appVar ? `var ${appVar}=${globalObject}.${appVar}=\n` : '')
                       + newSourcePrefix1 
                       + source.substr(match.index + sourcePrefix.length);
                   }
