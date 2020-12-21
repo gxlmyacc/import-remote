@@ -36,6 +36,16 @@ const fsStatAsync = promisify(fs.stat);
 const fsReadFileAsync = promisify(fs.readFile);
 
 
+function innumerable(
+  obj,
+  key,
+  value,
+  options = { configurable: true }
+) {
+  Object.defineProperty(obj, key, { value, ...options });
+  return obj;
+}
+
 /**
  * resolve scopeName
   * @param {ProcessedModuleWebpackOptions} options
@@ -386,8 +396,21 @@ class ModuleWebpackPlugin {
     const self = this;
     const webpack = compiler.webpack;
 
-    if (!compiler.options.optimization.runtimeChunk) {
-      compiler.options.optimization.runtimeChunk = true;
+    const optimization = compiler.options.optimization;
+    if (!optimization.runtimeChunk
+      || !optimization.runtimeChunk._moduleWebpackPluginHooked) { 
+      let name = isPlainObject(optimization.runtimeChunk)
+        ? optimization.runtimeChunk.name
+        : () => undefined;
+      if (!isPlainObject(optimization.runtimeChunk))optimization.runtimeChunk = {};
+      optimization.runtimeChunk.name = entrypoint => {
+        let ret = typeof name === 'function' ? name(entrypoint) : name;
+        if (typeof ret !== 'string') {
+          ret = compiler.options.entry[entrypoint.name] ? `runtime~${entrypoint.name}` : undefined;
+        }
+        return ret;
+      };
+      innumerable(optimization.runtimeChunk, '_moduleWebpackPluginHooked', true);
     }
 
     const packageFile = findUp.sync('package.json', { cwd: compiler.context || process.cwd() });
@@ -758,11 +781,17 @@ class ModuleWebpackPlugin {
         }));
     } else {
       compiler.hooks.thisCompilation.tap('ModuleWebpackPlugin',
-       /**
+        /**
          * Hook into the webpack compilation
          * @param {WebpackCompilation} compilation
         */
         compilation => {
+          // compilation.hooks.moduleIds.tap(
+          //   'ModuleWebpackPlugin',
+          //   modules => {
+          //     console.log('modules', modules);
+          //   }
+          // );
           compilation.hooks.optimizeChunkModules.tap(
             'ModuleWebpackPlugin',
             (chunks, modules) => {
@@ -778,7 +807,7 @@ class ModuleWebpackPlugin {
                 }
               });
             }
-         );
+          );
 
           compilation.hooks.processAssets.tapAsync(
             {

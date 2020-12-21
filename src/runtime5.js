@@ -36,6 +36,7 @@ function createRuntime({
   let chunkLoadingGlobal = context[jsonpFunction] = context[jsonpFunction] || [];
   let parentChunkLoadingFunction = chunkLoadingGlobal.push.bind(chunkLoadingGlobal);
   chunkLoadingGlobal.push = webpackJsonpCallback;
+  if (webpackVersion > 4 && !self[jsonpFunction]) self[jsonpFunction] = chunkLoadingGlobal;
     
   // The require function
   function __webpack_require__(moduleId, entryFile) {
@@ -1006,7 +1007,7 @@ function createRuntime({
       installedChunks[chunkId] = 0;
     }
   };
-      
+  // if (webpackVersion > 4 && hotUpdateGlobal && !self[hotUpdateGlobal]) self[hotUpdateGlobal] = context[hotUpdateGlobal];
 
   function applyHandler(options) {
     if (__webpack_require__.f) delete __webpack_require__.f.jsonpHmr;
