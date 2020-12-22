@@ -1110,28 +1110,38 @@ class ModuleWebpackPlugin {
     }
 
     const checkEntryModule = entryModule => {
+      let ret = {};
       // @ts-ignore
-      assets.entryId = getModuleId(compilation, entryModule);
+      ret.entryId = getModuleId(compilation, entryModule);
       if (webpackMajorVersion >= 5) {
-        return assets.entryId;
+        return ret;
       }
       if (entryModule.buildMeta.providedExports || entryModule.buildMeta.exportsType) {
-        assets.entryFile = resolveModuleFile(compilation, entryModule);
-        return Boolean(assets.entryFile);
+        ret.entryFile = resolveModuleFile(compilation, entryModule);
       }
+      return ret;
     };
     const chunks = compilation.chunks instanceof Set ? Array.from(compilation.chunks) : compilation.chunks;
     const entryChunk = chunks.find(c => {
       if (webpackMajorVersion < 5) {
         // @ts-ignore
         if (!c.entryModule || !entryNames.includes(c.entryModule.name)) return; 
-        checkEntryModule(c.entryModule);
+        Object.assign(assets, checkEntryModule(c.entryModule));
         return true;
       }
       // @ts-ignore
       if (!c.name || !entryNames.includes(c.name)) return;
-      const entryModule = compilation.chunkGraph.getChunkRootModules(c).find(m => m.type === 'javascript/auto');
-      if (entryModule) checkEntryModule(entryModule);
+      const entryModules = compilation.chunkGraph.getChunkRootModules(c).filter(m => m.type === 'javascript/auto');
+      if (entryModules) {
+        let entrys = entryModules.map(v => checkEntryModule(v));
+        if (entrys.length <= 1) Object.assign(assets, entrys[0]);
+        else {
+          // @ts-ignore
+          assets.entryId = entrys.map(v => v.entryId);
+          // @ts-ignore
+          assets.entryFile = entrys.map(v => v.entryFile);
+        }
+      }
       // if (assets.hot) {
       //   const entryModule = [...c.modulesIterable].find(m => m.type === 'javascript/auto');
       //   checkEntryModule(entryModule);
@@ -1292,8 +1302,9 @@ class ModuleWebpackPlugin {
   getAssetFiles(assets) {
     const files = _.uniq(Object.keys(assets).filter(assetType => assetType !== 'chunks' && assets[assetType])
       .reduce((files, assetType) => {
+        if (['entryId', 'entryFile'].includes(assetType)) return files;
         let asset = assets[assetType];
-        return files.concat(Array.isArray(asset) ? asset.map(v => v.file) : asset);
+        return files.concat(Array.isArray(asset) ? asset.map(v => v.file || '') : asset);
       }, []));
     files.sort();
     return files;

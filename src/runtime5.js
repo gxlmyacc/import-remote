@@ -21,15 +21,12 @@ function createRuntime({
   jsChunks = {},
   context = {},
   webpackVersion = 4,
-  initCodePerScope = {},
   cached = globalCached,
   timeout = DEFAULT_TIMEOUT,
   requireExternal,
   beforeSource,
   remotes = {}
 } = {}) {
-  let __webpack_ret__ = __webpack_require__;
-
   let __webpack_modules__ = {};
   /** ********************************************************************* */
   // The module cache
@@ -42,6 +39,7 @@ function createRuntime({
     
   // The require function
   function __webpack_require__(moduleId, entryFile) {
+    if (Array.isArray(moduleId)) return moduleId.map((id, i) => __webpack_require__(id, entryFile[i]));
     // Check if module is in cache
     if (__webpack_module_cache__[moduleId]) {
       return __webpack_module_cache__[moduleId].exports;
@@ -49,9 +47,8 @@ function createRuntime({
     if (!__webpack_modules__[moduleId] && entryFile && __webpack_modules__[entryFile]) moduleId = entryFile;
     if (!__webpack_modules__[moduleId]) {
       let result = requireExternal(moduleId);
-      if (result !== undefined) return result;
-
-      throw new Error(`[import-remote]module[${moduleId}] not exist!`);
+      if (result === undefined) console.error(`[import-remote]module[${moduleId}] not exist!`);
+      return result;
     }
     // Create a new module (and put it into the cache)
     let module = __webpack_module_cache__[moduleId] = {
@@ -309,11 +306,11 @@ function createRuntime({
       // runs all init snippets from all modules reachable
       let scope = __webpack_require__.S[name];
       let warn = msg => typeof console !== 'undefined' && console.warn && console.warn(msg);
-      let register = (name, version, factory) => {
+      let register = (name, version, factory, loaded) => {
         let versions = scope[name] = scope[name] || {};
         let activeVersion = versions[version];
-        if ((!activeVersion || !activeVersion.loaded) && uniqueName > activeVersion.from) {
-          versions[version] = { get: factory, from: uniqueName };
+        if (!activeVersion || (!activeVersion.loaded && uniqueName > activeVersion.from)) {
+          versions[version] = { get: factory, from: uniqueName, loaded };
         }
       };
       let promises = [];
@@ -329,14 +326,19 @@ function createRuntime({
         } catch (err) { handleError(err); }
       };
 
-      const initCode = initCodePerScope[name] || [];
+      const initCode = (remotes.initCodePerScope && remotes.initCodePerScope[name]) || [];
       if (initCode) {
         initCode.forEach(item => {
           const [type] = item;
           if (type === 'register') {
             const [, shareKey, version, chunkIds, entryId] = item;
-            register(shareKey, version, () => Promise.all(chunkIds.map(id => __webpack_require__.e(id)))
-              .then(() => () => __webpack_require__(entryId)));
+            let shareModule = __webpack_require__.m[entryId];
+            if (shareModule && !shareModule.__import_remote_shared__ && !shareModule.__import_remote_external__) shareModule = null;
+            register(shareKey, version, () => {
+              if (shareModule) return shareModule;
+              return Promise.all(chunkIds.map(id => __webpack_require__.e(id)))
+                .then(() => () => __webpack_require__(entryId));
+            }, shareModule ? 1 : 0);
           }
           if (type === 'init') {
             const [, entryId] = item;
@@ -818,31 +820,44 @@ function createRuntime({
     Object.keys(remotes.moduleIdToSourceMapping || {}).forEach(id => {
       let [shareScope, shareKey, version, chunkIds, entryId, 
         methodName = 'loadSingletonVersionCheckFallback'] = remotes.moduleIdToSourceMapping[id];
+      let shareModule = __webpack_require__.m[entryId];
+      if (shareModule && !shareModule.__import_remote_shared__ && !shareModule.__import_remote_external__) shareModule = null;
       moduleToHandlerMapping[id] = () => moduleToHandlerFns[methodName](
         shareScope, 
         shareKey, 
         version, 
-        () => Promise.all(chunkIds.map(chunkId => __webpack_require__.e(chunkId)))
-          .then(() => () => __webpack_require__(entryId))
+        () => {
+          if (shareModule) return shareModule;
+          return Promise.all(chunkIds.map(chunkId => __webpack_require__.e(chunkId)))
+            .then(() => () => __webpack_require__(entryId));
+        }
       );
     });
 
     (() => {
       let initialConsumes = remotes.initialConsumes || [];
       if (initialConsumes.length) {
-        let __webpack_ret_old__ = __webpack_ret__;
-        __webpack_ret__ = Promise.all(initialConsumes.map(id => new Promise((resolve, reject) => {
-          const fallback = factory => __webpack_modules__[id] = module => {
-            // Handle case when module is used sync
-            installedModules[id] = 0;
-            delete __webpack_module_cache__[id];
-            module.exports = factory();
-          };
-          let factory = moduleToHandlerMapping[id]();
-          if (factory && factory.then) factory.then(r => resolve(fallback(r))).catch(reject);  
-          else if (typeof factory !== 'function') reject('Shared module is not available for eager consumption: ' + id);
-          else resolve(fallback(factory));
-        }))).then(() => __webpack_ret_old__);
+        let prom = null;
+        __webpack_require__._init = () => {
+          delete __webpack_require__._init;
+          if (prom) return prom;
+          return prom = Promise.all(initialConsumes.map(id => new Promise((resolve, reject) => {
+            if (__webpack_modules__[id]) {
+              installedModules[id] = 0;
+              return resolve();
+            }
+            const fallback = factory => __webpack_modules__[id] = module => {
+              // Handle case when module is used sync
+              installedModules[id] = 0;
+              delete __webpack_module_cache__[id];
+              return module.exports = factory();
+            };
+            let factory = moduleToHandlerMapping[id]();
+            if (factory && factory.then) factory.then(r => resolve(fallback(r))).catch(reject);
+            else if (typeof factory !== 'function') reject('Shared module is not available for eager consumption: ' + id);
+            else resolve(fallback(factory));
+          })));
+        };
       }
     })();
 
@@ -1513,7 +1528,7 @@ function createRuntime({
   for (let i = 0; i < chunkLoadingGlobal.length; i++) webpackJsonpCallback(chunkLoadingGlobal[i]);
   (checkDeferredModules = checkDeferredModulesImpl)();
 
-  return __webpack_ret__;
+  return __webpack_require__;
 }
 
 export default createRuntime;

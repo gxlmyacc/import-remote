@@ -151,6 +151,7 @@ function splitSource(source, splitRegx, len = splitSourceSize) {
 function requireModule(__require__, manifest, options = {}) {
   if (!__require__) return;
   let result = __require__(manifest.entryId || manifest.entryFile, manifest.entryFile);
+  if (Array.isArray(manifest.entryId)) result = result[0];
   if (options.useEsModuleDefault && result && result.__esModule) result = result.default;
   return result;
 }
@@ -404,15 +405,17 @@ function remote(url, options = {}) {
   
         const context = __remoteModuleWebpack__[scopeName];
         let __require__ = context.require || context.__require__;
-        if (__require__.then) __require__ = await __require__;
 
         await Promise.all(manifest.entrys.ids.map(id => __require__.e(id)));
+
         manifest.externals.forEach(external => {
           if (__require__.m[external.id] && __require__.m[external.id].__import_remote_external__) return;
           const fn = module => {
             if (fn.__import_remote_module__) return fn.__import_remote_module__.exports;
+            if (!module) module = {};
             module.exports = requireExternal(external);
             fn.__import_remote_module__ = module;
+            return module.exports;
           };
           fn.__import_remote_external__ = true;
           __require__.m[external.id] = fn;
@@ -445,11 +448,16 @@ function remote(url, options = {}) {
               }
               if (itemVersion instanceof RegExp && !itemVersion.test(moduleVersion)) return;
             }
-            const fn = module => module.exports = newModule;
+            const fn = module => {
+              if (module) module.exports = newModule;
+              return newModule;
+            };
             fn.__import_remote_shared__ = true;
             __require__.m[item.id] = fn;
           }
         });
+
+        if (__require__._init) await __require__._init();
 
         resolve(requireModule(__require__, manifest, options));
       } catch (ex) {
