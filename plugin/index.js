@@ -35,17 +35,6 @@ const getModuleWebpackPluginHooks = require('./lib/hooks.js').getModuleWebpackPl
 const fsStatAsync = promisify(fs.stat);
 const fsReadFileAsync = promisify(fs.readFile);
 
-
-function innumerable(
-  obj,
-  key,
-  value,
-  options = { configurable: true }
-) {
-  Object.defineProperty(obj, key, { value, ...options });
-  return obj;
-}
-
 /**
  * resolve scopeName
   * @param {ProcessedModuleWebpackOptions} options
@@ -397,21 +386,22 @@ class ModuleWebpackPlugin {
     const webpack = compiler.webpack;
 
     const optimization = compiler.options.optimization;
-    if (!optimization.runtimeChunk
-      || !optimization.runtimeChunk._moduleWebpackPluginHooked) { 
-      let name = isPlainObject(optimization.runtimeChunk)
-        ? optimization.runtimeChunk.name
-        : () => undefined;
-      if (!isPlainObject(optimization.runtimeChunk))optimization.runtimeChunk = {};
-      optimization.runtimeChunk.name = entrypoint => {
-        let ret = typeof name === 'function' ? name(entrypoint) : name;
-        if (typeof ret !== 'string') {
-          ret = compiler.options.entry[entrypoint.name] ? `runtime~${entrypoint.name}` : undefined;
-        }
-        return ret;
-      };
-      innumerable(optimization.runtimeChunk, '_moduleWebpackPluginHooked', true);
-    }
+    let runtimeChunk = optimization.runtimeChunk;
+    let name = isPlainObject(runtimeChunk)
+      ? runtimeChunk.name
+      : entrypoint => (runtimeChunk === true 
+        ? `runtime~${entrypoint.name}`
+        : typeof runtimeChunk === 'string'
+          ? runtimeChunk
+          : undefined);
+    if (!isPlainObject(optimization.runtimeChunk)) optimization.runtimeChunk = {};
+    optimization.runtimeChunk.name = entrypoint => {
+      let ret = typeof name === 'function' ? name(entrypoint) : name;
+      if (typeof ret !== 'string' && (!self.options.chunks || self.options.chunks.includes(entrypoint.name))) {
+        ret = compiler.options.entry[entrypoint.name] ? `runtime~${entrypoint.name}` : undefined;
+      }
+      return ret;
+    };
 
     const packageFile = findUp.sync('package.json', { cwd: compiler.context || process.cwd() });
     this.options.package = require(packageFile);

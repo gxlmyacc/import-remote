@@ -28,6 +28,8 @@ function createRuntime({
   beforeSource,
   remotes = {}
 } = {}) {
+  let __webpack_ret__ = __webpack_require__;
+
   let __webpack_modules__ = {};
   /** ********************************************************************* */
   // The module cache
@@ -84,7 +86,7 @@ function createRuntime({
     
   // expose the module execution interceptor
   __webpack_require__.i = [];
-    
+  
   /** ********************************************************************* */
   /* webpack/runtime/compat get default export */
   // getDefaultExport function for compatibility with non-harmony modules
@@ -97,21 +99,28 @@ function createRuntime({
   };
     
   /* webpack/runtime/create fake namespace object */
+  // eslint-disable-next-line no-proto
+  let getProto = Object.getPrototypeOf ? obj => Object.getPrototypeOf(obj) : obj => obj.__proto__;
+  let leafPrototypes;
   // create a fake namespace object
   // mode & 1: value is a module id, require it
   // mode & 2: merge all properties of value into the ns
   // mode & 4: return value when already ns object
+  // mode & 16: return value when it's Promise-like
   // mode & 8|1: behave like require
   __webpack_require__.t = function (value, mode) {
     if (mode & 1) value = this(value);
     if (mode & 8) return value;
-    if ((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
+    if (typeof value === 'object' && value) {
+      if ((mode & 4) && value.__esModule) return value;
+      if ((mode & 16) && typeof value.then === 'function') return value;
+    }
     let ns = Object.create(null);
     __webpack_require__.r(ns);
     let def = {};
-    if (mode & 2 && typeof value == 'object' && value) {
-    // eslint-disable-next-line guard-for-in
-      for (const key in value) def[key] = () => value[key];
+    leafPrototypes = leafPrototypes || [null, getProto({}), getProto([]), getProto(getProto)];
+    for (let current = mode & 2 && value; typeof current == 'object' && !~leafPrototypes.indexOf(current); current = getProto(current)) {
+      Object.getOwnPropertyNames(current).forEach(key => def[key] = () => value[key]);
     }
     def.default = () => value;
     __webpack_require__.d(ns, def);
@@ -818,17 +827,24 @@ function createRuntime({
       );
     });
 
-    let initialConsumes = remotes.initialConsumes || [];
-    initialConsumes.forEach(id => {
-      __webpack_modules__[id] = module => {
-        // Handle case when module is used sync
-        installedModules[id] = 0;
-        delete __webpack_module_cache__[id];
-        let factory = moduleToHandlerMapping[id]();
-        if (typeof factory !== 'function') throw new Error('Shared module is not available for eager consumption: ' + id);
-        module.exports = factory();
-      };
-    });
+    (() => {
+      let initialConsumes = remotes.initialConsumes || [];
+      if (initialConsumes.length) {
+        let __webpack_ret_old__ = __webpack_ret__;
+        __webpack_ret__ = Promise.all(initialConsumes.map(id => new Promise((resolve, reject) => {
+          const fallback = factory => __webpack_modules__[id] = module => {
+            // Handle case when module is used sync
+            installedModules[id] = 0;
+            delete __webpack_module_cache__[id];
+            module.exports = factory();
+          };
+          let factory = moduleToHandlerMapping[id]();
+          if (factory && factory.then) factory.then(r => resolve(fallback(r))).catch(reject);  
+          else if (typeof factory !== 'function') reject('Shared module is not available for eager consumption: ' + id);
+          else resolve(fallback(factory));
+        }))).then(() => __webpack_ret_old__);
+      }
+    })();
 
     let chunkMapping = remotes.chunkToModuleMapping || {};
     __webpack_require__.f.consumes = (chunkId, promises) => {
@@ -1497,7 +1513,7 @@ function createRuntime({
   for (let i = 0; i < chunkLoadingGlobal.length; i++) webpackJsonpCallback(chunkLoadingGlobal[i]);
   (checkDeferredModules = checkDeferredModulesImpl)();
 
-  return __webpack_require__;
+  return __webpack_ret__;
 }
 
 export default createRuntime;

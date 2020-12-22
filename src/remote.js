@@ -403,8 +403,9 @@ function remote(url, options = {}) {
         }
   
         const context = __remoteModuleWebpack__[scopeName];
-  
-        const __require__ = context.require || context.__require__;
+        let __require__ = context.require || context.__require__;
+        if (__require__.then) __require__ = await __require__;
+
         await Promise.all(manifest.entrys.ids.map(id => __require__.e(id)));
         manifest.externals.forEach(external => {
           if (__require__.m[external.id] && __require__.m[external.id].__import_remote_external__) return;
