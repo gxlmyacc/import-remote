@@ -307,8 +307,8 @@ function remote(url, options = {}) {
 
           const jsonpFunction = manifest.jsonpFunction || 'webpackJsonp';
           const jsonpSourceRegx = new RegExp(`${
-            (!libraryTarget || libraryTarget === 'var') ? '^(?:\\/\\*[A-z\\s*():/.",-]+\\*\\/\\n)?' : ''
-          }(?:var ([A-Za-z0-9]+);[A-Za-z0-9_$\\s=]+\\n?)?\\(${globalObject}(?:(?:\\[")|\\.)${jsonpFunction}(?:"\\])?\\s?=\\s?${
+            (!libraryTarget || libraryTarget === 'var') ? '^(?:\\/\\*[A-Za-z0-9\\s*():/.",\\-!_$@#%&~]+\\*\\/\\n)?' : ''
+          }(?:var ([A-Za-z0-9_$]+);[A-Za-z0-9_$\\s=]+\\n?)?\\(${globalObject}(?:(?:\\[")|\\.)${jsonpFunction}(?:"\\])?\\s?=\\s?${
             globalObject}(?:(?:\\[")|\\.)${jsonpFunction}(?:"\\])?\\s?\\|\\|\\s?\\[\\]\\)`);
 
           const batchReplaces = manifest.batchReplaces && manifest.batchReplaces.map(v => {
