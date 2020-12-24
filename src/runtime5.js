@@ -820,13 +820,16 @@ function createRuntime({
     Object.keys(remotes.moduleIdToSourceMapping || {}).forEach(id => {
       let [shareScope, shareKey, version, chunkIds, entryId, 
         methodName = 'loadSingletonVersionCheckFallback'] = remotes.moduleIdToSourceMapping[id];
-      let shareModule = __webpack_require__.m[entryId];
-      if (shareModule && !shareModule.__import_remote_shared__ && !shareModule.__import_remote_external__) shareModule = null;
+      let shareModule;
       moduleToHandlerMapping[id] = () => moduleToHandlerFns[methodName](
         shareScope, 
         shareKey, 
         version, 
         () => {
+          if (shareModule === undefined) {
+            shareModule = __webpack_require__.m[entryId] || null;
+            if (shareModule && !shareModule.__import_remote_shared__ && !shareModule.__import_remote_external__) shareModule = null;
+          }
           if (shareModule) return shareModule;
           return Promise.all(chunkIds.map(chunkId => __webpack_require__.e(chunkId)))
             .then(() => () => __webpack_require__(entryId));

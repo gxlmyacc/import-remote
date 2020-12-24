@@ -223,8 +223,17 @@ function resolveRemotes(self, compilation, options) {
   [...compilation.modules].forEach(m => {
     if (m.type === 'remote-module') {
       const mid = getModuleId(compilation, m);
-      // @ts-ignore
-      remotes.idToExternalAndNameMapping[mid] = [m.shareScope, m.internalRequest, m.externalRequests[0]];
+      let externalModule = m.dependencies.length
+        ? compilation.moduleGraph.getModule(m.dependencies[0])
+        : null;
+      remotes.idToExternalAndNameMapping[mid] = [
+        // @ts-ignore
+        m.shareScope, 
+        // @ts-ignore
+        m.internalRequest, 
+        // @ts-ignore
+        externalModule ? externalModule.id : m.externalRequests[0]
+      ]; 
       // @ts-ignore
       compilation.chunkGraph.getModuleChunksIterable(m).forEach(c => {
         if (!remotes.chunkMapping[c.id]) remotes.chunkMapping[c.id] = [];
@@ -337,6 +346,7 @@ class ModuleWebpackPlugin {
       templateParameters: null,
       filename: 'index.js',
       runtime: /(manifest|runtime~).+[.]js$/,
+      runtimeChunk: true,
       hash: false,
       compile: true,
       cache: true,
@@ -385,23 +395,25 @@ class ModuleWebpackPlugin {
     const self = this;
     const webpack = compiler.webpack;
 
-    const optimization = compiler.options.optimization;
-    let runtimeChunk = optimization.runtimeChunk;
-    let name = isPlainObject(runtimeChunk)
-      ? runtimeChunk.name
-      : entrypoint => (runtimeChunk === true 
-        ? `runtime~${entrypoint.name}`
-        : typeof runtimeChunk === 'string'
-          ? runtimeChunk
-          : undefined);
-    if (!isPlainObject(optimization.runtimeChunk)) optimization.runtimeChunk = {};
-    optimization.runtimeChunk.name = entrypoint => {
-      let ret = typeof name === 'function' ? name(entrypoint) : name;
-      if (typeof ret !== 'string' && (!self.options.chunks || self.options.chunks.includes(entrypoint.name))) {
-        ret = compiler.options.entry[entrypoint.name] ? `runtime~${entrypoint.name}` : undefined;
-      }
-      return ret;
-    };
+    if (self.options.runtimeChunk) {
+      const optimization = compiler.options.optimization;
+      let runtimeChunk = optimization.runtimeChunk;
+      let name = isPlainObject(runtimeChunk)
+        ? runtimeChunk.name
+        : entrypoint => (runtimeChunk === true 
+          ? `runtime~${entrypoint.name}`
+          : typeof runtimeChunk === 'string'
+            ? runtimeChunk
+            : undefined);
+      if (!isPlainObject(optimization.runtimeChunk)) optimization.runtimeChunk = {};
+      optimization.runtimeChunk.name = entrypoint => {
+        let ret = typeof name === 'function' ? name(entrypoint) : name;
+        if (typeof ret !== 'string' && (!self.options.chunks || self.options.chunks.includes(entrypoint.name))) {
+          ret = compiler.options.entry[entrypoint.name] ? `runtime~${entrypoint.name}` : undefined;
+        }
+        return ret;
+      };
+    }
 
     const packageFile = findUp.sync('package.json', { cwd: compiler.context || process.cwd() });
     this.options.package = require(packageFile);
@@ -1066,7 +1078,7 @@ class ModuleWebpackPlugin {
 
     // let runtimeChunkIdx = -1;
     compilation.chunks.forEach((chunk, i) => {
-      if (chunk.hasRuntime()) {
+      if (this.options.runtimeChunk && chunk.hasRuntime()) {
         // if (entryNames.some(entryName => chunk.name.includes(entryName))) {
         //   runtimeChunkIdx = i;
         // }

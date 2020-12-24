@@ -4,7 +4,6 @@ function isRegExp(obj) {
 }
 
 module.exports = function ({
-  globalObject,
   version,
   pkg,
   outputOptions,
@@ -43,8 +42,8 @@ module.exports = function ({
     cssChunks: chunks.files.css,
     entrys: {
       css: entrys.css.map(v => (v.file.indexOf(publicPath) === 0 ? v.file.replace(publicPath, '') : v.file)),
-      js: entrys.js.filter(v => !v.isRuntime).map(v => (v.file.indexOf(publicPath) === 0 ? v.file.replace(publicPath, '') : v.file)),
-      ids: entrys.ids.filter(v => !v.isRuntime).map(v => v.id),
+      js: entrys.js.filter(v => !options.runtimeChunk || !v.isRuntime).map(v => (v.file.indexOf(publicPath) === 0 ? v.file.replace(publicPath, '') : v.file)),
+      ids: entrys.ids.filter(v => !options.runtimeChunk || !v.isRuntime).map(v => v.id),
     },
     meta: options.meta || {}
   };

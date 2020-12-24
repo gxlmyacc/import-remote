@@ -19,8 +19,8 @@ declare namespace ModuleWebpackPlugin {
 
   interface TemplateAssets {
     publicPath: string,
-    entryFile: string,
-    entryId: string|number,
+    entryFile: string|string[],
+    entryId: string|number|string[]|number[],
     hash: string,
     jsonpFunction: string,
     hot: boolean,
@@ -64,54 +64,56 @@ declare namespace ModuleWebpackPlugin {
         options: ProcessedOptions, 
         isEval: boolean) => [RegExp, string][])
     };
+
+    runtimeChunk?: boolean;
     /**
      * List all entries which should be injected
      */
-    chunks: "all" | string[];
+    chunks?: "all" | string[];
     /**
      * Allows to control how chunks should be sorted before they are included to the html.
      * @default 'auto'
      */
-    chunksSortMode:
+    chunksSortMode?:
     | "auto"
     | "manual"
     | (((entryNameA: string, entryNameB: string) => number));
     /**
      * List all entries which should not be injected
      */
-    excludeChunks: string[];
+    excludeChunks?: string[];
     /**
      * The file to write the HTML to.
      * Defaults to `index.html`.
      * Supports subdirectories eg: `assets/admin.html`
      * @default 'auto'
      */
-    filename: string;
+    filename?: string;
     /**
      * If `true` then append a unique `webpack` compilation hash to all included scripts and CSS files.
      * This is useful for cache busting
      */
-    hash: boolean;
+    hash?: boolean;
     /**
      * Render errors into the HTML page
      */
-    showErrors: boolean;
+    showErrors?: boolean;
     /**
      * The `webpack` require path to the template.
      * @see https://github.com/jantimon/html-webpack-plugin/blob/master/docs/template-option.md
      */
-    template: string;
+    template?: string;
     /**
      * Allow to use a html string instead of reading from a file
      */
-    templateContent:
+    templateContent?:
     | false // Use the template option instead to load a file
     | string
     | Promise<string>;
     /**
      * Allows to overwrite the parameters used in the template
      */
-    templateParameters:
+    templateParameters?:
     | false // Pass an empty object to the template function
     | ((
       compilation: any,
@@ -121,7 +123,7 @@ declare namespace ModuleWebpackPlugin {
     ) => { [option: string]: any } | Promise<{ [option: string]: any }>)
     | { [option: string]: any };
 
-    globalToScopes: string[];
+    globalToScopes?: string[];
     /**
      * In addition to the options actually used by this plugin, you can use this hash to pass arbitrary data through
      * to your template.
