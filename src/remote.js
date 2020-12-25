@@ -457,7 +457,7 @@ function remote(url, options = {}) {
           }
         });
 
-        if (__require__._init) await __require__._init();
+        if (__require__._init) await __require__._init(manifest.remotes);
 
         resolve(requireModule(__require__, manifest, options));
       } catch (ex) {

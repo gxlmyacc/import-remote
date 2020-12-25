@@ -839,29 +839,27 @@ function createRuntime({
 
     (() => {
       let initialConsumes = remotes.initialConsumes || [];
-      if (initialConsumes.length) {
-        let prom = null;
-        __webpack_require__._init = () => {
-          delete __webpack_require__._init;
-          if (prom) return prom;
-          return prom = Promise.all(initialConsumes.map(id => new Promise((resolve, reject) => {
-            if (__webpack_modules__[id]) {
-              installedModules[id] = 0;
-              return resolve();
-            }
-            const fallback = factory => __webpack_modules__[id] = module => {
-              // Handle case when module is used sync
-              installedModules[id] = 0;
-              delete __webpack_module_cache__[id];
-              return module.exports = factory();
-            };
-            let factory = moduleToHandlerMapping[id]();
-            if (factory && factory.then) factory.then(r => resolve(fallback(r))).catch(reject);
-            else if (typeof factory !== 'function') reject('Shared module is not available for eager consumption: ' + id);
-            else resolve(fallback(factory));
-          })));
-        };
-      }
+      let prom = null;
+      __webpack_require__._init = rm => {
+        if (rm) initialConsumes = rm.initialConsumes || [];
+        else if (prom) return prom;
+        return prom = Promise.all(initialConsumes.map(id => new Promise((resolve, reject) => {
+          if (__webpack_modules__[id]) {
+            installedModules[id] = 0;
+            return resolve();
+          }
+          const fallback = factory => __webpack_modules__[id] = module => {
+            // Handle case when module is used sync
+            installedModules[id] = 0;
+            delete __webpack_module_cache__[id];
+            return module.exports = factory();
+          };
+          let factory = moduleToHandlerMapping[id]();
+          if (factory && factory.then) factory.then(r => resolve(fallback(r))).catch(reject);
+          else if (typeof factory !== 'function') reject('Shared module is not available for eager consumption: ' + id);
+          else resolve(fallback(factory));
+        })));
+      };
     })();
 
     let chunkMapping = remotes.chunkToModuleMapping || {};

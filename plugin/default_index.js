@@ -14,6 +14,11 @@ module.exports = function ({
     hot, chunks, externals, publicPath, entrys, options 
   }
 }) {
+  const filterEntry = (entry, isId) => {
+    let ret = !options.runtimeChunk || !entry.isRuntime;
+    if (ret && isId && remotes.chunkToModuleMapping && remotes.chunkToModuleMapping[entry.id]) ret = false;
+    return ret;
+  };
   const data = {
     timestamp: Date.now(),
     name: pkg.name,
@@ -42,8 +47,8 @@ module.exports = function ({
     cssChunks: chunks.files.css,
     entrys: {
       css: entrys.css.map(v => (v.file.indexOf(publicPath) === 0 ? v.file.replace(publicPath, '') : v.file)),
-      js: entrys.js.filter(v => !options.runtimeChunk || !v.isRuntime).map(v => (v.file.indexOf(publicPath) === 0 ? v.file.replace(publicPath, '') : v.file)),
-      ids: entrys.ids.filter(v => !options.runtimeChunk || !v.isRuntime).map(v => v.id),
+      js: entrys.js.filter(v => filterEntry(v)).map(v => (v.file.indexOf(publicPath) === 0 ? v.file.replace(publicPath, '') : v.file)),
+      ids: entrys.ids.filter(v => filterEntry(v, true)).map(v => v.id),
     },
     meta: options.meta || {}
   };

@@ -418,7 +418,8 @@ class ModuleWebpackPlugin {
       if (!isPlainObject(optimization.runtimeChunk)) optimization.runtimeChunk = {};
       optimization.runtimeChunk.name = entrypoint => {
         let ret = typeof name === 'function' ? name(entrypoint) : name;
-        if (typeof ret !== 'string' && (!self.options.chunks || self.options.chunks.includes(entrypoint.name))) {
+        if (typeof ret !== 'string' && (!self.options.chunks || self.options.chunks === 'all' 
+          || self.options.chunks.includes(entrypoint.name))) {
           ret = compiler.options.entry[entrypoint.name] ? `runtime~${entrypoint.name}` : undefined;
         }
         return ret;
@@ -516,6 +517,7 @@ class ModuleWebpackPlugin {
 
         self.initialConsumes = [];
         self.moduleIdToSourceMapping = {};
+        self.initCodePerScope = {};
 
         compilation.hooks.runtimeRequirementInTree
           .for(RuntimeGlobals.shareScopeMap)
@@ -524,6 +526,11 @@ class ModuleWebpackPlugin {
               compareModulesByIdentifier,
             // @ts-ignore
             } = require('webpack/lib/util/comparators');
+
+            if (self.options.chunks && self.options.chunks.length) {
+              const entrypoint = [...chunk.groupsIterable][0];
+              if (entrypoint && !self.options.chunks.includes(entrypoint.name)) return;
+            }
 
             const isNumber = typeof chunk.id === 'number';
 
@@ -547,7 +554,6 @@ class ModuleWebpackPlugin {
               return ret;
             };
                   
-            const initCodePerScope = {};
             for (const c of chunk.getAllReferencedChunks()) {
               // @ts-ignore
               const modules = compilation.chunkGraph.getOrderedChunkModulesIterableBySourceType(
@@ -582,13 +588,19 @@ class ModuleWebpackPlugin {
                   if (entryId) {
                     stage = ['init', entryId];
                   }
-                  let stages = initCodePerScope[shareScope];
-                  if (stages == null) initCodePerScope[shareScope] = stages = [];
-                  if (stage) stages.push(stage);
+                  let stages = self.initCodePerScope[shareScope];
+                  if (stages == null) self.initCodePerScope[shareScope] = stages = [];
+                  if (stage && !stages.some(v => v[0] === stage[0] && v[1] === stage[1])) {
+                    if (stage[0] === 'register') {
+                      const idx = stages.findIndex(v => v[0] !== 'register');
+                      if (idx < 0) stages.push(stage);
+                      else if (idx === 0) stages.unshift(stage);
+                      else stage.splice(idx - 1, 0, stage);
+                    } else stages.push(stage);
+                  }
                 }
               }
             }
-            self.initCodePerScope = initCodePerScope;
 
             const addModules = (modules, chunk, list) => {
               for (const m of modules) {
