@@ -54,7 +54,7 @@ function createRuntime({
     let module = __webpack_module_cache__[moduleId] = {
       inRemoteModule: true,
       requireExternal,
-      publicPath,
+      publicPath: __webpack_require__.p,
       id: moduleId,
       loaded: false,
       exports: {}
@@ -74,6 +74,9 @@ function createRuntime({
     // Return the exports of the module
     return module.exports;
   }
+
+  /* webpack/runtime/publicPath */
+  __webpack_require__.p = joinUrl(host, publicPath);
     
   // expose the modules object (__webpack_modules__)
   __webpack_require__.m = __webpack_modules__;
@@ -709,9 +712,6 @@ function createRuntime({
       }
     }
   })();
-    
-  /* webpack/runtime/publicPath */
-  __webpack_require__.p = joinUrl(host, publicPath);
     
   /* webpack/runtime/consumes */
   (() => {

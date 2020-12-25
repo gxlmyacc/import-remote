@@ -90,6 +90,11 @@ declare namespace ModuleWebpackPlugin {
      */
     filename?: string;
     /**
+     * The file path of import-remote.min.js write to.
+     * @default ''
+     */
+    libraryFileName?: string|boolean;
+    /**
      * If `true` then append a unique `webpack` compilation hash to all included scripts and CSS files.
      * This is useful for cache busting
      */

@@ -35,6 +35,15 @@ const getModuleWebpackPluginHooks = require('./lib/hooks.js').getModuleWebpackPl
 const fsStatAsync = promisify(fs.stat);
 const fsReadFileAsync = promisify(fs.readFile);
 
+function isSameFile(file1, file2) {
+  const stat1 = fs.statSync(file1);
+  const stat2 = fs.statSync(file2);
+  return Object.keys(stat1).every(key => {
+    if (!['size', 'atimeMs', 'mtimeMs', 'mode'].includes(key)) return true;
+    return Math.trunc(stat1[key]) === Math.trunc(stat2[key]);
+  });
+}
+
 /**
  * resolve scopeName
   * @param {ProcessedModuleWebpackOptions} options
@@ -347,6 +356,7 @@ class ModuleWebpackPlugin {
       filename: 'index.js',
       runtime: /(manifest|runtime~).+[.]js$/,
       runtimeChunk: true,
+      libraryFileName: '',
       hash: false,
       compile: true,
       cache: true,
@@ -432,6 +442,10 @@ class ModuleWebpackPlugin {
     const filename = this.options.filename;
     if (path.resolve(filename) === path.normalize(filename)) {
       this.options.filename = path.relative(compiler.options.output.path, filename);
+    }
+    const libraryFileName = this.options.libraryFileName;
+    if (libraryFileName && typeof libraryFileName === 'string' && path.resolve(libraryFileName) === path.normalize(libraryFileName)) {
+      this.options.libraryFileName = path.relative(compiler.options.output.path, libraryFileName);
     }
 
     if (!compiler.options.output.devtoolNamespace) {
@@ -529,7 +543,7 @@ class ModuleWebpackPlugin {
             };
 
             const getMapHandlerMethod = src => {
-              const [, ret] = src.match(/^\(\) => ([A-Za-z]+)\(/);
+              const [, ret] = src.match(/^(?:function)?\(\)(?: (?:=>|{ return))? ([A-Za-z]+)\(/) || [];
               return ret;
             };
                   
@@ -750,6 +764,30 @@ class ModuleWebpackPlugin {
           emitAsset(finalOutputName, source);
           self.previousEmittedAssets.push({ name: finalOutputName, source });
 
+          return finalOutputName;
+        })
+        .then(finalOutputName => {
+          let libraryFileName = self.options.libraryFileName;
+          if (libraryFileName) {
+            const src = path.resolve(__dirname, '../dist/import-remote.min.js');
+            let dist = typeof libraryFileName === 'string'
+              ? path.resolve(
+                compiler.options.output.path, 
+                libraryFileName.endsWith('/') ? `${libraryFileName}import-remote.min.js` : libraryFileName
+              )
+              : path.resolve(compiler.options.output.path, 'import-remote.min.js');
+            if (!fs.existsSync(dist) || !isSameFile(src, dist)) {
+              fs.mkdirSync(path.dirname(dist), { recursive: true });
+              fs.copyFileSync(src, dist);
+              const statSrc = fs.statSync(src);
+              const fd = fs.openSync(dist, 'r+');
+              try {
+                fs.futimesSync(fd, statSrc.atime, statSrc.mtime);
+              } finally {
+                fs.closeSync(fd);
+              }
+            }
+          }
           return finalOutputName;
         })
         .then(finalOutputName => getModuleWebpackPluginHooks(compilation).afterEmit.promise({
