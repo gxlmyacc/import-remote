@@ -649,8 +649,6 @@ class ModuleWebpackPlugin {
               if (!modules) continue;
               addModules(modules, c, self.initialConsumes);
             }
-
-            return true;
           });
       });
     }
