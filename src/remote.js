@@ -167,6 +167,7 @@ function remote(url, options = {}) {
     externals = {},
     globals = {},
     getManifestCallback = null,
+    onRuntimeChanged = null,
     host = getHostFromUrl(url),
     sync = false,
     beforeSource,
@@ -255,6 +256,7 @@ function remote(url, options = {}) {
   
         if (!__remoteModuleWebpack__.__moduleManifests__[scopeName]) {
           const moduleManifest = __remoteModuleWebpack__.__moduleManifests__[scopeName] = {};
+          moduleManifest.timestamp = manifest.timestamp;
           moduleManifest.host = host;
           moduleManifest.jsChunks = manifest.jsChunks;
           moduleManifest.cssChunks = manifest.cssChunks;
@@ -263,7 +265,13 @@ function remote(url, options = {}) {
           moduleManifest.entrys = {};
         }
         const moduleManifest = __remoteModuleWebpack__.__moduleManifests__[scopeName];
-        moduleManifest.entrys[manifest.entryFile] = manifest;
+        manifest.entryFile && (moduleManifest.entrys[manifest.entryFile] = manifest);
+        if (moduleManifest.timestamp && manifest.timestamp !== moduleManifest.timestamp) {
+          console.error(`warning:[import-remote:remote]the timestamp(${
+            manifest.timestamp
+          }) of [${url}] is different from initialization module(${moduleManifest.timestamp})!`);
+          onRuntimeChanged && (await onRuntimeChanged(manifest, moduleManifest));
+        }
 
         const requireExternal = (externalOrModuleId, isShare) => {
           let external = externalOrModuleId;

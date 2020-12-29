@@ -35,7 +35,8 @@ function createRuntime({
   let chunkLoadingGlobal = context[jsonpFunction] = context[jsonpFunction] || [];
   let parentChunkLoadingFunction = chunkLoadingGlobal.push.bind(chunkLoadingGlobal);
   chunkLoadingGlobal.push = webpackJsonpCallback;
-  if (webpackVersion > 4 && !self[jsonpFunction]) self[jsonpFunction] = chunkLoadingGlobal;
+  if (webpackVersion > 4 && remotes.loading 
+    && cached === globalCached && !self[jsonpFunction]) self[jsonpFunction] = chunkLoadingGlobal;
     
   // The require function
   function __webpack_require__(moduleId, entryFile) {
@@ -1484,6 +1485,7 @@ function createRuntime({
 
   // install a JSONP callback for chunk loading
   function webpackJsonpCallback(data) {
+    if (!Array.isArray(data)) return;
     let [chunkIds, moreModules, runtime, executeModules] = data;
     if (webpackVersion < 5) {
       executeModules = runtime;

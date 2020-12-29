@@ -79,7 +79,7 @@ function resolveModuleResource(compilation, resource = '') {
 
 function resolveModuleFile(compilation, module) {
   // @ts-ignore
-  let request = module.request;
+  let request = module.resource || module.request;
   if (!request
     // @ts-ignore
     && module._identifier
@@ -210,7 +210,6 @@ function resolveShareModules(self, compilation, options) {
 */
 function resolveRemotes(self, compilation, options) { 
   const remotes = { 
-    withBaseURI: self.withBaseURI,
     hasJsMatcher: self.hasJsMatcher,
     chunkMapping: {}, 
     idToExternalAndNameMapping: {},
@@ -220,6 +219,8 @@ function resolveRemotes(self, compilation, options) {
     chunkToModuleMapping: self.chunkToModuleMapping,
   };
   if (webpackMajorVersion < 5) return remotes;
+
+  if (self.withBaseURI) remotes.withBaseURI = self.withBaseURI;
 
   // @ts-ignore
   const miniCssFModule = compilation._modules.get('webpack/runtime/get mini-css chunk filename');
@@ -248,12 +249,13 @@ function resolveRemotes(self, compilation, options) {
         if (!remotes.chunkMapping[c.id]) remotes.chunkMapping[c.id] = [];
         remotes.chunkMapping[c.id].push(mid);
       });
-    }
-    if (m.type === 'consume-shared-module') {
+    } else if (m.type === 'consume-shared-module') {
       // console.log(m);
-    }
-    if (m.type === 'provide-module') {
+    } else if (m.type === 'provide-module') {
       // console.log(m);
+    // @ts-ignore
+    } else if (m.name === 'remotes loading') {
+      remotes.loading = true;
     }
   });
   return remotes;
@@ -1173,9 +1175,9 @@ class ModuleWebpackPlugin {
       let ret = {};
       // @ts-ignore
       ret.entryId = getModuleId(compilation, entryModule);
-      if (webpackMajorVersion >= 5) {
-        return ret;
-      }
+      // if (webpackMajorVersion >= 5) {
+      //   return ret;
+      // }
       if (entryModule.buildMeta.providedExports || entryModule.buildMeta.exportsType) {
         ret.entryFile = resolveModuleFile(compilation, entryModule);
       }
