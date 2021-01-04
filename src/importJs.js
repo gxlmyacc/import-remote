@@ -38,6 +38,7 @@ function importJs(href, {
                       src = src.replace(scopeNameRegx, `(import-remote)/[${scopeName}]`);
                     }
                   }
+                  if (/\?[a-z0-9]{4}$/.test(src)) src = src.substr(0, src.length - 5);
                   return /^https?:/.test(src) ? src : (host + src);
                 });
                 return `//# sourceMappingURL=data:application/json;charset=utf-8;base64,${base64.encode(JSON.stringify(sourcemap))}${

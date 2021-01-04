@@ -94,6 +94,7 @@ declare namespace ModuleWebpackPlugin {
      * @default ''
      */
     libraryFileName?: string|boolean;
+    libraryWithMap?: boolean;
     /**
      * If `true` then append a unique `webpack` compilation hash to all included scripts and CSS files.
      * This is useful for cache busting

@@ -359,6 +359,7 @@ class ModuleWebpackPlugin {
       runtime: /(manifest|runtime~).+[.]js$/,
       runtimeChunk: true,
       libraryFileName: '',
+      libraryWithMap: true,
       hash: false,
       compile: true,
       cache: true,
@@ -791,6 +792,7 @@ class ModuleWebpackPlugin {
             if (!fs.existsSync(dist) || !isSameFile(src, dist)) {
               fs.mkdirSync(path.dirname(dist), { recursive: true });
               fs.copyFileSync(src, dist);
+              if (self.options.libraryWithMap && fs.existsSync(`${src}.map`)) fs.copyFileSync(`${src}.map`, `${dist}.map`);
               const statSrc = fs.statSync(src);
               const fd = fs.openSync(dist, 'r+');
               try {

@@ -103,13 +103,14 @@ function fetch(url, { timeout = 120000, sync, nocache, } = {}) {
 fetch.queue = queue;
 
 function requireJs(url, options = {}) {
-  if (requireJs.modules[url]) return requireJs.modules[url].exports;
-  return fetch(url, options).then(src => {
-    if (requireJs.modules[url]) return requireJs.modules[url].exports;
+  const cached = options.cached || globalCached;
+  if (!cached._rs) innumerable(cached, '_rs', {});
+  if (cached._rs[url]) return cached._rs[url];
 
+  return requireJs._rs[url] = fetch(url, options).then(src => {
     // eslint-disable-next-line no-new-func
     const fn = new Function('module', 'exports', 'require', src);
-    const _module = requireJs.modules[url] = { exports: {} };
+    const _module = { exports: {} };
     try {
       fn(
         _module, 
@@ -119,20 +120,41 @@ function requireJs(url, options = {}) {
         })
       );
     } catch (ex) {
-      delete requireJs.modules[url];
       throw ex;
     }
 
     return _module.exports;
   });
 }
-requireJs.modules = {};
+
+class AsyncRemoteModule {
+
+  constructor(libraryUrl, host, options = {}) {
+    if (!libraryUrl) throw new Error('[AsyncRemoteModule]libraryUrl can not be null!');
+    this.libraryUrl = libraryUrl;
+    this.host = host;
+    this.options = options || {};
+  }
+
+  readyRuntime() {
+    return requireJs(this.libraryUrl)
+      .then(({ RemoteModule }) => {
+        if (this.runtime) return this.runtime;
+        return this.runtime = new RemoteModule(this.host, this.options);
+      });
+  }
+
+}
+['require', 'import', 'requireSync', 'importSync'].forEach(key => AsyncRemoteModule.prototype[key] = function () {
+  return this.readyRuntime().then(runtime => runtime[key].apply(runtime, arguments));
+});
 
 export {
   globalCached,
   requireJs,
   checkRemoteModuleWebpack,
-  objectDefineProperty
+  objectDefineProperty,
+  AsyncRemoteModule
 };
 
 export default fetch;
