@@ -107,7 +107,7 @@ function requireJs(url, options = {}) {
   if (!cached._rs) innumerable(cached, '_rs', {});
   if (cached._rs[url]) return cached._rs[url];
 
-  return requireJs._rs[url] = fetch(url, options).then(src => {
+  return cached._rs[url] = fetch(url, options).then(src => {
     // eslint-disable-next-line no-new-func
     const fn = new Function('module', 'exports', 'require', src);
     const _module = { exports: {} };
