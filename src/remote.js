@@ -1,5 +1,5 @@
 import escapeStringRegexp from 'escape-string-regexp';
-import { globalCached, checkRemoteModuleWebpack } from './fetch';
+import { globalCached, checkRemoteModuleWebpack, requireJs } from './fetch';
 import { 
   DEFAULT_TIMEOUT, ATTR_SCOPE_NAME,
   isFunction, getHostFromUrl, resolveRelativeUrl, walkMainifest,
@@ -7,7 +7,6 @@ import {
 } from './utils';
 import createRuntime5 from './runtime5';
 import { transformStyleHost, ATTR_CSS_TRANSFORMED } from './importCss';
-import importJs from './importJs';
 import { isRequireFactory } from './requireFactory';
 import { versionLt, satisfy } from './semver';
 
@@ -157,9 +156,13 @@ function requireModule(__require__, manifest, options = {}) {
 }
 
 function requireManifest(url, options) {
-  return importJs(url, options).then(manifest => {
+  return requireJs(url, options).then(manifest => {
     if (isFunction(manifest)) {
-      manifest = (manifest.iref ? walkMainifest : v => v)(manifest(remote, options));
+      let target = manifest(remote, options);
+      if (target) {
+        if (options.meta) target = target.meta;
+        manifest = target && (manifest.iref ? walkMainifest : v => v)(target);
+      }
     }
     return manifest;
   });

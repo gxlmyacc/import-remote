@@ -1,5 +1,7 @@
 import { objectDefineProperty } from './_objdp';
 
+const DEFAULT_HEAD_TIMEOUT = 30000;
+
 function checkRemoteModuleWebpack(context = global) {
   if (!context.__remoteModuleWebpack__) {
     context.__remoteModuleWebpack__ = { 
@@ -142,6 +144,36 @@ function requireJs(url, options = {}) {
   });
 }
 
+function isAbsoluteUrl(url) {
+  return typeof url === 'string' && /^(((https?:)?\/\/)|(data:))/.test(url);
+}
+
+function joinUrl(host, path) {
+  if (path && /^["'].+["']$/.test(path)) path = path.substr(1, path.length - 2);
+  if (!host || isAbsoluteUrl(path)) return path;
+  if (/^\/[A-Za-z]/.test(host) && path.startsWith(host)) return path;
+  if (/\/$/.test(host)) host = host.substr(0, host.length - 1);
+  if (/^\.\//.test(path)) path = path.substr(1, path.length);
+  return `${host}${/^\//.test(path) ? path : `/${path}`}`;
+}
+
+function resolveModuleUrl(host, moduleName = 'index.js') {
+  if (!/\.js$/.test(moduleName)) moduleName += '.js';
+  return joinUrl(host, moduleName);
+}
+
+function existModule(host, moduleName = 'index.js', options = {}) {
+  return new Promise(
+    resolve => fetch(resolveModuleUrl(host, moduleName), Object.assign({ 
+      timeout: DEFAULT_HEAD_TIMEOUT, 
+      nocache: true, 
+      method: 'HEAD' 
+    }, options))
+      .then(r => resolve(r))
+      .catch(() => resolve(null))
+  );
+}
+
 class AsyncRemoteModule {
 
   constructor(libraryUrl, host, options = {}) {
@@ -159,8 +191,13 @@ class AsyncRemoteModule {
       });
   }
 
+  exist(moduleName = 'index.js', options = {}) {
+    return existModule(this.host, moduleName, options);
+  }
+
 }
-['exist', 'requireMeta', 'require', 'import'].forEach(key => AsyncRemoteModule.prototype[key] = function () {
+
+['requireMeta', 'require', 'import'].forEach(key => AsyncRemoteModule.prototype[key] = function () {
   return this.readyRuntime().then(runtime => runtime[key].apply(runtime, arguments));
 });
 
@@ -169,6 +206,11 @@ export {
   requireJs,
   checkRemoteModuleWebpack,
   objectDefineProperty,
+  resolveModuleUrl,
+  isAbsoluteUrl,
+  joinUrl,
+  existModule,
+
   AsyncRemoteModule
 };
 

@@ -1,7 +1,7 @@
 import { objectDefineProperty } from './_objdp';
+import { isAbsoluteUrl, joinUrl } from './fetch';
 
 const DEFAULT_TIMEOUT = 120000;
-const DEFAULT_HEAD_TIMEOUT = 30000;
 
 const ATTR_SCOPE_NAME = 'data-remote-scope';
 
@@ -18,10 +18,6 @@ function requireFromStr(source, { global: context = global, moduleProps = {}, } 
     // console.error(ex);
     throw ex;
   }
-}
-
-function isAbsoluteUrl(url) {
-  return typeof url === 'string' && /^(((https?:)?\/\/)|(data:))/.test(url);
 }
 
 function resolveRelativeUrl(url, options = {}) {
@@ -41,16 +37,6 @@ function resolveRelativeUrl(url, options = {}) {
     }
   }
   return joinUrl(host, url);
-}
-
-
-function joinUrl(host, path) {
-  if (path && /^["'].+["']$/.test(path)) path = path.substr(1, path.length - 2);
-  if (!host || isAbsoluteUrl(path)) return path;
-  if (/^\/[A-Za-z]/.test(host) && path.startsWith(host)) return path;
-  if (/\/$/.test(host)) host = host.substr(0, host.length - 1);
-  if (/^\.\//.test(path)) path = path.substr(1, path.length);
-  return `${host}${/^\//.test(path) ? path : `/${path}`}`;
 }
 
 const _toString = Object.prototype.toString;
@@ -164,7 +150,6 @@ function requireWithVersion(module, version) {
 
 export {
   DEFAULT_TIMEOUT,
-  DEFAULT_HEAD_TIMEOUT,
   ATTR_SCOPE_NAME,
 
   walkMainifest,

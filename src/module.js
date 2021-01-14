@@ -1,6 +1,6 @@
 import remote, { requireManifest } from './remote';
-import fetch from './fetch';
-import { DEFAULT_HEAD_TIMEOUT, joinUrl, mergeObject, innumerable, resolveRelativeUrl } from './utils';
+import { resolveModuleUrl, existModule } from './fetch';
+import { mergeObject, innumerable, resolveRelativeUrl } from './utils';
 
 class RemoteModule {
 
@@ -16,13 +16,8 @@ class RemoteModule {
     else Object.assign(this.options.externals, name);
   }
 
-  resolveModuleUrl(moduleName = 'index.js') {
-    if (!/\.js$/.test(moduleName)) moduleName += '.js';
-    return joinUrl(this.host, moduleName);
-  }
-
   isRequired(moduleName = 'index.js') {
-    return Boolean(remote.cached[this.resolveModuleUrl(moduleName)]);
+    return Boolean(remote.cached[resolveModuleUrl(this.host, moduleName)]);
   }
 
   prefetch(prefetchs = []) {
@@ -30,19 +25,11 @@ class RemoteModule {
   }
 
   exist(moduleName = 'index.js', options = {}) {
-    return new Promise(
-      resolve => fetch(this.resolveModuleUrl(moduleName), mergeObject({ 
-        timeout: DEFAULT_HEAD_TIMEOUT, 
-        nocache: true, 
-        method: 'HEAD' 
-      }, options))
-        .then(r => resolve(r))
-        .catch(() => resolve(null))
-    );
+    return existModule(this.host, moduleName, options);
   }
 
   requireMeta(moduleName = 'index.js', options = {}) {
-    return requireManifest(this.resolveModuleUrl(moduleName), mergeObject({}, options))
+    return requireManifest(resolveModuleUrl(this.host, moduleName), mergeObject({ meta: true }, options))
       .then(r => (r && r.meta) || {});
   }
 
@@ -55,7 +42,7 @@ class RemoteModule {
   }
 
   require(moduleName = 'index.js', options = {}) {
-    return remote(this.resolveModuleUrl(moduleName), mergeObject({}, this.options, options, { host: this.host }));
+    return remote(resolveModuleUrl(this.host, moduleName), mergeObject({}, this.options, options, { host: this.host }));
   }
 
   requireSync(moduleName = 'index.js', options = {}) {
