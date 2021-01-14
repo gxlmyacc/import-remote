@@ -526,6 +526,30 @@ testOther.dosomething();
   resolveModuleUrl(moduleName: string = 'index'): string; 
 
   /**
+   * 发送HEAD请求判断`moduleName`是否存在，当存在时返回请求的响应头信息
+   * @param {string} moduleName 模块名，调用
+   * @param {object} options 加载选项
+   * @returns {Promise<object|null>} HEAD请求头信息或为空
+   **/
+  exist(moduleName: string = 'index', options: {}): Promise<any>; 
+
+  /**
+   * 获取`moduleName`的meta信息
+   * @param {string} moduleName 模块名，调用
+   * @param {object} options 加载选项，和remote方法的option一致
+   * @returns {Promise<any>} 模块的meta信息
+   **/
+  requireMeta(moduleName: string = 'index', options: {}): Promise<any>; 
+
+  /**
+   * 功能和requireMeta相同，只是将加载资源时的ajax设置为同步请求
+   * @param {string} moduleName 模块名，调用
+   * @param {object} options 加载选项，和remote方法的option一致
+   * @returns {any} 远程模块的导出内容
+   **/
+  requireMetaSync(moduleName: string = 'index', options: {}): any; 
+
+  /**
    * 异步加载方法
    * @param {string} moduleName 模块名，调用
    * @param {object} options 加载选项，和remote方法的option一致

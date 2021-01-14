@@ -156,6 +156,15 @@ function requireModule(__require__, manifest, options = {}) {
   return result;
 }
 
+function requireManifest(url, options) {
+  return importJs(url, options).then(manifest => {
+    if (isFunction(manifest)) {
+      manifest = (manifest.iref ? walkMainifest : v => v)(manifest(remote, options));
+    }
+    return manifest;
+  });
+}
+
 function remote(url, options = {}) {
   url = resolveRelativeUrl(url, {
     host: options.host,
@@ -171,6 +180,7 @@ function remote(url, options = {}) {
     host = getHostFromUrl(url),
     sync = false,
     beforeSource,
+    method,
     windowProxy = { document: { html: document.documentElement, body: document.body, head: document.head } },
   } = options;
   const __remoteModuleWebpack__ = checkRemoteModuleWebpack(windowProxy.context);
@@ -189,11 +199,7 @@ function remote(url, options = {}) {
         return _reject.apply(this, arguments);
       };
       try {
-        let manifest = await importJs(url, { timeout, global: window, nocache: true, sync, cached });
-        if (isFunction(manifest)) {
-          manifest = (manifest.iref ? walkMainifest : v => v)(manifest(remote, options));
-        }
-        
+        let manifest = await requireManifest(url, { timeout, global: window, nocache: true, sync, cached, method });
         if (!manifest.scopeName) throw new Error('[import-remote:remote]scopeName can not be empty!');
         let scopeName = getScopeName(__remoteModuleWebpack__, manifest.scopeName, host);
         if (manifest.scopeName !== scopeName) manifest.scopeName = scopeName;
@@ -236,6 +242,7 @@ function remote(url, options = {}) {
                 globals, 
                 host: mHost || getHostFromUrl(url),
                 sync,
+                method,
                 // getManifestCallback: m.scoped ? getManifestCallback : undefined,
                 windowProxy: m.scoped ? windowProxy : undefined,
               });
@@ -479,6 +486,10 @@ function remote(url, options = {}) {
 remote.externals = {};
 remote.globals = {
   // _interopRequireDefault: require('babel-runtime/helpers/interopRequireDefault').default
+};
+
+export {
+  requireManifest
 };
 
 export default remote;

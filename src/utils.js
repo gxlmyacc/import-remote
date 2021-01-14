@@ -1,6 +1,7 @@
 import { objectDefineProperty } from './_objdp';
 
 const DEFAULT_TIMEOUT = 120000;
+const DEFAULT_HEAD_TIMEOUT = 30000;
 
 const ATTR_SCOPE_NAME = 'data-remote-scope';
 
@@ -163,6 +164,7 @@ function requireWithVersion(module, version) {
 
 export {
   DEFAULT_TIMEOUT,
+  DEFAULT_HEAD_TIMEOUT,
   ATTR_SCOPE_NAME,
 
   walkMainifest,

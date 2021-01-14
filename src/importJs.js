@@ -6,13 +6,15 @@ import { innumerable, requireFromStr, isEvalDevtool, DEFAULT_TIMEOUT } from './u
 const scopeNameRegx = /\(import-remote\)\/((?:@[^/]+\/[^/]+)|(?:[^@][^/]+))/;
 
 function importJs(href, { 
-  cached = globalCached, timeout = DEFAULT_TIMEOUT, global, sync, scopeName, host, devtool, nocache, beforeSource 
+  cached = globalCached, 
+  timeout = DEFAULT_TIMEOUT, 
+  global, sync, scopeName, host, devtool, nocache, beforeSource, method
 } = {}) {
   if (!cached._js) innumerable(cached, '_js', {});
   if (cached._js[href]) return cached._js[href];
 
   return cached._js[href] = new Promise((resolve, reject) => {
-    fetch(href, { timeout, sync, nocache, beforeSource }).then(source => {
+    fetch(href, { timeout, sync, nocache, beforeSource, method }).then(source => {
       try {
         if (devtool && isEvalDevtool(devtool) && host && source) {
           if (!/\/$/.test(host)) host += '/';

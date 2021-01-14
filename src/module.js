@@ -1,5 +1,6 @@
-import remote from './remote';
-import { joinUrl, mergeObject, innumerable, resolveRelativeUrl } from './utils';
+import remote, { requireManifest } from './remote';
+import fetch from './fetch';
+import { DEFAULT_HEAD_TIMEOUT, joinUrl, mergeObject, innumerable, resolveRelativeUrl } from './utils';
 
 class RemoteModule {
 
@@ -26,6 +27,31 @@ class RemoteModule {
 
   prefetch(prefetchs = []) {
     return Promise.all(prefetchs.slice().map(moduleName => this.require(moduleName)));
+  }
+
+  exist(moduleName = 'index.js', options = {}) {
+    return new Promise(
+      resolve => fetch(this.resolveModuleUrl(moduleName), mergeObject({ 
+        timeout: DEFAULT_HEAD_TIMEOUT, 
+        nocache: true, 
+        method: 'HEAD' 
+      }, options))
+        .then(r => resolve(r))
+        .catch(() => resolve(null))
+    );
+  }
+
+  requireMeta(moduleName = 'index.js', options = {}) {
+    return requireManifest(this.resolveModuleUrl(moduleName), mergeObject({}, options))
+      .then(r => (r && r.meta) || {});
+  }
+
+  requireMetaSync(moduleName = 'index.js', options = {}) {
+    let result;
+    this.requireMeta(moduleName, mergeObject({}, options, { sync: true }))
+      .then(r => result = r)
+      .catch(ex => { throw ex; });
+    return result;
   }
 
   require(moduleName = 'index.js', options = {}) {

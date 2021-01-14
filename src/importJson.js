@@ -1,13 +1,13 @@
 
 import fetch, { globalCached } from './fetch';
-import { innumerable, DEFAULT_TIMEOUT } from './utils';
+import { innumerable } from './utils';
 
-function importJson(href, { cached = globalCached, timeout = DEFAULT_TIMEOUT, sync, nocache } = {}) {
+function importJson(href, { cached = globalCached, ...options } = {}) {
   if (!cached._json) innumerable(cached, '_json', {});
   if (cached._json[href]) return cached._json[href];
 
   return cached._json[href] = new Promise((resolve, reject) => {
-    fetch(href, { timeout, sync, nocache }).then(source => {
+    fetch(href, options).then(source => {
       try {
         resolve(JSON.parse(source.trim()));
       } catch (err) {

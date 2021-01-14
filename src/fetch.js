@@ -43,15 +43,16 @@ function innumerable(
   return obj;
 }
 
-function fetch(url, { timeout = 120000, sync, nocache, } = {}) {
+function fetch(url, { timeout = 120000, sync, nocache, method = 'GET', headers } = {}) {
   if (!globalCached._fetched) innumerable(globalCached, '_fetched', {});
   const fetched = globalCached._fetched;
-
   if (fetched[url]) return fetched[url];
-  return fetched[url] = new Promise(function (resolve, reject) {
+
+  const isHeadRequest = ['HEAD', 'OPTIONS'].includes(method);
+  const prom = new Promise(function (resolve, reject) {
     const res = pushQueue(url, resolve, reject); 
 
-    const xhr = new window.XMLHttpRequest();
+    const xhr = new XMLHttpRequest();
     let timerId;
     xhr.onreadystatechange = () => {
       if (xhr.readyState === 4) {
@@ -76,14 +77,26 @@ function fetch(url, { timeout = 120000, sync, nocache, } = {}) {
           res.fail(err);
         } else {
           // success
-          res.success(xhr.responseText);
+          if (isHeadRequest) {
+            const rheaders = xhr.getAllResponseHeaders().split('\n').reduce((p, v) => {
+              const [key, value] = v.split(': ');
+              if (!key) return p;
+              p[key] = value;
+              return p;
+            }, {});
+            res.success(rheaders);
+          } else res.success(xhr.responseText);
         }
       }
     };
     try {
       if (nocache) url += `${~url.indexOf('?') ? '&' : '?'}_=${Date.now()}`;
-      xhr.open('GET', url, !sync);
+      xhr.timeout = timeout;
+      xhr.open(method, url, !sync);
       xhr.setRequestHeader('Content-Type', 'text/plain;charset=UTF-8');
+
+      if (headers) Object.keys(headers).forEach(key => xhr.setRequestHeader(key, headers[key]));
+      
       // if (nocache) {
       //   xhr.setRequestHeader('If-Modified-Since', '0');
       //   xhr.setRequestHeader('Cache-Control', 'no-cache');
@@ -98,6 +111,8 @@ function fetch(url, { timeout = 120000, sync, nocache, } = {}) {
       }, timeout);
     } catch (e) { res.fail(e); }
   });
+  if (!isHeadRequest) fetched[url] = prom;
+  return prom;
 }
 
 fetch.queue = queue;
@@ -145,7 +160,7 @@ class AsyncRemoteModule {
   }
 
 }
-['require', 'import', 'requireSync', 'importSync'].forEach(key => AsyncRemoteModule.prototype[key] = function () {
+['exist', 'requireMeta', 'require', 'import'].forEach(key => AsyncRemoteModule.prototype[key] = function () {
   return this.readyRuntime().then(runtime => runtime[key].apply(runtime, arguments));
 });
 

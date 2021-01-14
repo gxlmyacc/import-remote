@@ -1,7 +1,7 @@
 
 import fetch, { requireJs } from './fetch';
 import { innumerable, mergeObject, requireWithVersion } from './utils';
-import remote from './remote';
+import remote, { requireManifest } from './remote';
 import RemoteModule from './module';
 import createRequireFactory from './requireFactory';
 import importJs from './importJs';
@@ -27,6 +27,7 @@ export {
   satisfy,
   versionLt,
   requireWithVersion,
+  requireManifest,
   version
 };
 
@@ -44,6 +45,7 @@ const remoteExternal = {
   satisfy,
   versionLt,
   requireWithVersion,
+  requireManifest,
   version,
   
   default: remote,

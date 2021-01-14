@@ -26,14 +26,18 @@ function transformStyleHost(source, host) {
   return source.replace(/url\(([^)]+)\)/ig, (m, p1) => `url(${joinUrl(host, p1)})`);
 }
 
-function fetchStyle(href, { cached = globalCached, timeout = DEFAULT_TIMEOUT, sync, head, scopeName, host, beforeSource } = {}) {
+function fetchStyle(href, { 
+  cached = globalCached, 
+  timeout = DEFAULT_TIMEOUT, 
+  sync, head, scopeName, host, beforeSource, method 
+} = {}) {
   if (!cached._css) innumerable(cached, '_css', {});
   if (cached._css[href]) return cached._css[href];
 
   return cached._css[href] = new Promise((resolve, reject) => {
     if (!head) head = document.getElementsByTagName('head')[0];
     if (hasFetched(href, head)) return resolve();
-    fetch(href, { timeout, sync }).then(source => {
+    fetch(href, { timeout, sync, method }).then(source => {
       try {
         source = transformStyleHost(source, host);
         if (beforeSource) source = beforeSource(source, 'css', href);
