@@ -149,7 +149,7 @@ function splitSource(source, splitRegx, len = splitSourceSize) {
 
 function requireModule(__require__, manifest, options = {}) {
   if (!__require__) return;
-  let result = __require__(manifest.entryId || manifest.entryFile, manifest.entryFile);
+  let result = __require__(manifest.entryId, manifest.entryFile);
   if (Array.isArray(manifest.entryId)) result = result[0];
   if (options.useEsModuleDefault && result && result.__esModule) result = result.default;
   return result;
@@ -424,7 +424,12 @@ function remote(url, options = {}) {
         const context = __remoteModuleWebpack__[scopeName];
         let __require__ = context.require || context.__require__;
 
-        await Promise.all(manifest.entrys.ids.map(id => __require__.e(id)));
+        // eslint-disable-next-line no-empty
+        if (context.promisePending) try { await context.promisePending; } catch (ex) {}
+        context.promisePending = Promise.all(manifest.entrys.ids.map(id => __require__.e(id)));
+        try {
+          await context.promisePending;
+        } finally { context.promisePending = null; }
 
         manifest.externals.forEach(external => {
           if (__require__.m[external.id] && __require__.m[external.id].__import_remote_external__) return;

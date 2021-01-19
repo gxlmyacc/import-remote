@@ -827,6 +827,7 @@ class ModuleWebpackPlugin {
        * @param {(err?: Error) => void} callback
       */
         (compilation, callback) => processAssets(compilation, callback, (name, source) => {
+          if (compilation.assets[name]) throw new Error(`assets [${name}] has aleady exist!`);
           // @ts-ignore
           compilation.assets[name] = {
             source: () => source,
@@ -878,6 +879,7 @@ class ModuleWebpackPlugin {
            */
             // @ts-ignore
             (compilationAssets, callback) => processAssets(compilation, callback, (name, source) => {
+              if (compilation.assets[name]) throw new Error(`assets [${name}] has aleady exist!`);
               compilation.emitAsset(name, new webpack.sources.RawSource(source, false));
             })
           );
