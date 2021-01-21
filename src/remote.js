@@ -147,11 +147,15 @@ function splitSource(source, splitRegx, len = splitSourceSize) {
   return ret;
 }
 
-function requireModule(__require__, manifest, options = {}) {
+function resolveResult(result, options) {
+  if (options.useEsModuleDefault && result && result.__esModule) result = result.default;
+  return result;
+}
+
+function requireModule(__require__, manifest) {
   if (!__require__) return;
   let result = __require__(manifest.entryId, manifest.entryFile);
   if (Array.isArray(manifest.entryId)) result = result[0];
-  if (options.useEsModuleDefault && result && result.__esModule) result = result.default;
   return result;
 }
 
@@ -191,7 +195,7 @@ function remote(url, options = {}) {
   if (cached[url]) {
     return cached[url].result.then(async r => {
       getManifestCallback && (await getManifestCallback(cached[url].manifest));
-      return r;
+      return resolveResult(r, options);
     });
   }
   cached[url] = {
@@ -212,7 +216,7 @@ function remote(url, options = {}) {
 
         if (__remoteModuleWebpack__[scopeName]) {
           const ctx = __remoteModuleWebpack__[scopeName];
-          const m = requireModule(ctx.require, manifest, options);
+          const m = requireModule(ctx.require, manifest);
           if (m) return resolve(m);
         }
   
@@ -482,14 +486,14 @@ function remote(url, options = {}) {
 
         if (__require__._init) await __require__._init(manifest.remotes);
 
-        resolve(requireModule(__require__, manifest, options));
+        resolve(requireModule(__require__, manifest));
       } catch (ex) {
         reject(ex);
         throw ex;
       } 
     })
   };
-  return cached[url].result;
+  return cached[url].result.then(result => resolveResult(result, options));
 }
 remote.externals = {};
 remote.globals = {
