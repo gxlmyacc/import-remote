@@ -20,7 +20,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "import-remote": "^0.0.14-alpha.2",
+    "import-remote": "^0.0.14-alpha.3",
     "react": "^16.13.0",
     "react-dom": "^16.13.0"
   }
