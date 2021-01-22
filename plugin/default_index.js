@@ -6,6 +6,7 @@ function isRegExp(obj) {
 module.exports = function ({
   version,
   pkg,
+  timestamp,
   outputOptions,
   webpackVersion,
   webpackConfig,
@@ -20,7 +21,7 @@ module.exports = function ({
     return ret;
   };
   const data = {
-    timestamp: Date.now(),
+    timestamp,
     name: pkg.name,
     version,
     webpackVersion,

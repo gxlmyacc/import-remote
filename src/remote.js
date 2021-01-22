@@ -152,9 +152,9 @@ function resolveResult(result, options) {
   return result;
 }
 
-function requireModule(__require__, manifest) {
+function requireModule(__require__, manifest, isTry) {
   if (!__require__) return;
-  let result = __require__(manifest.entryId, manifest.entryFile);
+  let result = __require__(manifest.entryId, manifest.entryFile, isTry);
   if (Array.isArray(manifest.entryId)) result = result[0];
   return result;
 }
@@ -216,7 +216,7 @@ function remote(url, options = {}) {
 
         if (__remoteModuleWebpack__[scopeName]) {
           const ctx = __remoteModuleWebpack__[scopeName];
-          const m = requireModule(ctx.require, manifest);
+          const m = requireModule(ctx.require, manifest, true);
           if (m) return resolve(m);
         }
   
@@ -493,7 +493,7 @@ function remote(url, options = {}) {
       } 
     })
   };
-  return cached[url].result.then(result => resolveResult(result, options));
+  return cached[url].result.then(r => resolveResult(r, options));
 }
 remote.externals = {};
 remote.globals = {

@@ -35,6 +35,8 @@ const getModuleWebpackPluginHooks = require('./lib/hooks.js').getModuleWebpackPl
 const fsStatAsync = promisify(fs.stat);
 const fsReadFileAsync = promisify(fs.readFile);
 
+const BUILD_TIMESTAMP = Date.now();
+
 function isSameFile(file1, file2) {
   const stat1 = fs.statSync(file1);
   const stat2 = fs.statSync(file2);
@@ -310,6 +312,7 @@ function templateParametersGenerator(compilation, assets, options, version) {
   return {
     version,
     compilation,
+    timestamp: BUILD_TIMESTAMP,
     pkg: options.package,
     webpackVersion: webpackMajorVersion,
     outputOptions: compilation.outputOptions,
@@ -459,7 +462,8 @@ class ModuleWebpackPlugin {
     // `contenthash` is introduced in webpack v4.3
     // which conflicts with the plugin's existing `contenthash` method,
     // hence it is renamed to `templatehash` to avoid conflicts
-    this.options.filename = this.options.filename.replace(/\[(?:(\w+):)?contenthash(?::([a-z]+\d*))?(?::(\d+))?\]/ig, match => match.replace('contenthash', 'templatehash'));
+    this.options.filename = this.options.filename.replace(/\[(?:(\w+):)?contenthash(?::([a-z]+\d*))?(?::(\d+))?\]/ig, 
+      match => match.replace('contenthash', 'templatehash'));
 
     compiler.hooks.afterPlugins.tap('ModuleWebpackPlugin', compiler => {
       // addHMRPlugin(compiler.options);

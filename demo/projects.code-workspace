@@ -1,0 +1,20 @@
+{
+	"folders": [
+    {
+			"path": "./app1"
+		},
+		{
+			"path": "./app2"
+		},
+		{
+			"path": "../"
+		},
+    {
+			"path": ".",
+      "name": "工作区"
+		},
+	],
+	"settings": {
+		"javascript.implicitProjectConfig.experimentalDecorators": true
+	}
+}

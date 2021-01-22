@@ -144,6 +144,7 @@ declare namespace ModuleWebpackPlugin {
    */
   interface TemplateParameter {
     version: number,
+    timestamp: number,
     compilation: any;
     pkg: any;
     moduleWebpackPlugin: {

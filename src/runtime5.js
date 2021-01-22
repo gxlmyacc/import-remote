@@ -39,16 +39,19 @@ function createRuntime({
     && cached === globalCached && !self[jsonpFunction]) self[jsonpFunction] = chunkLoadingGlobal;
     
   // The require function
-  function __webpack_require__(moduleId, entryFile) {
-    if (Array.isArray(moduleId)) return moduleId.map((id, i) => __webpack_require__(id, entryFile[i]));
+  function __webpack_require__(moduleId, entryFile, isTry) {
+    if (Array.isArray(moduleId)) return moduleId.map((id, i) => __webpack_require__(id, entryFile[i], isTry));
     // Check if module is in cache
     if (__webpack_module_cache__[moduleId]) {
       return __webpack_module_cache__[moduleId].exports;
     }
     if (!__webpack_modules__[moduleId] && entryFile && __webpack_modules__[entryFile]) moduleId = entryFile;
     if (!__webpack_modules__[moduleId]) {
-      let result = requireExternal(moduleId);
-      if (result === undefined) console.error(`[import-remote]module[${moduleId}] not exist!`);
+      let result;
+      if (!isTry) {
+        result = requireExternal(moduleId);
+        if (result === undefined) console.error(`[import-remote]module[${moduleId}] not exist!`);
+      }
       return result;
     }
     // Create a new module (and put it into the cache)
