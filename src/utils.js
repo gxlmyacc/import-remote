@@ -8,11 +8,21 @@ const ATTR_SCOPE_NAME = 'data-remote-scope';
 function requireFromStr(source, { global: context = global, moduleProps = {}, } = {}) {
   // eslint-disable-next-line no-useless-catch
   try {
-    if (context) source = `with(__context__){\n  try {\n${source}\n  } catch(ex) {\n    console.error(ex); throw ex;\n  } \n}`;
-    // eslint-disable-next-line
-    const fn = new Function('module', 'exports', '__context__', source);
     const _module = { inRemoteModule: true, exports: {}, ...moduleProps };
-    fn(_module, _module.exports, context);
+    let names = ['module', 'exports'];
+    let args = [_module, _module.exports];
+
+    if (context && context !== global) {
+      Object.keys(context).forEach(key => {
+        let v = context[key];
+        if (v == null) return;
+        names.push(key);
+        args.push(v);
+      });
+    }
+    // eslint-disable-next-line
+    const fn = new Function(...names, source);
+    fn.apply(context, args);
     return _module.exports;
   } catch (ex) {
     // console.error(ex);
@@ -125,7 +135,7 @@ function innumerable(
   obj,
   key,
   value,
-  options = { configurable: true }
+  options = { configurable: true, writable: true }
 ) {
   objectDefineProperty(obj, key, { value, ...options });
   return obj;

@@ -281,9 +281,9 @@ function remote(url, options = {}) {
         const moduleManifest = __remoteModuleWebpack__.__moduleManifests__[scopeName];
         manifest.entryFile && (moduleManifest.entrys[manifest.entryFile] = manifest);
         if (moduleManifest.timestamp && manifest.timestamp !== moduleManifest.timestamp) {
-          console.error(`warning:[import-remote:remote]the timestamp(${
+          console.error(`warning:[import-remote:remote][${scopeName}]the timestamp(${
             manifest.timestamp
-          }) of [${url}] is different from initialization module(${moduleManifest.timestamp})!`);
+          }) of [${url}] is different with the entry module(${moduleManifest.timestamp})!`);
           onRuntimeChanged && (await onRuntimeChanged(manifest, moduleManifest));
         }
 
@@ -342,9 +342,9 @@ function remote(url, options = {}) {
           });
 
           const ctx = __remoteModuleWebpack__[scopeName] = createContext(windowProxy.context);
-          ctx.__remoteModuleWebpack__ = __remoteModuleWebpack__;
           Object.assign(ctx, remote.globals, globals);
-          ctx.__HOST__ = host;
+          innumerable(ctx, '__remoteModuleWebpack__', __remoteModuleWebpack__);
+          innumerable(ctx, '__HOST__', host);
           ctx.__windowProxy__ = createWindowProxy(windowProxy, {
             scoped: manifest.scopeName, host, beforeSource
           });
@@ -430,10 +430,10 @@ function remote(url, options = {}) {
 
         // eslint-disable-next-line no-empty
         if (context.promisePending) try { await context.promisePending; } catch (ex) {}
-        context.promisePending = Promise.all(manifest.entrys.ids.map(id => __require__.e(id)));
+        innumerable(context, 'promisePending', Promise.all(manifest.entrys.ids.map(id => __require__.e(id))));
         try {
           await context.promisePending;
-        } finally { context.promisePending = null; }
+        } finally { delete context.promisePending; }
 
         manifest.externals.forEach(external => {
           if (__require__.m[external.id] && __require__.m[external.id].__import_remote_external__) return;

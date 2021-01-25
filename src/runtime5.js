@@ -1,7 +1,7 @@
 
 /* eslint-disable camelcase */
 import fetch, { globalCached, objectDefineProperty } from './fetch';
-import { DEFAULT_TIMEOUT, isFunction, joinUrl } from './utils';
+import { DEFAULT_TIMEOUT, isFunction, joinUrl, innumerable } from './utils';
 import importCss from './importCss';
 import importJs from './importJs';
 import jsonp from './jsonp';
@@ -32,7 +32,9 @@ function createRuntime({
   // The module cache
   let __webpack_module_cache__ = {};
 
-  let chunkLoadingGlobal = context[jsonpFunction] = context[jsonpFunction] || [];
+  if (!context[jsonpFunction]) innumerable(context, jsonpFunction, []);
+
+  let chunkLoadingGlobal = context[jsonpFunction];
   let parentChunkLoadingFunction = chunkLoadingGlobal.push.bind(chunkLoadingGlobal);
   chunkLoadingGlobal.push = webpackJsonpCallback;
   if (webpackVersion > 4 && remotes.loading 
@@ -1025,7 +1027,7 @@ function createRuntime({
   let currentUpdateRemovedChunks;
   let currentUpdateRuntime;
 
-  context[hotUpdateGlobal || 'webpackHotUpdate'] = (chunkId, moreModules, runtime) => {
+  innumerable(context, hotUpdateGlobal || 'webpackHotUpdate', (chunkId, moreModules, runtime) => {
     if (currentUpdate) {
       for (let moduleId in moreModules) {
         if (__webpack_require__.o(moreModules, moduleId)) {
@@ -1042,7 +1044,7 @@ function createRuntime({
       installedChunks[chunkId][0]();
       installedChunks[chunkId] = 0;
     }
-  };
+  });
   // if (webpackVersion > 4 && hotUpdateGlobal && !self[hotUpdateGlobal]) self[hotUpdateGlobal] = context[hotUpdateGlobal];
 
   function applyHandler(options) {
