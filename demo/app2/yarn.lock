@@ -2880,10 +2880,10 @@ import-local@^3.0.2:
     pkg-dir "^4.2.0"
     resolve-cwd "^3.0.0"
 
-import-remote@^0.0.14-alpha.3:
-  version "0.0.14-alpha.3"
-  resolved "https://registry.yarnpkg.com/import-remote/-/import-remote-0.0.14-alpha.3.tgz#5208e764ac4b06423ddba0e35019efe9712ed2ad"
-  integrity sha512-0g1M4zoX6yWS3kSIJxgE/axZSrbgkAurj2dNqEHCByqPFqAK/DUfCIkU84rhlh4Agvnj/vY/UyvHywwvxgCM8w==
+import-remote@^0.0.14-alpha.4:
+  version "0.0.14-alpha.4"
+  resolved "https://registry.yarnpkg.com/import-remote/-/import-remote-0.0.14-alpha.4.tgz#31a57ea5d058de72dbd5c0151747b0c2ffcb42e3"
+  integrity sha512-PZULYASfGWZCR80OEqTECtbpOqYcwmYFhc0NCeQjFQhhS0SUeoxy6/k7qy31DPHqsf5VX+8Mmb0JoDewnmgRig==
   dependencies:
     "@babel/cli" "^7.2.3"
     "@babel/core" "^7.11.4"

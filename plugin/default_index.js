@@ -59,7 +59,7 @@ module.exports = function ({
   return `module.exports=function(){return ${JSON.stringify(data, (key, value) => {
     if (typeof value === 'function') {
       let str = value.toString();
-      let [, args = '', body = '', bracket] = str.match(/^(?:(?:function)?\s?[A-Za-z0-9_$]*\s?)?\(([A-Za-z0-9_$\s,]*)\)\s*(?:=>\s*)?{((?:.|\n)*)(})$/) || [];
+      let [, args = '', body = '', bracket] = str.match(/^(?:(?:function)?\s?[A-Za-z0-9_$]*\s?)?\(([A-Za-z0-9_$\s,]*)\)\s*(?:=>\s*)?{?((?:.|\n)*)(}?)$/) || [];
       return {
         _t: 'f',
         _v: [
