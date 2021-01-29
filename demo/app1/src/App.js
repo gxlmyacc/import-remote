@@ -1,17 +1,9 @@
 import React, { useState } from 'react';
 import app2 from './app2';
 
-const RemoteButton = React.lazy(async () => {
-  const ret = await app2.require('button');
-  console.log('app1 app2/button', ret);
-  return ret;
-});
+const RemoteButton = React.lazy(() => app2.require('button'));
 
-const App2 = React.lazy(async () => {
-  const ret = await app2.require('app');
-  console.log('app1 app2/app', ret);
-  return ret;
-});
+const App2 = React.lazy(() => app2.require('app'));
 
 const App = () => {
   const [text, setText] = useState('app1 button');

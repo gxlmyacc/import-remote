@@ -152,9 +152,9 @@ function resolveResult(result, options) {
   return result;
 }
 
-function requireModule(__require__, manifest, isTry) {
+function requireModule(__require__, manifest) {
   if (!__require__) return;
-  let result = __require__(manifest.entryId, manifest.entryFile, isTry);
+  let result = __require__(manifest.entryId, manifest.entryFile);
   if (Array.isArray(manifest.entryId)) result = result[0];
   return result;
 }
@@ -214,11 +214,11 @@ function remote(url, options = {}) {
         cached[url] && (cached[url].manifest = manifest);
         getManifestCallback && (await getManifestCallback(manifest));
 
-        if (__remoteModuleWebpack__[scopeName]) {
-          const ctx = __remoteModuleWebpack__[scopeName];
-          const m = requireModule(ctx.require, manifest, true);
-          if (m) return resolve(m);
-        }
+        // if (__remoteModuleWebpack__[scopeName]) {
+        //   const ctx = __remoteModuleWebpack__[scopeName];
+        //   const m = requireModule(ctx.require, manifest, true);
+        //   if (m) return resolve(m);
+        // }
   
         Object.assign(externals, remote.externals);
   
