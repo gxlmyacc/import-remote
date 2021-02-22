@@ -23,7 +23,9 @@ function hasFetched(href, head) {
 function transformStyleHost(source, host) {
   if (!host || !source) return source;
   if (/\/$/.test(host)) host = host.substr(0, host.length - 1);
-  return source.replace(/url\(([^)]+)\)/ig, (m, p1) => `url(${joinUrl(host, p1)})`);
+  return source
+    .replace(/url\(([^)]+)\)/ig, (m, p1) => `url(${joinUrl(host, p1)})`);
+  // .replace(/@import\s+(["'])([^"']+)["']/ig, (m, p0, p1) => `@import ${p0 + joinUrl(host, p1) + p0}`);
 }
 
 function fetchStyle(href, { 
