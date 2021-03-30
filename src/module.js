@@ -7,6 +7,7 @@ class RemoteModule {
   constructor(host, options = {}) {
     if (!host) throw new Error('[RemoteModule]`host` can not empty！');
     this.host = resolveRelativeUrl(host);
+    this.pathname = options.pathname || '';
     this.options = options || {};
   }
 
@@ -17,7 +18,7 @@ class RemoteModule {
   }
 
   isRequired(moduleName = 'index.js') {
-    return Boolean(remote.cached[resolveModuleUrl(this.host, moduleName)]);
+    return Boolean(remote.cached[resolveModuleUrl(this.host + this.pathname, moduleName)]);
   }
 
   prefetch(prefetchs = []) {
@@ -25,11 +26,11 @@ class RemoteModule {
   }
 
   exist(moduleName = 'index.js', options = {}) {
-    return existModule(this.host, moduleName, options);
+    return existModule(this.host + this.pathname, moduleName, options);
   }
 
   requireMeta(moduleName = 'index.js', options = {}) {
-    return requireManifest(resolveModuleUrl(this.host, moduleName), mergeObject({ meta: true }, options))
+    return requireManifest(resolveModuleUrl(this.host + this.pathname, moduleName), mergeObject({ meta: true }, options))
       .then(r => (r && r.meta) || {});
   }
 
@@ -42,7 +43,7 @@ class RemoteModule {
   }
 
   require(moduleName = 'index.js', options = {}) {
-    return remote(resolveModuleUrl(this.host, moduleName), mergeObject({}, this.options, options, { host: this.host }));
+    return remote(resolveModuleUrl(this.host + this.pathname, moduleName), mergeObject({}, this.options, options, { host: this.host }));
   }
 
   requireSync(moduleName = 'index.js', options = {}) {

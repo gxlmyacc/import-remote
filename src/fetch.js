@@ -4,8 +4,8 @@ const DEFAULT_HEAD_TIMEOUT = 30000;
 
 function checkRemoteModuleWebpack(context = global) {
   if (!context.__remoteModuleWebpack__) {
-    context.__remoteModuleWebpack__ = { 
-      __moduleManifests__: {}, 
+    context.__remoteModuleWebpack__ = {
+      __moduleManifests__: {},
       cached: {},
     };
   }
@@ -52,7 +52,7 @@ function fetch(url, { timeout = 120000, sync, nocache, method = 'GET', headers }
 
   const isHeadRequest = ['HEAD', 'OPTIONS'].includes(method);
   const prom = new Promise(function (resolve, reject) {
-    const res = pushQueue(url, resolve, reject); 
+    const res = pushQueue(url, resolve, reject);
 
     const xhr = new XMLHttpRequest();
     let timerId;
@@ -98,7 +98,7 @@ function fetch(url, { timeout = 120000, sync, nocache, method = 'GET', headers }
       xhr.setRequestHeader('Content-Type', 'text/plain;charset=UTF-8');
 
       if (headers) Object.keys(headers).forEach(key => xhr.setRequestHeader(key, headers[key]));
-      
+
       // if (nocache) {
       //   xhr.setRequestHeader('If-Modified-Since', '0');
       //   xhr.setRequestHeader('Cache-Control', 'no-cache');
@@ -130,8 +130,8 @@ function requireJs(url, options = {}) {
     const _module = { exports: {} };
     try {
       fn(
-        _module, 
-        _module.exports, 
+        _module,
+        _module.exports,
         options.require || (name => {
           throw new Error(`[import-remote:requireJs]module [${name}] cannot be found!`);
         })
@@ -164,10 +164,10 @@ function resolveModuleUrl(host, moduleName = 'index.js') {
 
 function existModule(host, moduleName = 'index.js', options = {}) {
   return new Promise(
-    resolve => fetch(resolveModuleUrl(host, moduleName), Object.assign({ 
-      timeout: DEFAULT_HEAD_TIMEOUT, 
-      nocache: true, 
-      method: 'HEAD' 
+    resolve => fetch(resolveModuleUrl(host, moduleName), Object.assign({
+      timeout: DEFAULT_HEAD_TIMEOUT,
+      nocache: true,
+      method: 'HEAD'
     }, options))
       .then(r => resolve(r))
       .catch(() => resolve(null))
