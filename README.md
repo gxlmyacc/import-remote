@@ -86,7 +86,8 @@ module.exports = {
   // 配置入口，可以配置多个入口
   entry: {
     ...(entryFiles.reduce((p, file) => {
-      p[file] = `${file}.js`
+      p[file] = `${file}.js`;
+      return p;
     }, {}))
   }
   // 配置输出目录

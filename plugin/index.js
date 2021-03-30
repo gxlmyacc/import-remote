@@ -1195,7 +1195,12 @@ class ModuleWebpackPlugin {
     const entryChunk = chunks.find(c => {
       if (webpackMajorVersion < 5) {
         // @ts-ignore
-        if (!c.entryModule || !entryNames.includes(c.entryModule.name)) return; 
+        if (!c.entryModule) return;
+        if (c.entryModule.name != null) {
+          if (!entryNames.includes(c.entryModule.name)) return;
+        } else if (c.entryModule.resource && isPlainObject(compilation.options.entry)) {
+          if (!entryNames.some(name => compilation.options.entry[name] === c.entryModule.resource)) return;
+        } else return;
         Object.assign(assets, checkEntryModule(c.entryModule));
         return true;
       }
@@ -1245,7 +1250,9 @@ class ModuleWebpackPlugin {
         isRuntime: runtimeChunk === c
       })));
 
-      const entryFiles = entryChunk.files instanceof Set ? Array.from(entryChunk.files) : entryChunk.files;
+      const entryFiles = entryChunk
+        ? entryChunk.files instanceof Set ? Array.from(entryChunk.files) : entryChunk.files
+        : [];
       const runtimeFiles = runtimeChunk.files instanceof Set ? Array.from(runtimeChunk.files) : runtimeChunk.files;
 
       // Prepend the publicPath and append the hash depending on the
