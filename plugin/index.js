@@ -18,7 +18,7 @@ const _ = require('lodash');
 const path = require('path');
 // @ts-ignore
 const findUp = require('find-up');
-// const webpack = require('webpack');
+const webpack = require('webpack');
 const loaderUtils = require('loader-utils');
 // const { sync: getBabelOptionsSync } = require('read-babelrc-up');
 
@@ -94,7 +94,7 @@ function resolveModuleFile(compilation, module) {
   }
   if (!request) return '';
   if (request) request = request.split('?')[0];
-  return path.isAbsolute(request) 
+  return path.isAbsolute(request)
     ? path.relative(compilation.options.context, request).replace(/\\/g, '/')
     : request;
 }
@@ -108,7 +108,7 @@ function isEvalDevtool(devtool) {
  * @param {ModuleWebpackPlugin} self
  * @param {WebpackCompilation} compilation
 * @param {ProcessedModuleWebpackOptions} options
-* @returns 
+* @returns
 */
 function resolveBatchReplaces(self, compilation, options) {
   const isEval = isEvalDevtool(compilation.options.devtool);
@@ -143,7 +143,7 @@ function getModuleId(compilation, module) {
  * @param {ModuleWebpackPlugin} self
  * @param {WebpackCompilation} compilation
 * @param {ProcessedModuleWebpackOptions} options
-* @returns 
+* @returns
 */
 function resolveShareModules(self, compilation, options) {
   if (!options.shareModules || !options.shareModules.length) return [];
@@ -210,10 +210,10 @@ function resolveShareModules(self, compilation, options) {
 * @param {ProcessedModuleWebpackOptions} options
 * @returns {{ chunkMapping: {}, idToExternalAndNameMapping: {} }}
 */
-function resolveRemotes(self, compilation, options) { 
-  const remotes = { 
+function resolveRemotes(self, compilation, options) {
+  const remotes = {
     hasJsMatcher: self.hasJsMatcher,
-    chunkMapping: {}, 
+    chunkMapping: {},
     idToExternalAndNameMapping: {},
     initCodePerScope: self.initCodePerScope,
     initialConsumes: self.initialConsumes,
@@ -240,12 +240,12 @@ function resolveRemotes(self, compilation, options) {
         : null;
       remotes.idToExternalAndNameMapping[mid] = [
         // @ts-ignore
-        m.shareScope, 
+        m.shareScope,
         // @ts-ignore
-        m.internalRequest, 
+        m.internalRequest,
         // @ts-ignore
         externalModule ? externalModule.id : m.externalRequests[0]
-      ]; 
+      ];
       // @ts-ignore
       compilation.chunkGraph.getModuleChunksIterable(m).forEach(c => {
         if (!remotes.chunkMapping[c.id]) remotes.chunkMapping[c.id] = [];
@@ -279,7 +279,7 @@ function resolveExternals(compilation, options) {
   }).map(m => {
     let v = { id: getModuleId(compilation, m) };
     // @ts-ignore
-    if (m.externalType) v.type = m.externalTyp; 
+    if (m.externalType) v.type = m.externalTyp;
     // @ts-ignore
     if (isPlainObject(m.request)) {
       // @ts-ignore
@@ -325,13 +325,13 @@ function templateParametersGenerator(compilation, assets, options, version) {
   };
 }
 
-// function findHMRPluginIndex(config) {
-//   if (!config.plugins) {
-//     config.plugins = [];
-//     return;
-//   }
-//   return config.plugins.findIndex(plugin => plugin.constructor === webpack.HotModuleReplacementPlugin);
-// }
+function findHMRPluginIndex(config) {
+  if (!config.plugins) {
+    config.plugins = [];
+    return -1;
+  }
+  return config.plugins.findIndex(plugin => plugin.constructor === webpack.HotModuleReplacementPlugin);
+}
 
 // function addHMRPlugin(config) {
 //   const idx = findHMRPluginIndex(config);
@@ -377,8 +377,8 @@ class ModuleWebpackPlugin {
 
     this.hasJsMatcher = null;
     this.withBaseURI = false;
-    this.initCodePerScope = {}; 
-    this.initialConsumes = []; 
+    this.initCodePerScope = {};
+    this.initialConsumes = [];
     this.moduleIdToSourceMapping = {};
     this.chunkToModuleMapping = {};
     this.previousEmittedAssets = [];
@@ -416,7 +416,7 @@ class ModuleWebpackPlugin {
       let runtimeChunk = optimization.runtimeChunk;
       let name = isPlainObject(runtimeChunk)
         ? runtimeChunk.name
-        : entrypoint => (runtimeChunk === true 
+        : entrypoint => (runtimeChunk === true
           ? `runtime~${entrypoint.name}`
           : typeof runtimeChunk === 'string'
             ? runtimeChunk
@@ -424,7 +424,7 @@ class ModuleWebpackPlugin {
       if (!isPlainObject(optimization.runtimeChunk)) optimization.runtimeChunk = {};
       optimization.runtimeChunk.name = entrypoint => {
         let ret = typeof name === 'function' ? name(entrypoint) : name;
-        if (typeof ret !== 'string' && (!self.options.chunks || self.options.chunks === 'all' 
+        if (typeof ret !== 'string' && (!self.options.chunks || self.options.chunks === 'all'
           || self.options.chunks.includes(entrypoint.name))) {
           ret = compiler.options.entry[entrypoint.name] ? `runtime~${entrypoint.name}` : undefined;
         }
@@ -462,7 +462,7 @@ class ModuleWebpackPlugin {
     // `contenthash` is introduced in webpack v4.3
     // which conflicts with the plugin's existing `contenthash` method,
     // hence it is renamed to `templatehash` to avoid conflicts
-    this.options.filename = this.options.filename.replace(/\[(?:(\w+):)?contenthash(?::([a-z]+\d*))?(?::(\d+))?\]/ig, 
+    this.options.filename = this.options.filename.replace(/\[(?:(\w+):)?contenthash(?::([a-z]+\d*))?(?::(\d+))?\]/ig,
       match => match.replace('contenthash', 'templatehash'));
 
     compiler.hooks.afterPlugins.tap('ModuleWebpackPlugin', compiler => {
@@ -560,7 +560,7 @@ class ModuleWebpackPlugin {
               const [, ret] = src.match(/^(?:function)?\(\)(?: (?:=>|{ return))? ([A-Za-z]+)\(/) || [];
               return ret;
             };
-                  
+
             for (const c of chunk.getAllReferencedChunks()) {
               // @ts-ignore
               const modules = compilation.chunkGraph.getOrderedChunkModulesIterableBySourceType(
@@ -584,9 +584,9 @@ class ModuleWebpackPlugin {
                   if (shareKey) {
                     let [entryId] = getChunkIdFormSource(init);
                     stage = [
-                      'register', 
-                      shareKey, 
-                      version, 
+                      'register',
+                      shareKey,
+                      version,
                       getChunkIdFormSource(init, true),
                       entryId
                     ];
@@ -646,7 +646,7 @@ class ModuleWebpackPlugin {
               addModules(modules, c, (chunkToModuleMapping[c.id] = []));
             }
             self.chunkToModuleMapping = chunkToModuleMapping;
-          
+
             for (const c of chunk.getAllInitialChunks()) {
               // @ts-ignore
               const modules = compilation.chunkGraph.getChunkModulesIterableBySourceType(
@@ -708,7 +708,7 @@ class ModuleWebpackPlugin {
           self.previousEmittedAssets.forEach(({ name, source }) => emitAsset(name, source));
         }
         return callback();
-      } 
+      }
       self.previousEmittedAssets = [];
       self.assetJson = newAssetJson;
 
@@ -789,7 +789,7 @@ class ModuleWebpackPlugin {
             const src = path.resolve(__dirname, '../dist/import-remote.min.js');
             let dist = typeof libraryFileName === 'string'
               ? path.resolve(
-                compiler.options.output.path, 
+                compiler.options.output.path,
                 libraryFileName.endsWith('/') ? `${libraryFileName}import-remote.min.js` : libraryFileName
               )
               : path.resolve(compiler.options.output.path, 'import-remote.min.js');
@@ -887,7 +887,7 @@ class ModuleWebpackPlugin {
               compilation.emitAsset(name, new webpack.sources.RawSource(source, false));
             })
           );
-        });  
+        });
     }
   }
 
@@ -1107,10 +1107,12 @@ class ModuleWebpackPlugin {
       entryId: 0,
       // hash
       hash: compilationHash,
-      // jsonpFunction 
+      // jsonpFunction
       jsonpFunction,
       // is hot
-      hot: Boolean(compilation.compiler.watchMode),
+      hot: compilation.compiler.watchMode != null
+        ? Boolean(compilation.compiler.watchMode)
+        : findHMRPluginIndex(compilation.options) > -1,
       remotes: {},
       shareModules: [],
       batchReplaces: [],
@@ -1149,7 +1151,7 @@ class ModuleWebpackPlugin {
           if (!assets.chunks.files.js[chunk.id]) {
             assets.chunks.files.js[chunk.id] = file;
             return;
-          } 
+          }
           if (!Array.isArray(assets.chunks.files.js[chunk.id])) {
             assets.chunks.files.js[chunk.id] = [assets.chunks.files.js[chunk.id]];
           }
@@ -1196,9 +1198,13 @@ class ModuleWebpackPlugin {
       if (webpackMajorVersion < 5) {
         // @ts-ignore
         if (!c.entryModule) return;
+        // @ts-ignore
         if (c.entryModule.name != null) {
+          // @ts-ignore
           if (!entryNames.includes(c.entryModule.name)) return;
+        // @ts-ignore
         } else if (c.entryModule.resource && isPlainObject(compilation.options.entry)) {
+          // @ts-ignore
           if (!entryNames.some(name => compilation.options.entry[name] === c.entryModule.resource)) return;
         } else return;
         Object.assign(assets, checkEntryModule(c.entryModule));
@@ -1262,7 +1268,7 @@ class ModuleWebpackPlugin {
         .map(chunkFile => {
           const entryPointPublicPath = publicPath + this.urlencodePath(chunkFile);
           const isJs = /\.(js|mjs)(\?|$)/.test(chunkFile);
-        
+
           const isEntry = Boolean(entryChunk && entryFiles.includes(chunkFile));
           let item = {
             file: this.options.hash
@@ -1313,7 +1319,7 @@ class ModuleWebpackPlugin {
     }
     return url + (url.indexOf('?') === -1 ? '?' : '&') + hash;
   }
-  
+
   /**
    * Encode each path component using `encodeURIComponent` as files can contain characters
    * which needs special encoding in URLs like `+ `.
