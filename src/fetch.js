@@ -150,7 +150,7 @@ function isAbsoluteUrl(url) {
 
 function joinUrl(host, path) {
   if (path && /^["'].+["']$/.test(path)) path = path.substr(1, path.length - 2);
-  if (!host || isAbsoluteUrl(path)) return path;
+  if (!host || isAbsoluteUrl(path) /* || /^\//.test(path) */) return path;
   if (/^\/[A-Za-z]/.test(host) && path.startsWith(host)) return path;
   if (/\/$/.test(host)) host = host.substr(0, host.length - 1);
   if (/^\.\//.test(path)) path = path.substr(1, path.length);

@@ -1206,6 +1206,8 @@ class ModuleWebpackPlugin {
         } else if (c.entryModule.resource && isPlainObject(compilation.options.entry)) {
           // @ts-ignore
           if (!entryNames.some(name => compilation.options.entry[name] === c.entryModule.resource)) return;
+        } else if (c.name && entryNames.includes(c.name)) {
+          // empty
         } else return;
         Object.assign(assets, checkEntryModule(c.entryModule));
         return true;
