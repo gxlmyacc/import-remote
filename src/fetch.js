@@ -2,7 +2,7 @@ import { objectDefineProperty } from './_objdp';
 
 const DEFAULT_HEAD_TIMEOUT = 30000;
 
-function checkRemoteModuleWebpack(context = global) {
+function checkRemoteModuleWebpack(context = window) {
   if (!context.__remoteModuleWebpack__) {
     context.__remoteModuleWebpack__ = {
       __moduleManifests__: {},

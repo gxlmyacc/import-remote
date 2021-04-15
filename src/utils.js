@@ -5,14 +5,14 @@ const DEFAULT_TIMEOUT = 120000;
 
 const ATTR_SCOPE_NAME = 'data-remote-scope';
 
-function requireFromStr(source, { global: context = global, moduleProps = {}, } = {}) {
+function requireFromStr(source, { global: context = window, moduleProps = {}, } = {}) {
   // eslint-disable-next-line no-useless-catch
   try {
     const _module = { inRemoteModule: true, exports: {}, ...moduleProps };
     let names = ['module', 'exports'];
     let args = [_module, _module.exports];
 
-    if (context && context !== global) {
+    if (context && context !== window) {
       Object.keys(context).forEach(key => {
         let v = context[key];
         if (v == null) return;
@@ -60,7 +60,7 @@ function isRegExp(obj) {
 }
 
 function isFunction(fn) {
-  return fn 
+  return fn
     && typeof fn === 'function'
     && (!fn.prototype || fn.prototype === Function || fn.constructor === Function);
 }
@@ -99,7 +99,7 @@ function walkMainifest(target) {
         const [args, body, bracket] = ret._v;
         // eslint-disable-next-line no-new-func
         ret = new Function(
-          ...args, 
+          ...args,
           `"use strict";${bracket ? '' : 'return ('}\n${body}${bracket ? '' : '\n)'}`
         );
       } else if (ret._t === 'r') {

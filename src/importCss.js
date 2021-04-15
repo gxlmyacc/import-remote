@@ -28,15 +28,23 @@ function transformStyleHost(source, host) {
   // .replace(/@import\s+(["'])([^"']+)["']/ig, (m, p0, p1) => `@import ${p0 + joinUrl(host, p1) + p0}`);
 }
 
-function fetchStyle(href, { 
-  cached = globalCached, 
-  timeout = DEFAULT_TIMEOUT, 
-  sync, head, scopeName, host, beforeSource, method 
+function fetchStyle(href, {
+  cached = globalCached,
+  timeout = DEFAULT_TIMEOUT,
+  sync, head, scopeName, host, beforeSource, method
 } = {}) {
   if (!cached._css) innumerable(cached, '_css', {});
   if (cached._css[href]) return cached._css[href];
 
   return cached._css[href] = new Promise((resolve, reject) => {
+    // const resolve = r => {
+    //   delete cached._css[href];
+    //   return _resolve(r);
+    // };
+    // const reject = r => {
+    //   delete cached._css[href];
+    //   return _reject(r);
+    // };
     if (!head) head = document.getElementsByTagName('head')[0];
     if (hasFetched(href, head)) return resolve();
     fetch(href, { timeout, sync, method }).then(source => {
@@ -53,9 +61,9 @@ function fetchStyle(href, {
         head.appendChild(styleTag);
         resolve(styleTag);
       } catch (err) {
-        console.error(err); 
+        console.error(err);
         err.code = 'CSS_CHUNK_LOAD_FAILED';
-        reject(err); 
+        reject(err);
       }
     }).catch(reject);
   });
