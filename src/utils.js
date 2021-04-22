@@ -78,7 +78,7 @@ function mergeObject(target) {
         else {
           let w = target[key];
           if (!isPlainObject(w)) w = target[key] = {};
-          _mergeObject(w, v, copiedObjects);
+          Object.keys(v).forEach(key2 => w[key2] = v[key2]);
         }
       } else target[key] = v;
     });
