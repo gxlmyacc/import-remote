@@ -9,12 +9,13 @@ const sourceMappingURLRegx = /\/\/# sourceMappingURL=([0-9A-Za-z_.-]+\.js\.map)$
 function importJs(href, {
   cached = globalCached,
   timeout = DEFAULT_TIMEOUT,
-  global, sync, scopeName, host, devtool, nocache, beforeSource, method
+  global, sync, scopeName, host, devtool, nocache, beforeSource, method,
+  webpackChunk,
 } = {}) {
   if (!cached._js) innumerable(cached, '_js', {});
-  if (cached._js[href]) return cached._js[href];
+  if (!webpackChunk && cached._js[href]) return cached._js[href];
 
-  return cached._js[href] = new Promise((resolve, reject) => {
+  const prom = new Promise((resolve, reject) => {
     fetch(href, { timeout, sync, nocache, beforeSource, method }).then(source => {
       try {
         if (host && source) {
@@ -68,6 +69,10 @@ function importJs(href, {
       }
     }).catch(reject);
   });
+
+  if (!webpackChunk) cached._js[href] = prom;
+
+  return prom;
 }
 
 export default importJs;

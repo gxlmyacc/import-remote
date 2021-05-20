@@ -158,12 +158,19 @@ function requireWithVersion(module, version) {
   return module;
 }
 
+function isSameHost(host1, host2) {
+  host1 = host1.replace(/\/+$/, '');
+  host2 = host2.replace(/\/+$/, '');
+  return host1.toLowerCase() === host2.toLowerCase();
+}
+
 export {
   DEFAULT_TIMEOUT,
   ATTR_SCOPE_NAME,
 
   walkMainifest,
 
+  isSameHost,
   requireFromStr,
   isAbsoluteUrl,
   resolveRelativeUrl,

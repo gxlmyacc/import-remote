@@ -1,9 +1,9 @@
 import escapeStringRegexp from 'escape-string-regexp';
 import { globalCached, checkRemoteModuleWebpack, requireJs } from './fetch';
-import { 
+import {
   DEFAULT_TIMEOUT, ATTR_SCOPE_NAME,
   isFunction, getHostFromUrl, resolveRelativeUrl, walkMainifest,
-  innumerable, isPlainObject
+  innumerable, isPlainObject, joinUrl, isSameHost
 } from './utils';
 import createRuntime5 from './runtime5';
 import { transformStyleHost, ATTR_CSS_TRANSFORMED } from './importCss';
@@ -47,11 +47,11 @@ function createWindowProxy(windowProxy, { scopeName, host, beforeSource } = {}) 
     // eslint-disable-next-line no-unused-vars
     context,
     document: doc = {
-      html: document.documentElement, 
-      body: document.body, 
+      html: document.documentElement,
+      body: document.body,
       head: document.head
-    }, 
-    ...windowOthers 
+    },
+    ...windowOthers
   } = windowProxy;
 
   const attachIframeLoad = el => {
@@ -62,8 +62,8 @@ function createWindowProxy(windowProxy, { scopeName, host, beforeSource } = {}) 
         if (el.contentWindow && !el.contentWindow.__windowProxy__) {
           el.contentWindow.__windowProxy__ = {
             doc: {
-              html: el.contentDocument, 
-              body: el.contentDocument.body, 
+              html: el.contentDocument,
+              body: el.contentDocument.body,
               head: el.contentDocument.head,
               createElement() {
                 return el.contentDocument.createElement(...arguments);
@@ -116,9 +116,9 @@ function createWindowProxy(windowProxy, { scopeName, host, beforeSource } = {}) 
 function getScopeName(__remoteModuleWebpack__, scopeName, host, order = 0) {
   let newScopeName = `${scopeName}${order ? `_${order}` : ''}`;
   const currentManifest = __remoteModuleWebpack__.__moduleManifests__[newScopeName];
-  if (currentManifest && host && currentManifest.host && currentManifest.host !== host) {
+  if (currentManifest && host && currentManifest.host && !isSameHost(currentManifest.host, host)) {
     console.warn(`[import-remote]note: [${host}:${newScopeName}] scopename alreadly exist, will rename to [${scopeName}_${order + 1}]!`);
-    return getScopeName(__remoteModuleWebpack__, scopeName, host, ++order); 
+    return getScopeName(__remoteModuleWebpack__, scopeName, host, ++order);
   }
   return newScopeName;
 }
@@ -219,9 +219,9 @@ function remote(url, options = {}) {
         //   const m = requireModule(ctx.require, manifest, true);
         //   if (m) return resolve(m);
         // }
-  
+
         Object.assign(externals, remote.externals);
-  
+
         let manifestExternals = [
           ...manifest.externals,
           ...(manifest.shareModules || []).filter(v => v.shareCommon)
@@ -237,16 +237,16 @@ function remote(url, options = {}) {
               if (isFunction(url)) url = url.call(m, options, manifest);
               url = resolveRelativeUrl(url, {
                 host: mHost || host,
-                onHost: m.host 
-                  ? null 
+                onHost: m.host
+                  ? null
                   : host => {
                     if (!m.host) m.host = host;
                   }
               });
-              return remote(url, { 
-                isCommonModule: true, 
-                externals, 
-                globals, 
+              return remote(url, {
+                isCommonModule: true,
+                externals,
+                globals,
                 host: mHost || getHostFromUrl(url),
                 sync,
                 method,
@@ -267,11 +267,11 @@ function remote(url, options = {}) {
           }
           return modules;
         }))).filter(Boolean);
-  
+
         if (!__remoteModuleWebpack__.__moduleManifests__[scopeName]) {
           const moduleManifest = __remoteModuleWebpack__.__moduleManifests__[scopeName] = {};
           moduleManifest.timestamp = manifest.timestamp;
-          moduleManifest.host = host;
+          moduleManifest.host = joinUrl(host, '');
           moduleManifest.jsChunks = manifest.jsChunks;
           moduleManifest.cssChunks = manifest.cssChunks;
           moduleManifest.hot = manifest.hot;
@@ -301,7 +301,7 @@ function remote(url, options = {}) {
           if (result === undefined) {
             commonModuleOptions.some(option => {
               const commonModuleContext = __remoteModuleWebpack__[option.name];
-              const commonModuleManifest = __remoteModuleWebpack__.__moduleManifests__[option.name]; 
+              const commonModuleManifest = __remoteModuleWebpack__.__moduleManifests__[option.name];
               result = commonModuleContext && commonModuleManifest && resolveModule(external,
                 commonModuleContext.require || commonModuleContext.__require__,
                 commonModuleManifest.nodeModulesPath,
@@ -315,7 +315,7 @@ function remote(url, options = {}) {
           }
           return result;
         };
-  
+
         if (!__remoteModuleWebpack__[scopeName]) {
           const globalObject = manifest.windowObject || 'window';
           const newGlobalObject = manifest.globalObject || '__context__';
@@ -348,10 +348,10 @@ function remote(url, options = {}) {
           ctx.__windowProxy__ = createWindowProxy(windowProxy, {
             scoped: manifest.scopeName, host, beforeSource
           });
-          ctx.require = createRuntime5({ 
-            ...manifest, 
+          ctx.require = createRuntime5({
+            ...manifest,
             scopeName,
-            host, 
+            host,
             context: ctx,
             cached,
             requireExternal,
@@ -366,7 +366,7 @@ function remote(url, options = {}) {
                     const newSourcePrefix1 = `(${newGlobalObject}['${jsonpFunction}']=${newGlobalObject}['${jsonpFunction}']||[])`;
                     source = (match.index ? source.substr(0, match.index) : '')
                       + (appVar ? `var ${appVar}=${globalObject}.${appVar}=\n` : '')
-                      + newSourcePrefix1 
+                      + newSourcePrefix1
                       + source.substr(match.index + sourcePrefix.length);
                   }
                 }
@@ -375,7 +375,7 @@ function remote(url, options = {}) {
                   let match = source.match(hotSourceRegx);
                   let [hotSourcePrefix] = match || [];
                   if (hotSourcePrefix) {
-                    source = (match.index ? source.substr(0, match.index) : '') 
+                    source = (match.index ? source.substr(0, match.index) : '')
                       + hotUpdateGlobal + source.substr(match.index + hotSourcePrefix.length);
                   }
                 }
@@ -395,7 +395,7 @@ function remote(url, options = {}) {
                     [/\b(?:window\.)?document\.body\b/g, (m, offset) => checkOffset(src, offset, m, '__windowProxy__.doc.body')],
                     [/\b(?:window\.)?document\.head\b/g, (m, offset) => checkOffset(src, offset, m, '__windowProxy__.doc.head')],
                     [/\b(?:window\.)?document\.documentElement\b/g,  (m, offset) => checkOffset(src, offset, m, '__windowProxy__.doc.html')],
-                    ctx.__windowProxy__.addEventListener 
+                    ctx.__windowProxy__.addEventListener
                       ? [/\bwindow\.addEventListener\b/g, '__windowProxy__.addEventListener']
                       : null,
                     ctx.__windowProxy__.removeEventListener
@@ -421,10 +421,10 @@ function remote(url, options = {}) {
               if (beforeSource) source = beforeSource(source, type, manifest);
 
               return source;
-            } 
+            }
           });
         }
-  
+
         const context = __remoteModuleWebpack__[scopeName];
         let __require__ = context.require || context.__require__;
 
@@ -464,7 +464,7 @@ function remote(url, options = {}) {
                 if (!moduleVersion && newModule.__esModule && newModule.default && newModule.default.version) {
                   moduleVersion = newModule.default.version;
                 }
-              }    
+              }
               if (isFunction(itemVersion) && !itemVersion.call(item, moduleVersion, newModule, { versionLt, satisfy })) return;
               if (!moduleVersion) return;
               if (typeof itemVersion === 'string' && !satisfy(itemVersion, moduleVersion)) return;
@@ -490,7 +490,7 @@ function remote(url, options = {}) {
       } catch (ex) {
         reject(ex);
         throw ex;
-      } 
+      }
     })
   };
   return cached[url].result.then(r => resolveResult(r, options));
