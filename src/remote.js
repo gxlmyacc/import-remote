@@ -117,7 +117,7 @@ function getScopeName(__remoteModuleWebpack__, scopeName, host, order = 0) {
   let newScopeName = `${scopeName}${order ? `_${order}` : ''}`;
   const currentManifest = __remoteModuleWebpack__.__moduleManifests__[newScopeName];
   if (currentManifest && host && currentManifest.host && !isSameHost(currentManifest.host, host)) {
-    console.warn(`[import-remote]note: [${host}:${newScopeName}] scopename alreadly exist, will rename to [${scopeName}_${order + 1}]!`);
+    console.error(`[import-remote]warning: [${host}:${newScopeName}] scopename alreadly exist, will rename to [${scopeName}_${order + 1}]!`);
     return getScopeName(__remoteModuleWebpack__, scopeName, host, ++order);
   }
   return newScopeName;
