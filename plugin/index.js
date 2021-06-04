@@ -138,6 +138,16 @@ function getModuleId(compilation, module) {
     : module.id;
 }
 
+function babelTransform(str) {
+  const { babel } = getBabelOptionsSync();
+  let ret = require('@babel/core').transformSync(str, {
+    babelrc: false,
+    configFile: false,
+    plugins: ['@babel/plugin-transform-arrow-functions', '@babel/plugin-transform-destructuring']
+  });
+  return ret.code;
+}
+
 /**
  * resolve webpack remotes
  * @param {ModuleWebpackPlugin} self
@@ -236,6 +246,7 @@ function resolveRemotes(self, compilation, options) {
     if (m.type === 'remote-module') {
       const mid = getModuleId(compilation, m);
       let externalModule = m.dependencies.length
+        // @ts-ignore
         ? compilation.moduleGraph.getModule(m.dependencies[0])
         : null;
       remotes.idToExternalAndNameMapping[mid] = [
@@ -317,6 +328,7 @@ function templateParametersGenerator(compilation, assets, options, version) {
     webpackVersion: webpackMajorVersion,
     outputOptions: compilation.outputOptions,
     webpackConfig: compilation.options,
+    babelTransform,
     moduleWebpackPlugin: {
       scopeName: resolveScopeName(options),
       ...assets,
@@ -371,6 +383,7 @@ class ModuleWebpackPlugin {
       excludeChunks: [],
       chunksSortMode: 'auto',
       globalToScopes: [],
+      sourcemapHost: '',
       scopeName: options => options.package.name,
       base: false,
     };

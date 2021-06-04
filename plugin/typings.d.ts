@@ -59,9 +59,9 @@ declare namespace ModuleWebpackPlugin {
 
     batchReplaces?: {
       [key: string]: [RegExp, string][]|((
-        self: ModuleWebpackPlugin, 
-        compilation: WebpackCompilation, 
-        options: ProcessedOptions, 
+        self: ModuleWebpackPlugin,
+        compilation: WebpackCompilation,
+        options: ProcessedOptions,
         isEval: boolean) => [RegExp, string][])
     };
 
@@ -131,6 +131,10 @@ declare namespace ModuleWebpackPlugin {
 
     globalToScopes?: string[];
     /**
+     * The `webpack` require path to the template.
+     */
+    sourcemapHost?: string|Function;
+    /**
      * In addition to the options actually used by this plugin, you can use this hash to pass arbitrary data through
      * to your template.
      */
@@ -154,6 +158,7 @@ declare namespace ModuleWebpackPlugin {
     outputOptions: any,
     webpackVersion: number,
     webpackConfig: any;
+    babelTransform: (str) => string
   }
 
   interface Hooks {

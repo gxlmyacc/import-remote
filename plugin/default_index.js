@@ -12,7 +12,7 @@ module.exports = function ({
   webpackConfig,
   moduleWebpackPlugin: {
     scopeName, entryFile, entryId, hash, jsonpFunction, remotes, shareModules, batchReplaces, globalToScopes,
-    hot, chunks, externals, publicPath, entrys, options 
+    hot, chunks, externals, publicPath, entrys, options
   }
 }) {
   const filterEntry = (entry, isId) => {
@@ -56,16 +56,21 @@ module.exports = function ({
   if (globalToScopes && globalToScopes.length) data.globalToScopes = globalToScopes;
   if (batchReplaces && batchReplaces.length) data.batchReplaces = batchReplaces;
   if (options.commonModules) data.commonModules = options.commonModules;
+  if (options.sourcemapHost) data.sourcemapHost = options.sourcemapHost;
   return `module.exports=function(){return ${JSON.stringify(data, (key, value) => {
     if (typeof value === 'function') {
       let str = value.toString();
-      let [, args = '', body = '', bracket] = str.match(/^(?:(?:function)?\s?[A-Za-z0-9_$]*\s?)?\(([A-Za-z0-9_$\s,]*)\)\s*(?:=>\s*)?{?((?:.|\n)*)(}?)$/) || [];
+      let [, args = '', bracketL, body = '', bracketR] = str.match(/^(?:(?:function)?\s?[A-Za-z0-9_$]*\s?)?\(([A-Za-z0-9_$\s,]*)\)\s*(?:=>\s*)?({?)((?:.|\n)*)(}?)$/) || [];
+      if (bracketL === '{' && !bracketR && body.endsWith('}')) {
+        bracketR = '}';
+        body = body.substr(0, body.length - 1).trim()
+      }
       return {
         _t: 'f',
         _v: [
-          args.replace(/\s+/g, '').split(',').map(a => a.trim()).filter(Boolean),  
-          body.trim().replace(/\b(let|const)\b/g, 'var'), 
-          bracket].filter(Boolean)
+          args.replace(/\s+/g, '').split(',').map(a => a.trim()).filter(Boolean),
+          body.trim().replace(/\b(let|const)\b/g, 'var'),
+          bracketR].filter(Boolean)
       };
     }
     if (isRegExp(value)) {

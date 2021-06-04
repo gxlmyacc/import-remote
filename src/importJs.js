@@ -1,7 +1,7 @@
 
 import base64 from 'base-64';
 import fetch, { globalCached, joinUrl } from './fetch';
-import { innumerable, requireFromStr, isEvalDevtool, DEFAULT_TIMEOUT } from './utils';
+import { innumerable, requireFromStr, isEvalDevtool, DEFAULT_TIMEOUT, isFunction } from './utils';
 
 const scopeNameRegx = /\(import-remote\)\/((?:@[^/]+\/[^/]+)|(?:[^@][^/]+))/;
 const sourceMappingURLRegx = /\/\/# sourceMappingURL=([0-9A-Za-z_.-]+\.js\.map)$/;
@@ -10,7 +10,7 @@ function importJs(href, {
   cached = globalCached,
   timeout = DEFAULT_TIMEOUT,
   global, sync, scopeName, host, devtool, nocache, beforeSource, method,
-  webpackChunk,
+  webpackChunk, entryHost, sourcemapHost,
 } = {}) {
   if (!cached._js) innumerable(cached, '_js', {});
   if (!webpackChunk && cached._js[href]) return cached._js[href];
@@ -50,8 +50,13 @@ function importJs(href, {
                 }`;
               });
           } else if (devtool) {
+            if (isFunction(sourcemapHost)) sourcemapHost = sourcemapHost({ scopeName, host, entryHost, source, webpackChunk });
+
+            if (!sourcemapHost) sourcemapHost = href.split('/').slice(0, -1).join('/');
+            else if (sourcemapHost.test(/\/$/)) sourcemapHost = sourcemapHost.substr(0, sourcemapHost.length - 1);
+
             source = source.replace(sourceMappingURLRegx,
-              (m, p1) =>  `//# sourceMappingURL=${href.split('/').slice(0, -1).join('/')}/${p1}`);
+              (m, p1) =>  `//# sourceMappingURL=${sourcemapHost}/${p1}`);
           } else if (scopeName) {
             const sourcemapHost = sessionStorage.getItem(`import-remote-${scopeName}-sourcemapping-host`);
             if (sourcemapHost && href.startsWith(host)) {

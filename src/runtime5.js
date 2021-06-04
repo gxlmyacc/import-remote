@@ -17,6 +17,8 @@ function createRuntime({
   uniqueName = '',
   scopeName = '',
   hotUpdateGlobal = '',
+  entryHost = '',
+  sourcemapHost = '',
   cssChunks = {},
   jsChunks = {},
   context = {},
@@ -226,6 +228,8 @@ function createRuntime({
       devtool,
       beforeSource,
       webpackChunk: true,
+      entryHost,
+      sourcemapHost,
       key: key ? `${uniqueName}:${key}` : ''
     })))
       .then(onScriptComplete)
@@ -915,7 +919,9 @@ function createRuntime({
           host,
           devtool,
           beforeSource,
-          cached
+          cached,
+          entryHost,
+          sourcemapHost,
         }).then(resolve).catch(function (err) {
           delete installedCssChunks[chunkId];
           reject(err);

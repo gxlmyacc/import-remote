@@ -186,6 +186,7 @@ function remote(url, options = {}) {
     onRuntimeChanged = null,
     host = getHostFromUrl(url),
     sync = false,
+    sourcemapHost,
     beforeSource,
     method,
     windowProxy = { document: { html: document.documentElement, body: document.body, head: document.head } },
@@ -354,6 +355,8 @@ function remote(url, options = {}) {
             host,
             context: ctx,
             cached,
+            entryHost: getHostFromUrl(url),
+            sourcemapHost: sourcemapHost || manifest.sourcemapHost,
             requireExternal,
             beforeSource(source, type) {
               if (type === 'js') {
