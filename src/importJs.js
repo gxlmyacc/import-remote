@@ -10,7 +10,7 @@ function importJs(href, {
   cached = globalCached,
   timeout = DEFAULT_TIMEOUT,
   global, sync, scopeName, host, devtool, nocache, beforeSource, method,
-  webpackChunk, entryHost, sourcemapHost,
+  webpackChunk, publicPath, sourcemapHost,
 } = {}) {
   if (!cached._js) innumerable(cached, '_js', {});
   if (!webpackChunk && cached._js[href]) return cached._js[href];
@@ -50,16 +50,16 @@ function importJs(href, {
                 }`;
               });
           } else if (devtool) {
-            if (isFunction(sourcemapHost)) sourcemapHost = sourcemapHost({ scopeName, host, entryHost, href, source, webpackChunk });
+            if (isFunction(sourcemapHost)) sourcemapHost = sourcemapHost({ scopeName, host, publicPath, href, source, webpackChunk });
 
             if (!sourcemapHost) sourcemapHost = href.split('/').slice(0, -1).join('/');
             else {
               if (/\/$/.test(sourcemapHost)) sourcemapHost = sourcemapHost.substr(0, sourcemapHost.length - 1);
-              sourcemapHost += '/' + href.substr(host.length, href.length).split('/').slice(0, -1).join('/');
+              sourcemapHost = joinUrl(sourcemapHost, href.substr(publicPath.length, href.length).split('/').slice(0, -1).join('/'));
             }
 
             source = source.replace(sourceMappingURLRegx,
-              (m, p1) =>  `//# sourceMappingURL=${sourcemapHost}/${p1}`);
+              (m, p1) =>  `//# sourceMappingURL=${joinUrl(sourcemapHost, p1)}`);
           } else if (scopeName) {
             const sourcemapHost = sessionStorage.getItem(`import-remote-${scopeName}-sourcemapping-host`);
             if (sourcemapHost && href.startsWith(host)) {

@@ -355,7 +355,6 @@ function remote(url, options = {}) {
             host,
             context: ctx,
             cached,
-            entryHost: getHostFromUrl(url),
             sourcemapHost: sourcemapHost || manifest.sourcemapHost,
             requireExternal,
             beforeSource(source, type) {
