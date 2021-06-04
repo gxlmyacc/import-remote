@@ -50,10 +50,13 @@ function importJs(href, {
                 }`;
               });
           } else if (devtool) {
-            if (isFunction(sourcemapHost)) sourcemapHost = sourcemapHost({ scopeName, host, entryHost, source, webpackChunk });
+            if (isFunction(sourcemapHost)) sourcemapHost = sourcemapHost({ scopeName, host, entryHost, href, source, webpackChunk });
 
             if (!sourcemapHost) sourcemapHost = href.split('/').slice(0, -1).join('/');
-            else if (/\/$/.test(sourcemapHost)) sourcemapHost = sourcemapHost.substr(0, sourcemapHost.length - 1);
+            else {
+              if (/\/$/.test(sourcemapHost)) sourcemapHost = sourcemapHost.substr(0, sourcemapHost.length - 1);
+              sourcemapHost += '/' + href.substr(host.length, href.length).split('/').slice(0, -1).join('/');
+            }
 
             source = source.replace(sourceMappingURLRegx,
               (m, p1) =>  `//# sourceMappingURL=${sourcemapHost}/${p1}`);
