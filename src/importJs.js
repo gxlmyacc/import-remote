@@ -53,7 +53,7 @@ function importJs(href, {
             if (isFunction(sourcemapHost)) sourcemapHost = sourcemapHost({ scopeName, host, entryHost, source, webpackChunk });
 
             if (!sourcemapHost) sourcemapHost = href.split('/').slice(0, -1).join('/');
-            else if (sourcemapHost.test(/\/$/)) sourcemapHost = sourcemapHost.substr(0, sourcemapHost.length - 1);
+            else if (/\/$/.test(sourcemapHost)) sourcemapHost = sourcemapHost.substr(0, sourcemapHost.length - 1);
 
             source = source.replace(sourceMappingURLRegx,
               (m, p1) =>  `//# sourceMappingURL=${sourcemapHost}/${p1}`);
