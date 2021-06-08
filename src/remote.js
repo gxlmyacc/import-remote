@@ -382,10 +382,15 @@ function remote(url, options = {}) {
                   }
                 }
 
+                // eslint-disable-next-line arrow-body-style
                 const checkOffset = (source, offset, match, replaceStr) => {
                   // if (/^ ?=/.test(source.substr(offset + match.length, 2))) return match;
-                  if (offset && !/^(window|self|global)\./.test(match) && source[offset - 1] === '.') return match;
-                  return replaceStr;
+                  if (!offset) return replaceStr;
+                  if (!/^(window|self|global)\./.test(match)) {
+                    const [, prefixVar] = source.substr(offset - 7, 7).match(/(window|self|global)\.$/) || [];
+                    if (prefixVar) offset = Math.max(offset - prefixVar.length - 1, 0);
+                  }
+                  return (offset && ['.', ']'].includes(source[offset - 1])) ? match : replaceStr;
                 };
                 const sources = splitSource(source, /[\s<>|&{}:,;()"'+=*![\]/\\]/);
                 sources.forEach((src, i) => {

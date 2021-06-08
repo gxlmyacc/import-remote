@@ -1,5 +1,5 @@
 import fetch, { globalCached } from './fetch';
-import { ATTR_SCOPE_NAME, innumerable, DEFAULT_TIMEOUT, joinUrl } from './utils';
+import { ATTR_SCOPE_NAME, innumerable, DEFAULT_TIMEOUT, joinUrl, transformSourcemapUrl } from './utils';
 
 const ATTR_CSS_TRANSFORMED = 'data-import-remote-transformed';
 
@@ -31,7 +31,8 @@ function transformStyleHost(source, host) {
 function fetchStyle(href, {
   cached = globalCached,
   timeout = DEFAULT_TIMEOUT,
-  sync, head, scopeName, host, beforeSource, method
+  sync, head, scopeName, host, beforeSource, method,
+  devtool, sourcemapHost, publicPath, webpackChunk
 } = {}) {
   if (!cached._css) innumerable(cached, '_css', {});
   if (cached._css[href]) return cached._css[href];
@@ -50,6 +51,8 @@ function fetchStyle(href, {
     fetch(href, { timeout, sync, method }).then(source => {
       try {
         source = transformStyleHost(source, host);
+        source = transformSourcemapUrl(href, source, { devtool, sourcemapHost, scopeName, host, publicPath, webpackChunk });
+
         if (beforeSource) source = beforeSource(source, 'css', href);
 
         let styleTag = document.createElement('style');

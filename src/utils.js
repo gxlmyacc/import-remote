@@ -164,6 +164,35 @@ function isSameHost(host1, host2) {
   return host1.toLowerCase() === host2.toLowerCase();
 }
 
+const sourceMappingURLCssRegx = /\/\*# sourceMappingURL=([0-9A-Za-z_.-]+\.(?:js|css)\.map)\*\/$/;
+const sourceMappingURLJsRegx = /\/\/# sourceMappingURL=([0-9A-Za-z_.-]+\.(?:js|css)\.map)$/;
+function transformSourcemapUrl(href, source, { devtool, sourcemapHost, scopeName, host, publicPath, webpackChunk } = { }) {
+  if (devtool) {
+    if (isFunction(sourcemapHost)) sourcemapHost = sourcemapHost({ scopeName, host, publicPath, href, source, webpackChunk });
+
+    if (!sourcemapHost) sourcemapHost = href.split('/').slice(0, -1).join('/');
+    else {
+      if (/\/$/.test(sourcemapHost)) sourcemapHost = sourcemapHost.substr(0, sourcemapHost.length - 1);
+      sourcemapHost = joinUrl(sourcemapHost, href.substr(publicPath.length, href.length).split('/').slice(0, -1).join('/'));
+    }
+
+    if (/\.css$/i.test(href)) {
+      source = source.replace(sourceMappingURLCssRegx,
+        (m, p1) =>  `/*# sourceMappingURL=${joinUrl(sourcemapHost, p1)}*/`);
+    } else {
+      source = source.replace(sourceMappingURLJsRegx,
+        (m, p1) =>  `//# sourceMappingURL=${joinUrl(sourcemapHost, p1)}`);
+    }
+  } else if (scopeName) {
+    const sourcemapHost = sessionStorage.getItem(`import-remote-${scopeName}-sourcemapping-host`);
+    if (sourcemapHost && href.startsWith(host)) {
+      source = `${source}\n//# sourceMappingURL=${joinUrl(sourcemapHost, href.substr(host.length, href.length))}.map`;
+    }
+  }
+  return source;
+}
+
+
 export {
   DEFAULT_TIMEOUT,
   ATTR_SCOPE_NAME,
@@ -182,5 +211,7 @@ export {
   innumerable,
   getHostFromUrl,
   isEvalDevtool,
-  requireWithVersion
+  requireWithVersion,
+
+  transformSourcemapUrl
 };
