@@ -139,13 +139,14 @@ function getModuleId(compilation, module) {
 }
 
 function babelTransform(str) {
-  const { babel } = getBabelOptionsSync();
-  let ret = require('@babel/core').transformSync(str, {
-    babelrc: false,
-    configFile: false,
-    plugins: ['@babel/plugin-transform-arrow-functions', '@babel/plugin-transform-destructuring']
-  });
-  return ret.code;
+  // const { babel } = getBabelOptionsSync();
+  // let ret = require('@babel/core').transformSync(str, {
+  //   babelrc: false,
+  //   configFile: false,
+  //   plugins: ['@babel/plugin-transform-arrow-functions', '@babel/plugin-transform-destructuring']
+  // });
+  // return ret.code;
+  return str;
 }
 
 /**

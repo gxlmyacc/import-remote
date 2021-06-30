@@ -63,7 +63,7 @@ module.exports = function ({
       let [, args = '', bracketL, body = '', bracketR] = str.match(/^(?:(?:function)?\s?[A-Za-z0-9_$]*\s?)?\(([A-Za-z0-9_$\s,]*)\)\s*(?:=>\s*)?({?)((?:.|\n)*)(}?)$/) || [];
       if (bracketL === '{' && !bracketR && body.endsWith('}')) {
         bracketR = '}';
-        body = body.substr(0, body.length - 1).trim()
+        body = body.substr(0, body.length - 1).trim();
       }
       return {
         _t: 'f',
