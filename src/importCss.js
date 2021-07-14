@@ -68,7 +68,10 @@ function fetchStyle(href, {
         err.code = 'CSS_CHUNK_LOAD_FAILED';
         reject(err);
       }
-    }).catch(reject);
+    }).catch(ex => {
+      delete cached._css[href];
+      return reject(ex);
+    });
   });
 }
 

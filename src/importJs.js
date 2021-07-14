@@ -60,7 +60,10 @@ function importJs(href, {
         console.error(err, source);
         reject(err);
       }
-    }).catch(reject);
+    }).catch(ex => {
+      delete cached._js[href];
+      return reject(ex);
+    });
   });
 
   if (!webpackChunk) cached._js[href] = prom;

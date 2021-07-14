@@ -11,10 +11,13 @@ function importJson(href, { cached = globalCached, ...options } = {}) {
       try {
         resolve(JSON.parse(source.trim()));
       } catch (err) {
-        console.error(err, source); 
-        reject(err); 
+        console.error(err, source);
+        reject(err);
       }
-    }).catch(reject);
+    }).catch(ex => {
+      delete cached._json[href];
+      return reject(ex);
+    });
   });
 }
 

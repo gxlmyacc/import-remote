@@ -52,7 +52,10 @@ function fetch(url, { timeout = 120000, sync, nocache, method = 'GET', headers }
 
   const isHeadRequest = ['HEAD', 'OPTIONS'].includes(method);
   const prom = new Promise(function (resolve, reject) {
-    const res = pushQueue(url, resolve, reject);
+    const res = pushQueue(url, resolve, r => {
+      delete fetched[url];
+      return reject(r);
+    });
 
     const xhr = new XMLHttpRequest();
     let timerId;
@@ -141,6 +144,9 @@ function requireJs(url, options = {}) {
     }
 
     return _module.exports;
+  }).catch(ex => {
+    delete cached._rs[url];
+    return ex;
   });
 }
 
