@@ -15,7 +15,11 @@ function requireFromStr(source, { global: context = window, moduleProps = {}, } 
     if (context && context !== window) {
       Object.keys(context).forEach(key => {
         let v = context[key];
-        if (v == null) return;
+        if (v == null) {
+          if (key !== '__windowProxy__') return;
+          v = window;
+          if (!v.doc) v.doc = window.document;
+        }
         names.push(key);
         args.push(v);
       });
