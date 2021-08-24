@@ -394,14 +394,16 @@ function remote(url, options = {}) {
                 };
                 const sources = splitSource(source, /[\s<>|&{}:,;()"'+=*![\]/\\]/);
                 sources.forEach((src, i) => {
+                  const replaceStr1 = 'document'.concat('.documentElement.getElementsBy');
+                  const replaceStr2 = 'document'.concat('.documentElement').concat('.querySelector');
                   src = batchReplace(src, [
-                    [/\b(?:window\.)?document\.getElementsBy(TagName(?:NS)?|Name|ClassName)\b/g, (m, p1, offset) => checkOffset(src, offset, m, 'document.documentElement.getElementsBy' + p1)],
-                    [/\b(?:window\.)?document\.querySelector(All)?\b/g, (m, p1, offset) => checkOffset(src, offset, m, 'document.documentElement.querySelector' + (p1 || ''))],
-                    [/\b(?:window\.)?document\.getElementById\b/g, (m, offset) => checkOffset(src, offset, m, '__windowProxy__.doc.getElementById')],
-                    [/\b(?:window\.)?document\.createElement\b/g, (m, offset) => checkOffset(src, offset, m, '__windowProxy__.doc.createElement')],
-                    [/\b(?:window\.)?document\.body\b/g, (m, offset) => checkOffset(src, offset, m, '__windowProxy__.doc.body')],
-                    [/\b(?:window\.)?document\.head\b/g, (m, offset) => checkOffset(src, offset, m, '__windowProxy__.doc.head')],
-                    [/\b(?:window\.)?document\.documentElement\b/g,  (m, offset) => checkOffset(src, offset, m, '__windowProxy__.doc.html')],
+                    [/\b(?:window\.)?document\.getElementsBy(TagName(?:NS)?|Name|ClassName)\b/g, (m, p1, offset, src) => checkOffset(src, offset, m, replaceStr1 + p1)],
+                    [/\b(?:window\.)?document\.querySelector(All)?\b/g, (m, p1, offset, src) => checkOffset(src, offset, m, replaceStr2 + (p1 || ''))],
+                    [/\b(?:window\.)?document\.getElementById\b/g, (m, offset, src) => checkOffset(src, offset, m, '__windowProxy__.doc.getElementById')],
+                    [/\b(?:window\.)?document\.createElement\b/g, (m, offset, src) => checkOffset(src, offset, m, '__windowProxy__.doc.createElement')],
+                    [/\b(?:window\.)?document\.body\b/g, (m, offset, src) => checkOffset(src, offset, m, '__windowProxy__.doc.body')],
+                    [/\b(?:window\.)?document\.head\b/g, (m, offset, src) => checkOffset(src, offset, m, '__windowProxy__.doc.head')],
+                    [/\b(?:window\.)?document\.documentElement\b/g,  (m, offset, src) => checkOffset(src, offset, m, '__windowProxy__.doc.html')],
                     ctx.__windowProxy__.addEventListener
                       ? [/\bwindow\.addEventListener\b/g, '__windowProxy__.addEventListener']
                       : null,
