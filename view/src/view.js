@@ -8,27 +8,6 @@ import { createShadowRoot, createDOMElement, isForwardComponent, isReactComponen
 
 class RemoteView extends React.Component {
 
-  static propTypes = {
-    scopeStyle: PropTypes.oneOfType([PropTypes.bool, PropTypes.string]),
-    scopePrefix: PropTypes.string, 
-    classPrefix: PropTypes.string,
-    className: PropTypes.string,
-    tag: PropTypes.string,
-    src: PropTypes.string,
-    module: PropTypes.object,
-    moduleName: PropTypes.string,
-    props: PropTypes.object,
-    externals: PropTypes.object,
-    onViewLoading: PropTypes.func,
-    onViewError: PropTypes.func,
-  }
-
-  static defaultProps = {
-    scopePrefix: 'v-',
-    classPrefix: 'import-remote-',
-    tag: 'div'
-  }
-
   constructor(props) {
     super(props);
     this.$refs = {};
@@ -68,7 +47,7 @@ class RemoteView extends React.Component {
       listeners.forEach(v => window.removeEventListener(v.type, v.listener));
       listeners.splice(0, listeners.length);
     }
- 
+
     let els = document.querySelectorAll(scopeName);
     els.forEach(el => el.parent && el.parent.removeChild(el));
     delete this.viewContext[scopeName];
@@ -97,7 +76,10 @@ class RemoteView extends React.Component {
     let _require = options => remote(src, options);
     if (!src && module) {
       src = moduleName ? module.resolveModuleUrl(moduleName) : '';
-      _require = options => module.require(moduleName, options);
+      _require = options => {
+        if (options.externals === undefined) delete options.externals;
+        return module.require(moduleName, options);
+      };
     }
     if (viewSrc === src) return;
     if (!src) {
@@ -115,7 +97,7 @@ class RemoteView extends React.Component {
     };
 
     const bodyEl = this.$refs.body;
- 
+
     const state = {};
     _require({
       externals,
@@ -163,14 +145,14 @@ class RemoteView extends React.Component {
         oldScopeName = this.viewScopeName;
         this.viewScopeName = newScopeName;
         this.viewScopeHash = `${scopePrefix}${hashSum(newScopeName)}`;
-     
+
         if (!bodyEl.className.includes(this.viewScopeHash)) bodyEl.className = `${bodyEl.className} ${this.viewScopeHash}`;
       }
     }).then(view => {
       if (view && view.__esModule) view = view.default;
       if (view.namespace && bodyEl && !bodyEl.className.includes(view.namespace)) {
         this.viewNamespace = view.namespace;
-        bodyEl.className = `${bodyEl.className} ${view.namespace}`; 
+        bodyEl.className = `${bodyEl.className} ${view.namespace}`;
       }
       if (typeof view === 'function' && !isReactComponent(view) && !isForwardComponent(view)) {
         view = createAppView(view);
@@ -183,10 +165,10 @@ class RemoteView extends React.Component {
       _finally();
     });
   }
-  
+
   render() {
-    const { 
-      shadow, classPrefix, tag, className, children, props = {},  
+    const {
+      shadow, classPrefix, tag, className, children, props = {},
     } = this.props;
 
     const otherProps = {};
@@ -201,8 +183,9 @@ class RemoteView extends React.Component {
     const { loading, view: View } = this.state;
 
     return React.createElement(
-      tag, 
+      tag,
       {
+        key: 'view-html',
         className: `${classPrefix}view ${
           shadowChild ? '' : `${classPrefix}view-html`
         } ${
@@ -214,27 +197,29 @@ class RemoteView extends React.Component {
             this.$refs.shadowRoot = createShadowRoot(r);
             this.$refs.html = createDOMElement(tag, { className: `${classPrefix}view-html`, style: { height: '100%' } }, this.$refs.shadowRoot);
             this.$refs.head = createDOMElement(tag, { className: `${classPrefix}view-head` }, this.$refs.html);
-            this.$refs.body = createDOMElement(tag, { 
-              className: `${classPrefix}view-body`, 
-              style: { height: '100%' } 
+            this.$refs.body = createDOMElement(tag, {
+              className: `${classPrefix}view-body`,
+              style: { height: '100%' }
             }, this.$refs.html);
             this.forceUpdate();
           } else this.$refs.html = r;
         },
         ...otherProps
-      }, 
-      (shadowChild) 
-        ? this.$refs.body && View 
-          ? ReactDOM.createPortal(React.createElement(View, props, children), this.$refs.body) 
+      },
+      (shadowChild)
+        ? this.$refs.body && View
+          ? ReactDOM.createPortal(React.createElement(View, props, children), this.$refs.body)
           : null
         : [
           React.createElement(tag, {
+            key: 'view-head',
             className: `${classPrefix}view-head`,
             ref: r => this.$refs.head = r
           }),
           React.createElement(
-            tag, 
+            tag,
             {
+              key: 'view-body',
               className: `${classPrefix}view-body`,
               style: { height: '100%' },
               ref: r => this.$refs.body = r
@@ -242,9 +227,31 @@ class RemoteView extends React.Component {
             View ? React.createElement(View, props, children) : null
           )
         ]
-    ); 
+    );
   }
 
 }
+
+RemoteView.propTypes = {
+  scopeStyle: PropTypes.oneOfType([PropTypes.bool, PropTypes.string]),
+  scopePrefix: PropTypes.string,
+  classPrefix: PropTypes.string,
+  className: PropTypes.string,
+  shadow: PropTypes.bool,
+  tag: PropTypes.string,
+  src: PropTypes.string,
+  module: PropTypes.object,
+  moduleName: PropTypes.string,
+  props: PropTypes.object,
+  externals: PropTypes.object,
+  onViewLoading: PropTypes.func,
+  onViewError: PropTypes.func,
+};
+
+RemoteView.defaultProps = {
+  scopePrefix: 'v-',
+  classPrefix: 'import-remote-',
+  tag: 'div'
+};
 
 export default RemoteView;

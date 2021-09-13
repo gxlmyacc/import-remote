@@ -1,6 +1,6 @@
 
 import fetch, { requireJs } from './fetch';
-import { innumerable, mergeObject, requireWithVersion } from './utils';
+import { innumerable, mergeObject, requireWithVersion, objectDefineProperty } from './utils';
 import remote, { requireManifest } from './remote';
 import RemoteModule from './module';
 import createRequireFactory from './requireFactory';
@@ -15,6 +15,7 @@ const version = typeof __packageversion__ === 'undefined' ? undefined : __packag
 
 export {
   RemoteModule,
+  objectDefineProperty,
   createRequireFactory,
   fetch,
   requireJs,
@@ -47,7 +48,7 @@ const remoteExternal = {
   requireWithVersion,
   requireManifest,
   version,
-  
+
   default: remote,
 };
 

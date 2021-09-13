@@ -55,7 +55,7 @@ declare namespace ModuleWebpackPlugin {
     /**
      * common module
      */
-    commonModules?: { name: string, url: string, scoped?: boolean };
+    commonModules?: { name?: string, url: string, host?: string, scoped?: boolean };
 
     batchReplaces?: {
       [key: string]: [RegExp, string][]|((

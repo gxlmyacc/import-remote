@@ -9,6 +9,7 @@ class RemoteModule {
     this.host = resolveRelativeUrl(host);
     this.pathname = options.pathname || '';
     this.options = options || {};
+    this.resolveModuleUrl = resolveModuleUrl;
   }
 
   external(name, module) {

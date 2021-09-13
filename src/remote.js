@@ -190,6 +190,7 @@ function remote(url, options = {}) {
     beforeSource,
     method,
     windowProxy = { document: { html: document.documentElement, body: document.body, head: document.head } },
+    isCommonModule,
   } = options;
   const __remoteModuleWebpack__ = checkRemoteModuleWebpack(windowProxy.context);
   let cached = (windowProxy.context && windowProxy.context.cached) || globalCached;
@@ -211,6 +212,9 @@ function remote(url, options = {}) {
         if (!manifest.scopeName) throw new Error('[import-remote:remote]scopeName can not be empty!');
         let scopeName = getScopeName(__remoteModuleWebpack__, manifest.scopeName, host);
         if (manifest.scopeName !== scopeName) manifest.scopeName = scopeName;
+        if (isCommonModule && typeof isCommonModule === 'string' && isCommonModule !== scopeName) {
+          console.error(`[import-remote]warning:commonModule's name(${isCommonModule}) is not matched the socpeName(${scopeName})`);
+        }
 
         cached[url] && (cached[url].manifest = manifest);
         getManifestCallback && (await getManifestCallback(manifest));
@@ -231,7 +235,7 @@ function remote(url, options = {}) {
         let commonModuleOptions = manifest.commonModules || [];
         let commonModules = manifestExternals.length
           ? await Promise.all(commonModuleOptions
-            .filter(m => m && (m.name && m.url))
+            .filter(m => m && (m.url))
             .map(m => {
               let url = m.url;
               let mHost = resolveRelativeUrl(isFunction(m.host) ? m.host(options, manifest) : m.host, { host });
@@ -245,7 +249,7 @@ function remote(url, options = {}) {
                   }
               });
               return remote(url, {
-                isCommonModule: true,
+                isCommonModule: m.name || true,
                 externals,
                 globals,
                 host: mHost || getHostFromUrl(url),
@@ -378,7 +382,7 @@ function remote(url, options = {}) {
                   let [hotSourcePrefix] = match || [];
                   if (hotSourcePrefix) {
                     source = (match.index ? source.substr(0, match.index) : '')
-                      + hotUpdateGlobal + source.substr(match.index + hotSourcePrefix.length);
+                      + `(typeof ${hotUpdateGlobal} !== "undefined") && ${hotUpdateGlobal}` + source.substr(match.index + hotSourcePrefix.length);
                   }
                 }
 
@@ -390,7 +394,7 @@ function remote(url, options = {}) {
                     const [, prefixVar] = source.substr(offset - 7, 7).match(/(window|self|global)\.$/) || [];
                     if (prefixVar) offset = Math.max(offset - prefixVar.length - 1, 0);
                   }
-                  return (offset && ['.', ']'].includes(source[offset - 1])) ? match : replaceStr;
+                  return (offset && ['.', '\'', '"'].includes(source[offset - 1])) ? match : replaceStr;
                 };
                 const sources = splitSource(source, /[\s<>|&{}:,;()"'+=*![\]/\\]/);
                 sources.forEach((src, i) => {

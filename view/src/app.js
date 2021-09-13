@@ -5,7 +5,7 @@ import remote from '../..';
 function createAppView(view, options = {}) {
   if (view && view.__esModule) view = view.default;
   if (!view) return null;
-  if (typeof view !== 'function' || isReactComponent(view) || isForwardComponent(view)) {
+  if (typeof view === 'function' || isReactComponent(view) || isForwardComponent(view)) {
     return view;
   }
   class RemoteAppView extends React.Component {
@@ -35,7 +35,7 @@ function createAppView(view, options = {}) {
       let props = this._getAppProps(this.props).otherProps;
       if (view.mounted) {
         return view.mounted(this.root, props);
-      } 
+      }
       if (view.init || view.forceInit) {
         const prom = (view.init || view.forceInit)(props, options);
         if (prom && prom.then) {
@@ -53,7 +53,7 @@ function createAppView(view, options = {}) {
     componentDidUpdate(prevProps) {
       let newProps = this._getAppProps(this.props).otherProps;
       let oldProps = this._getAppProps(prevProps).otherProps;
-      if (view.update) view.update(this.root, newProps, oldProps);  
+      if (view.update) view.update(this.root, newProps, oldProps);
       else if (view.mounted) view.mounted(this.root, newProps);
       else if (view.init || view.forceInit) (view.init || view.forceInit)(newProps);
     }
@@ -74,7 +74,7 @@ function createAppView(view, options = {}) {
   }
   RemoteAppView.__import_remote_app__ = true;
 
-  return RemoteAppView;  
+  return RemoteAppView;
 }
 
 function requireApp(url, options = {}) {

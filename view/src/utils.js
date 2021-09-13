@@ -1,4 +1,4 @@
-const { objectDefineProperty } = require('../esm/_objdp');
+const { objectDefineProperty } = require('../..');
 
 const hasSymbol = typeof Symbol === 'function' && Symbol.for;
 const REACT_FORWARD_REF_TYPE = hasSymbol ? Symbol.for('react.forward_ref') : 0xead0;
@@ -17,7 +17,7 @@ function isReactComponent(component) {
 }
 
 function isForwardComponent(component) {
-  return component && (component.$$typeof === REACT_FORWARD_REF_TYPE) 
+  return component && (component.$$typeof === REACT_FORWARD_REF_TYPE)
     && (typeof component.render === 'function');
 }
 
@@ -45,7 +45,7 @@ export {
   supportShadow,
   createShadowRoot,
   createDOMElement,
-  
+
   isReactComponent,
   isForwardComponent,
   innumerable

@@ -217,5 +217,6 @@ export {
   isEvalDevtool,
   requireWithVersion,
 
-  transformSourcemapUrl
+  transformSourcemapUrl,
+  objectDefineProperty
 };
