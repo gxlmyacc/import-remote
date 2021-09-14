@@ -55,11 +55,13 @@ module.exports = {
         // {
         //   name: 'react',
         //   version: (v, m, utils) => utils.versionLt('16.8.0', v) // : ['16.8.0', '17']
-        // }, 
+        // },
         'react',
         'react-dom'
       ],
-      chunks: [entry]
+      chunks: [entry],
+      globalToScopes: ['abc'],
+      batchReplaces: []
     }))),
     new HtmlWebpackPlugin({
       template: './public/index.html',

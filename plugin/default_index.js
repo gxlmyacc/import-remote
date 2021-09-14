@@ -11,7 +11,7 @@ module.exports = function ({
   webpackVersion,
   webpackConfig,
   moduleWebpackPlugin: {
-    scopeName, entryFile, entryId, hash, jsonpFunction, remotes, shareModules, batchReplaces, globalToScopes,
+    scopeName, entryFile, entryId, hash, jsonpFunction, remotes, shareModules, batchReplaces,
     hot, chunks, externals, publicPath, entrys, options
   }
 }) {
@@ -53,7 +53,7 @@ module.exports = function ({
     },
     meta: options.meta || {}
   };
-  if (globalToScopes && globalToScopes.length) data.globalToScopes = globalToScopes;
+  if (options.globalToScopes && options.globalToScopes.length) data.globalToScopes = options.globalToScopes;
   if (batchReplaces && batchReplaces.length) data.batchReplaces = batchReplaces;
   if (options.commonModules) data.commonModules = options.commonModules;
   if (options.sourcemapHost) data.sourcemapHost = options.sourcemapHost;

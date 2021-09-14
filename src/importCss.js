@@ -53,7 +53,7 @@ function fetchStyle(href, {
         source = transformStyleHost(source, host);
         source = transformSourcemapUrl(href, source, { devtool, sourcemapHost, scopeName, host, publicPath, webpackChunk });
 
-        if (beforeSource) source = beforeSource(source, 'css', href);
+        if (beforeSource) source = beforeSource(source, 'css', href, {});
 
         let styleTag = document.createElement('style');
         styleTag.type = 'text/css';

@@ -17,10 +17,10 @@ function importJs(href, {
   const prom = new Promise((resolve, reject) => {
     fetch(href, { timeout, sync, nocache, beforeSource, method }).then(source => {
       try {
+        const isEval = /^eval/.test(String(devtool));
         if (host && source) {
           if (!/\/$/.test(host)) host += '/';
           if (isEvalDevtool(devtool)) {
-            const isEval = /^eval/.test(String(devtool));
             if (isEval) {
               source = source.replace(/\/\/# sourceURL=\[module\]\\n/g, '\\n');
               source = source.replace(
@@ -52,7 +52,7 @@ function importJs(href, {
             source = transformSourcemapUrl(href, source, { devtool, sourcemapHost, scopeName, host, publicPath, webpackChunk });
           }
         }
-        if (beforeSource) source = beforeSource(source, 'js', href);
+        if (beforeSource) source = beforeSource(source, 'js', href, { isEval });
         const result = requireFromStr(source, { global });
         resolve(result);
       } catch (err) {

@@ -361,7 +361,7 @@ function remote(url, options = {}) {
             cached,
             sourcemapHost: sourcemapHost || manifest.sourcemapHost,
             requireExternal,
-            beforeSource(source, type) {
+            beforeSource(source, type, href, { isEval } = {}) {
               if (type === 'js') {
                 let sourcePrefix;
                 if (jsonpSourceRegx) {
@@ -420,7 +420,7 @@ function remote(url, options = {}) {
                     src = batchReplace(src, manifest.globalToScopes.map(varName => {
                       if (Array.isArray(varName)) return varName;
                       return [
-                        new RegExp(`\\b(?:global|window)\\.${escapeStringRegexp(varName)}\\b`),
+                        new RegExp(`\\b${isEval ? '(\\\\n)?' : ''}(?:global|window)\\.${escapeStringRegexp(varName)}\\b`, 'g'),
                         `__windowProxy__.globals.${varName}`
                       ];
                     }));
