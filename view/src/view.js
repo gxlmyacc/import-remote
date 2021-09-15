@@ -6,6 +6,9 @@ import remote from '../..';
 import { createAppView } from './app';
 import { createShadowRoot, createDOMElement, isForwardComponent, isReactComponent, supportShadow } from './utils';
 
+
+let RemoteViewSeed = 0;
+
 class RemoteView extends React.Component {
 
   constructor(props) {
@@ -14,6 +17,7 @@ class RemoteView extends React.Component {
     this.state = { loading: false, viewSrc: '', view: null };
     this.viewContext = { cached: {} };
     this.viewScopeName = null;
+    this.viewScopeSeed = ++RemoteViewSeed;
     this.listeners = [];
   }
 
@@ -71,7 +75,7 @@ class RemoteView extends React.Component {
   }
 
   _loadView() {
-    let { src, externals, scopePrefix, scopeStyle, module, moduleName, shadow, onViewLoading, onViewError } = this.props;
+    let { src, externals, scopePrefix, scopeStyle, module, moduleName, classPrefix, shadow, onViewLoading, onViewError } = this.props;
     let { viewSrc } = this.state;
     let _require = options => remote(src, options);
     if (!src && module) {
@@ -135,7 +139,17 @@ class RemoteView extends React.Component {
       },
       beforeSource: (source, type) => {
         if (scopeStyle && (!shadow || !supportShadow || scopeStyle === 'always') && type === 'css') {
-          source = source.replace(/([\n}])([.A-Za-z*:#[])/g, (m, p1, p2) => `${p1} .${this.viewScopeHash} ${p2}`);
+          source = source.replace(
+            // eslint-disable-next-line no-useless-escape
+            /((?:^|[\n},]|(?:"UTF\-8";(?:\/\*.*\*\/)?)))([^{},\s();/\\@]+)/ig,
+            (m, p1, p2) => {
+              const p2LowerCase = p2 ? p2.toLowerCase() : '';
+              if (p2LowerCase === 'url') return p1 + p2;
+              const isHtmlBodyEl = ['html', 'body', 'head'].includes(p2LowerCase);
+              if (isHtmlBodyEl) p2 = `.${classPrefix}view${p2LowerCase === 'html' ? '' : '-' + p2LowerCase}`;
+              return `${p1} .${this.viewScopeHash}${isHtmlBodyEl ? '' : ' '}${p2}`;
+            }
+          );
         }
         return source;
       },
@@ -144,9 +158,7 @@ class RemoteView extends React.Component {
         if (this.viewScopeName === newScopeName) return;
         oldScopeName = this.viewScopeName;
         this.viewScopeName = newScopeName;
-        this.viewScopeHash = `${scopePrefix}${hashSum(newScopeName)}`;
-
-        if (!bodyEl.className.includes(this.viewScopeHash)) bodyEl.className = `${bodyEl.className} ${this.viewScopeHash}`;
+        this.viewScopeHash = `${scopePrefix}${hashSum(newScopeName + this.viewScopeSeed)}`;
       }
     }).then(view => {
       if (view && view.__esModule) view = view.default;
@@ -186,7 +198,7 @@ class RemoteView extends React.Component {
       tag,
       {
         key: 'view-html',
-        className: `${classPrefix}view ${
+        className: `${this.viewScopeHash} ${classPrefix}view  ${
           shadowChild ? '' : `${classPrefix}view-html`
         } ${
           loading ? `${classPrefix}view-loading` : ''
@@ -213,14 +225,14 @@ class RemoteView extends React.Component {
         : [
           React.createElement(tag, {
             key: 'view-head',
-            className: `${classPrefix}view-head`,
+            className: `${this.viewScopeHash} ${classPrefix}view-head`,
             ref: r => this.$refs.head = r
           }),
           React.createElement(
             tag,
             {
               key: 'view-body',
-              className: `${classPrefix}view-body`,
+              className: `${this.viewScopeHash} ${classPrefix}view-body`,
               style: { height: '100%' },
               ref: r => this.$refs.body = r
             },

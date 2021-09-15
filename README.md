@@ -688,7 +688,7 @@ const Test = await requireApp('http://localhost:3000/test.js');
 
 #### RemoteView的props
 
-- `scopeStyle: boolean` - 当为true，并且`shadow`也为true时，将为引用的样式添加一个`hash`作用域，避免样式影响到外部。是一种在不支持`shadow DOM`的情况下解决样式冲突的一种解决办法
+- `scopeStyle: boolean` - 当为true，并且`shadow`为false时，将为引用的样式添加一个`hash`作用域，避免样式影响到外部。是一种在不支持`shadow DOM`的情况下解决样式冲突的一种解决办法
 
 - `scopePrefix: string = 'v-'` - 为引用样式创建的作用域名的前缀
 
