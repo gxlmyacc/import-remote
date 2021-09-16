@@ -1,17 +1,20 @@
 {
 	"folders": [
     {
-			"path": "./app1"
-		},
-		{
-			"path": "./app2"
-		},
-		{
-			"path": "../"
+			"path": "./",
+      "name": "工作区"
 		},
     {
-			"path": ".",
-      "name": "工作区"
+			"path": "./demo_common_modules",
+      "name": "公共模块"
+		},
+		{
+			"path": "./demo_share_modules",
+      "name": "共享模块"
+		},
+	  {
+			"path": "./demo_remote_view",
+      "name": "RemoteView示例"
 		},
 	],
 	"settings": {
