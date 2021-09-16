@@ -4,13 +4,14 @@ export default createRequireFactory({
   react: () => import(/* webpackChunkName: 'react' */ 'react'),
   'react-dom': () => import(/* webpackChunkName: 'react-dom' */ 'react-dom'),
   'prop-types': () => import(/* webpackChunkName: 'prop-types' */ 'prop-types'),
-  'dpl-react': () => import(/* webpackChunkName: 'dpl-react' */ 'dpl-react'),
-  'dpl-react/dist/dpl.css': import(/* webpackChunkName: 'dpl-react-css' */ 'dpl-react/dist/dpl.css'),
+  antd: () => import(/* webpackChunkName: 'antd' */ 'antd'),
+  'antd/dist/antd.css': import(/* webpackChunkName: 'antd-css' */ 'antd/dist/antd.css'),
 });
 
 // export default {
 //   react: require('react'),
 //   'react-dom': require('react-dom'),
 //   'prop-types': require('prop-types'),
-//   'dpl-react': require('dpl-react'),
+//   'antd': require('antd'),
+//   'antd/dist/antd.css': require('antd/dist/antd.css'),
 // }

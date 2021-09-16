@@ -1,7 +1,7 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const path = require('path');
 const ImportRemotePlugin = require('import-remote/plugin');
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const webpack = require('webpack');
 
 const entryList = ['app', 'button'];
@@ -49,11 +49,11 @@ module.exports = {
       },
       {
         test: /\.css$/i,
-        use: [MiniCssExtractPlugin.loader, "css-loader"],
+        use: [MiniCssExtractPlugin.loader, 'css-loader'],
       },
     ],
   },
-  externals: [/dpl\.css$/, 'react', 'react-dom', 'prop-types', 'dpl-react'],
+  externals: [/antd\.css$/, 'react', 'react-dom', 'prop-types', 'antd'],
   plugins: [
     new webpack.HotModuleReplacementPlugin(),
     new MiniCssExtractPlugin(),

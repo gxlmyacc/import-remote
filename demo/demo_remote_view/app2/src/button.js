@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import 'dpl-react/dist/dpl.css';
-import { Button } from 'dpl-react';
+import 'antd/dist/antd.css';
+import { Button } from 'antd';
 
 const RemoteButton = props => {
   console.log('RemoteButton props', props);

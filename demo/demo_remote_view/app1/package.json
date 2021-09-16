@@ -20,7 +20,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "dpl-react": "^1.60.0",
+    "antd": "^4.16.13",
     "import-remote": "^0.0.18-alpha.3",
     "react": "^16.13.0",
     "react-dom": "^16.13.0"

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button } from 'dpl-react';
+import { Button } from 'antd';
 
 const RemoteButton = () => {
   const [text, setText] = useState('App 2 Button');
