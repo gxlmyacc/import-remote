@@ -1,0 +1,16 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "lerna run --scope @webpack5-demo/* build",
+    "start": "lerna run --scope @webpack5-demo/* --parallel start",
+    "serve": "lerna run --scope @webpack5-demo/* --parallel serve",
+    "clean": "lerna run --scope @webpack5-demo/* --parallel clean"
+  },
+  "devDependencies": {
+    "lerna": "^3.22.1"
+  },
+  "name": "webpack5",
+  "dependencies": {
+    "css-loader": "^5.0.1"
+  }
+}

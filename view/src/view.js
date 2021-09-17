@@ -6,6 +6,9 @@ import remote from '../..';
 import { createAppView } from './app';
 import { createShadowRoot, createDOMElement, isForwardComponent, isReactComponent, supportShadow } from './utils';
 
+// eslint-disable-next-line no-useless-escape
+const REGX_CSS_SELECTOR = /((?:^|[\n},]|(?:"UTF\-8";(?:\/\*.*\*\/)?)))([^{},\s();/\\@]+)/ig;
+const REGX_CSS_FUNC_VALUE = /^(url|black|white|red|green|blue|yellow|pink|gray|gold|orange|olive|purple|silver|[\d.]+(?:deg|grad|rad|turn|v[h|w]|vmax|vmin|c[mh]|mm|in|%|r?e[mx]|p[xtc]|m?s)|#[a-z0-9]+)$/;
 
 let RemoteViewSeed = 0;
 
@@ -144,11 +147,10 @@ class RemoteView extends React.Component {
       beforeSource: (source, type) => {
         if (scopeStyle && (!shadow || !supportShadow || scopeStyle === 'always') && type === 'css') {
           source = source.replace(
-            // eslint-disable-next-line no-useless-escape
-            /((?:^|[\n},]|(?:"UTF\-8";(?:\/\*.*\*\/)?)))([^{},\s();/\\@]+)/ig,
+            REGX_CSS_SELECTOR,
             (m, p1, p2) => {
               const p2LowerCase = p2 ? p2.toLowerCase() : '';
-              if (p2LowerCase === 'url') return p1 + p2;
+              if (REGX_CSS_FUNC_VALUE.test(p2LowerCase)) return p1 + p2;
               const isHtmlBodyEl = transfromHtmlBodyTagClass && ['html', 'body', 'head'].includes(p2LowerCase);
               if (isHtmlBodyEl) p2 = `.${classPrefix}view${p2LowerCase === 'html' ? '' : '-' + p2LowerCase}`;
               return `${p1} .${this.viewScopeHash}${isHtmlBodyEl ? '' : ' '}${p2}`;
