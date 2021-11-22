@@ -6,6 +6,11 @@ import remote from '../..';
 import { createAppView } from './app';
 import { createShadowRoot, createDOMElement, isForwardComponent, isReactComponent, supportShadow } from './utils';
 
+// eslint-disable-next-line no-useless-escape
+const REGX_CSS_SELECTOR = /((?:^|[\n},]|(?:"UTF\-8";(?:\/\*.*\*\/)?)|(?:\.css\);)))([^{},\s();/\\@\d][^{},\s();/\\@]*)/ig;
+const REGX_CSS_FUNC_VALUE = /^url$/;
+// eslint-disable-next-line max-len
+// /^(url|black|white|red|green|blue|yellow|pink|gray|gold|orange|olive|purple|silver|[-?\d.]+(?:deg|grad|rad|turn|v[h|w]|vmax|vmin|c[mh]|mm|in|%|r?e[mx]|p[xtc]|m?s)|#[a-z0-9]+)$/;
 
 let RemoteViewSeed = 0;
 
@@ -76,7 +81,7 @@ class RemoteView extends React.Component {
 
   _loadView() {
     let {
-      src, externals, scopePrefix, scopeStyle, module, moduleName, classPrefix, shadow,
+      src, externals, scopePrefix, scopeStyle, module, moduleName, classPrefix, shadow, exportName,
       transfromHtmlBodyTagClass,
       onViewLoading, onViewError
     } = this.props;
@@ -144,13 +149,12 @@ class RemoteView extends React.Component {
       beforeSource: (source, type) => {
         if (scopeStyle && (!shadow || !supportShadow || scopeStyle === 'always') && type === 'css') {
           source = source.replace(
-            // eslint-disable-next-line no-useless-escape
-            /((?:^|[\n},]|(?:"UTF\-8";(?:\/\*.*\*\/)?)))([^{},\s();/\\@]+)/ig,
+            REGX_CSS_SELECTOR,
             (m, p1, p2) => {
               const p2LowerCase = p2 ? p2.toLowerCase() : '';
-              if (p2LowerCase === 'url') return p1 + p2;
-              const isHtmlBodyEl = transfromHtmlBodyTagClass && ['html', 'body', 'head'].includes(p2LowerCase);
-              if (isHtmlBodyEl) p2 = `.${classPrefix}view${p2LowerCase === 'html' ? '' : '-' + p2LowerCase}`;
+              if (REGX_CSS_FUNC_VALUE.test(p2LowerCase)) return p1 + p2;
+              const isHtmlBodyEl = transfromHtmlBodyTagClass && /^(html|head|body)\b/.test(p2LowerCase);
+              if (isHtmlBodyEl) p2 = `.${classPrefix}view${p2LowerCase.startsWith('html') ? '' : '-' + p2LowerCase}`;
               return `${p1} .${this.viewScopeHash}${isHtmlBodyEl ? '' : ' '}${p2}`;
             }
           );
@@ -165,7 +169,7 @@ class RemoteView extends React.Component {
         this.viewScopeHash = `${scopePrefix}${hashSum(newScopeName + this.viewScopeSeed)}`;
       }
     }).then(view => {
-      if (view && view.__esModule) view = view.default;
+      if (view && view.__esModule) view = view[exportName];
       if (view.namespace && bodyEl && !bodyEl.className.includes(view.namespace)) {
         this.viewNamespace = view.namespace;
         bodyEl.className = `${bodyEl.className} ${view.namespace}`;
@@ -186,7 +190,7 @@ class RemoteView extends React.Component {
     const {
       shadow, classPrefix, tag, className, children, props = {}, style = {}, bodyStyle = {},
       // eslint-disable-next-line no-unused-vars
-      transfromHtmlBodyTagClass
+      scopePrefix, transfromHtmlBodyTagClass, module, moduleName, exportName
     } = this.props;
 
     const otherProps = {};
@@ -249,7 +253,7 @@ class RemoteView extends React.Component {
 }
 
 RemoteView.propTypes = {
-  scopeStyle: PropTypes.oneOfType([PropTypes.bool, PropTypes.string]),
+  scopeStyle: PropTypes.oneOfType([PropTypes.bool, PropTypes.oneOf(['always'])]),
   scopePrefix: PropTypes.string,
   classPrefix: PropTypes.string,
   className: PropTypes.string,
@@ -261,6 +265,7 @@ RemoteView.propTypes = {
   src: PropTypes.string,
   module: PropTypes.object,
   moduleName: PropTypes.string,
+  exportName: PropTypes.string,
   props: PropTypes.object,
   externals: PropTypes.object,
   onViewLoading: PropTypes.func,
@@ -271,6 +276,7 @@ RemoteView.defaultProps = {
   scopePrefix: 'v-',
   classPrefix: 'import-remote-',
   tag: 'div',
+  exportName: 'default',
   transfromHtmlBodyTagClass: true,
 };
 

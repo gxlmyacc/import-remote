@@ -918,7 +918,12 @@ class ModuleWebpackPlugin {
     }
     // The LibraryTemplatePlugin stores the template result in a local variable.
     // To extract the result during the evaluation this part has to be removed.
-    source = source.replace('var MODULE_WEBPACK_PLUGIN_RESULT =', '');
+    if (source.includes('var MODULE_WEBPACK_PLUGIN_RESULT =')) {
+      source = source.replace('var MODULE_WEBPACK_PLUGIN_RESULT =', '');
+    } else if (source.includes('var MODULE_WEBPACK_PLUGIN_RESULT;')) {
+      source = source.replace('var MODULE_WEBPACK_PLUGIN_RESULT;', '')
+        .replace('MODULE_WEBPACK_PLUGIN_RESULT =', 'return');
+    }
     const template = this.options.template.replace(/^.+!/, '').replace(/\?.+$/, '');
     const vmContext = vm.createContext(_.extend({ MODULE_WEBPACK_PLUGIN: true, require, console }, global));
     const vmScript = new vm.Script(source, { filename: template });
