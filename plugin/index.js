@@ -237,10 +237,11 @@ function resolveRemotes(self, compilation, options) {
 
   // @ts-ignore
   const miniCssFModule = compilation._modules.get('webpack/runtime/get mini-css chunk filename');
-  if (miniCssFModule) {
+  // @ts-ignore
+  if (miniCssFModule && miniCssFModule._cachedGeneratedCode) {
     // @ts-ignore
     remotes.miniCssF = miniCssFModule._cachedGeneratedCode
-      .replace('// This function allow to reference all chunks\n__webpack_require__.miniCssF = ', '');
+      .replace(/^(\/\/[^\n]+\n)?__webpack_require__\.miniCssF = /, '');
   }
 
   [...compilation.modules].forEach(m => {

@@ -94,6 +94,45 @@ function createRuntime({
   __webpack_require__.i = [];
 
   /** ********************************************************************* */
+
+  /* webpack/runtime/amd options */
+  __webpack_require__.amdO = {};
+
+  /* webpack/runtime/chunk loaded */
+  (() => {
+    let deferred = [];
+    __webpack_require__.O = (result, chunkIds, fn, priority) => {
+      if (chunkIds) {
+        priority = priority || 0;
+        let i;
+        for (i = deferred.length; i > 0 && deferred[i - 1][2] > priority; i--) deferred[i] = deferred[i - 1];
+        deferred[i] = [chunkIds, fn, priority];
+        return;
+      }
+      let notFulfilled = Infinity;
+      for (let i = 0; i < deferred.length; i++) {
+        let [chunkIds, fn, priority] = deferred[i];
+        let fulfilled = true;
+        for (let j = 0; j < chunkIds.length; j++) {
+          if ((priority & 1 === 0 || notFulfilled >= priority)
+            && Object.keys(__webpack_require__.O).every(key => (__webpack_require__.O[key](chunkIds[j])))) {
+            chunkIds.splice(j--, 1);
+          } else {
+            fulfilled = false;
+            if (priority < notFulfilled) notFulfilled = priority;
+          }
+        }
+        if (fulfilled) {
+          deferred.splice(i--, 1);
+          let r = fn();
+          if (r !== undefined) result = r;
+        }
+      }
+      return result;
+    };
+
+    __webpack_require__.O.j = chunkId => (installedChunks[chunkId] === 0);
+  })();
   /* webpack/runtime/compat get default export */
   // getDefaultExport function for compatibility with non-harmony modules
   __webpack_require__.n = module => {
@@ -452,29 +491,37 @@ function createRuntime({
     }
 
     function createModuleHotObject(moduleId, me) {
+      let _main = currentChildModule !== moduleId;
       let hot = {
       // private stuff
         _acceptedDependencies: {},
+        _acceptedErrorHandlers: {},
         _declinedDependencies: {},
         _selfAccepted: false,
         _selfDeclined: false,
         _selfInvalidated: false,
         _disposeHandlers: [],
-        _main: currentChildModule !== moduleId,
+        _main,
         _requireSelf() {
           currentParents = me.parents.slice();
-          currentChildModule = moduleId;
+          currentChildModule = _main ? undefined : moduleId;
           __webpack_require__(moduleId);
         },
 
         // Module API
         active: true,
-        accept(dep, callback) {
+        accept(dep, callback, errorHandler) {
           if (dep === undefined) hot._selfAccepted = true;
           else if (typeof dep === 'function') hot._selfAccepted = dep;
           else if (typeof dep === 'object' && dep !== null) {
-            for (let i = 0; i < dep.length; i++) hot._acceptedDependencies[dep[i]] = callback || function () {};
-          } else hot._acceptedDependencies[dep] = callback || function () {};
+            for (let i = 0; i < dep.length; i++) {
+              hot._acceptedDependencies[dep[i]] = callback || function () {};
+              hot._acceptedErrorHandlers[dep[i]] = errorHandler;
+            }
+          } else {
+            hot._acceptedDependencies[dep] = callback || function () {};
+            hot._acceptedErrorHandlers[dep] = errorHandler;
+          }
         },
         decline(dep) {
           if (dep === undefined) hot._selfDeclined = true;
@@ -550,7 +597,11 @@ function createRuntime({
 
     function setStatus(newStatus) {
       currentStatus = newStatus;
-      for (let i = 0; i < registeredStatusHandlers.length; i++) registeredStatusHandlers[i].call(null, newStatus);
+      let results = [];
+
+      for (let i = 0; i < registeredStatusHandlers.length; i++) results[i] = registeredStatusHandlers[i].call(null, newStatus);
+
+      return Promise.all(results);
     }
 
     function trackBlockingPromise(promise) {
@@ -559,7 +610,7 @@ function createRuntime({
           setStatus('prepare');
           blockingPromises.push(promise);
           waitForBlockingPromises(function () {
-            setStatus('ready');
+            return setStatus('ready');
           });
           return promise;
         case 'prepare':
@@ -583,46 +634,50 @@ function createRuntime({
       if (currentStatus !== 'idle') {
         throw new Error('check() is only allowed in idle status');
       }
-      setStatus('check');
-      return __webpack_require__.hmrM().then(function (update) {
-        if (!update) {
-          setStatus(applyInvalidatedModules() ? 'ready' : 'idle');
-          return null;
-        }
-
-        setStatus('prepare');
-
-        let updatedModules = [];
-        blockingPromises = [];
-        currentUpdateApplyHandlers = [];
-
-        return Promise.all(
-          Object.keys(__webpack_require__.hmrC).reduce(function (
-            promises,
-            key
-          ) {
-            __webpack_require__.hmrC[key](
-              update.c,
-              update.r,
-              update.m,
-              promises,
-              currentUpdateApplyHandlers,
-              updatedModules
+      return setStatus('check')
+        .then(__webpack_require__.hmrM)
+        .then(function (update) {
+          if (!update) {
+            return setStatus(applyInvalidatedModules() ? 'ready' : 'idle').then(
+              function () {
+                return null;
+              }
             );
-            return promises;
-          },
-          [])
-        ).then(function () {
-          return waitForBlockingPromises(function () {
-            if (applyOnUpdate) {
-              return internalApply(applyOnUpdate);
-            }
-            setStatus('ready');
+          }
 
-            return updatedModules;
+          return setStatus('prepare').then(function () {
+            let updatedModules = [];
+            blockingPromises = [];
+            currentUpdateApplyHandlers = [];
+
+            return Promise.all(
+              Object.keys(__webpack_require__.hmrC).reduce(function (
+                promises,
+                key
+              ) {
+                __webpack_require__.hmrC[key](
+                  update.c,
+                  update.r,
+                  update.m,
+                  promises,
+                  currentUpdateApplyHandlers,
+                  updatedModules
+                );
+                return promises;
+              },
+              [])
+            ).then(function () {
+              return waitForBlockingPromises(function () {
+                if (applyOnUpdate) {
+                  return internalApply(applyOnUpdate);
+                }
+                return setStatus('ready').then(function () {
+                  return updatedModules;
+                });
+              });
+            });
           });
         });
-      });
     }
 
     function hotApply(options) {
@@ -651,8 +706,7 @@ function createRuntime({
         .filter(Boolean);
 
       if (errors.length > 0) {
-        setStatus('abort');
-        return Promise.resolve().then(function () {
+        return setStatus('abort').then(function () {
           throw errors[0];
         });
       }
@@ -686,8 +740,7 @@ function createRuntime({
 
       // handle errors in accept handlers and self accepted module load
       if (error) {
-        setStatus('fail');
-        return Promise.resolve().then(function () {
+        return setStatus('fail').then(function () {
           throw error;
         });
       }
@@ -701,8 +754,9 @@ function createRuntime({
         });
       }
 
-      setStatus('idle');
-      return Promise.resolve(outdatedModules);
+      return setStatus('idle').then(function () {
+        return outdatedModules;
+      });
     }
 
     function applyInvalidatedModules() {
@@ -1228,18 +1282,19 @@ function createRuntime({
     let outdatedSelfAcceptedModules = [];
     for (let j = 0; j < outdatedModules.length; j++) {
       let outdatedModuleId = outdatedModules[j];
+      let module = __webpack_require__.c[outdatedModuleId];
       if (
-        __webpack_require__.c[outdatedModuleId]
-            && __webpack_require__.c[outdatedModuleId].hot._selfAccepted
-            // removed self-accepted modules should not be required
-            && appliedUpdate[outdatedModuleId] !== warnUnexpectedRequire
-            // when called invalidate self-accepting is not possible
-            && !__webpack_require__.c[outdatedModuleId].hot._selfInvalidated
+        module
+      && (module.hot._selfAccepted || module.hot._main)
+      // removed self-accepted modules should not be required
+      && appliedUpdate[outdatedModuleId] !== warnUnexpectedRequire
+      // when called invalidate self-accepting is not possible
+      && !module.hot._selfInvalidated
       ) {
         outdatedSelfAcceptedModules.push({
           module: outdatedModuleId,
-          require: __webpack_require__.c[outdatedModuleId].hot._requireSelf,
-          errorHandler: __webpack_require__.c[outdatedModuleId].hot._selfAccepted
+          require: module.hot._requireSelf,
+          errorHandler: module.hot._selfAccepted
         });
       }
     }
@@ -1254,11 +1309,10 @@ function createRuntime({
         currentUpdateRemovedChunks = undefined;
 
         let idx;
-        let module;
         let queue = outdatedModules.slice();
         while (queue.length > 0) {
           let moduleId = queue.pop();
-          module = __webpack_require__.c[moduleId];
+          let module = __webpack_require__.c[moduleId];
           if (!module) continue;
 
           let data = {};
@@ -1294,7 +1348,7 @@ function createRuntime({
         let dependency;
         for (let outdatedModuleId in outdatedDependencies) {
           if (__webpack_require__.o(outdatedDependencies, outdatedModuleId)) {
-            module = __webpack_require__.c[outdatedModuleId];
+            let module = __webpack_require__.c[outdatedModuleId];
             if (module) {
               moduleOutdatedDependencies = outdatedDependencies[outdatedModuleId];
               for (let j = 0; j < moduleOutdatedDependencies.length; j++) {
@@ -1327,14 +1381,16 @@ function createRuntime({
               moduleOutdatedDependencies
                     = outdatedDependencies[outdatedModuleId];
               let callbacks = [];
+              let errorHandlers = [];
               let dependenciesForCallbacks = [];
               for (let j = 0; j < moduleOutdatedDependencies.length; j++) {
                 let dependency = moduleOutdatedDependencies[j];
-                let acceptCallback
-                      = module.hot._acceptedDependencies[dependency];
+                let acceptCallback = module.hot._acceptedDependencies[dependency];
+                let errorHandler = module.hot._acceptedErrorHandlers[dependency];
                 if (acceptCallback) {
                   if (callbacks.indexOf(acceptCallback) !== -1) continue;
                   callbacks.push(acceptCallback);
+                  errorHandlers.push(errorHandler);
                   dependenciesForCallbacks.push(dependency);
                 }
               }
@@ -1342,16 +1398,39 @@ function createRuntime({
                 try {
                   callbacks[k].call(null, moduleOutdatedDependencies);
                 } catch (err) {
-                  if (options.onErrored) {
-                    options.onErrored({
-                      type: 'accept-errored',
-                      moduleId: outdatedModuleId,
-                      dependencyId: dependenciesForCallbacks[k],
-                      error: err
-                    });
-                  }
-                  if (!options.ignoreErrored) {
-                    reportError(err);
+                  if (typeof errorHandlers[k] === 'function') {
+                    try {
+                      errorHandlers[k](err, {
+                        moduleId: outdatedModuleId,
+                        dependencyId: dependenciesForCallbacks[k]
+                      });
+                    } catch (err2) {
+                      if (options.onErrored) {
+                        options.onErrored({
+                          type: 'accept-error-handler-errored',
+                          moduleId: outdatedModuleId,
+                          dependencyId: dependenciesForCallbacks[k],
+                          error: err2,
+                          originalError: err
+                        });
+                      }
+                      if (!options.ignoreErrored) {
+                        reportError(err2);
+                        reportError(err);
+                      }
+                    }
+                  } else {
+                    if (options.onErrored) {
+                      options.onErrored({
+                        type: 'accept-errored',
+                        moduleId: outdatedModuleId,
+                        dependencyId: dependenciesForCallbacks[k],
+                        error: err
+                      });
+                    }
+                    if (!options.ignoreErrored) {
+                      reportError(err);
+                    }
                   }
                 }
               }
@@ -1368,7 +1447,10 @@ function createRuntime({
           } catch (err) {
             if (typeof item.errorHandler === 'function') {
               try {
-                item.errorHandler(err);
+                item.errorHandler(err, {
+                  moduleId,
+                  module: __webpack_require__.c[moduleId]
+                });
               } catch (err2) {
                 if (options.onErrored) {
                   options.onErrored({
@@ -1380,8 +1462,8 @@ function createRuntime({
                 }
                 if (!options.ignoreErrored) {
                   reportError(err2);
+                  reportError(err);
                 }
-                reportError(err);
               }
             } else {
               if (options.onErrored) {
@@ -1531,6 +1613,31 @@ function createRuntime({
     // run deferred modules when all chunks ready
     return checkDeferredModules();
   }
+
+  // let webpackJsonpCallback2 = (parentChunkLoadingFunction, data) => {
+  //   let result;
+  //   let [chunkIds, moreModules, runtime] = data;
+  //   // add "moreModules" to the modules object,
+  //   // then flag all "chunkIds" as loaded and fire callback
+  //   let moduleId; let chunkId; let i = 0;
+  //   if (chunkIds.some(id => (installedChunks[id] !== 0))) {
+  //     for (moduleId in moreModules) {
+  //       if (__webpack_require__.o(moreModules, moduleId)) {
+  //         __webpack_require__.m[moduleId] = moreModules[moduleId];
+  //       }
+  //     }
+  //     if (runtime) result = runtime(__webpack_require__);
+  //   }
+  //   if (parentChunkLoadingFunction) parentChunkLoadingFunction(data);
+  //   for (;i < chunkIds.length; i++) {
+  //     chunkId = chunkIds[i];
+  //     if (__webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId]) {
+  //       installedChunks[chunkId][0]();
+  //     }
+  //     installedChunks[chunkIds[i]] = 0;
+  //   }
+  //   return __webpack_require__.O(result);
+  // };
 
   /** ********************************************************************* */
   // module cache are used so entry inlining is disabled
