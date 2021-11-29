@@ -230,6 +230,7 @@ function resolveRemotes(self, compilation, options) {
     initialConsumes: self.initialConsumes,
     moduleIdToSourceMapping: self.moduleIdToSourceMapping,
     chunkToModuleMapping: self.chunkToModuleMapping,
+    runtimeName: self.runtimeName
   };
   if (webpackMajorVersion < 5) return remotes;
 
@@ -390,6 +391,7 @@ class ModuleWebpackPlugin {
       base: false,
     };
 
+    this.runtimeName = '';
     this.hasJsMatcher = null;
     this.withBaseURI = false;
     this.initCodePerScope = {};
@@ -536,6 +538,19 @@ class ModuleWebpackPlugin {
         compilation.hooks.runtimeRequirementInTree
           .for(RuntimeGlobals.hmrDownloadManifest)
           .tap('ModuleWebpackPlugin', handler);
+        compilation.hooks.runtimeRequirementInTree
+          .for(RuntimeGlobals.getUpdateManifestFilename)
+          .tap('ModuleWebpackPlugin', (chunk, set) => {
+            // const url = compilation.getPath(JSON.stringify(compilation.outputOptions.hotUpdateMainFilename), {
+            //   hash: `" + ${RuntimeGlobals.getFullHash}() + "`,
+            //   hashWithLength: length =>
+            //     `" + ${RuntimeGlobals.getFullHash}().slice(0, ${length}) + "`,
+            //   chunk,
+            //   runtime: chunk.runtime
+            // });
+            self.runtimeName = typeof chunk.runtime === 'string' ? chunk.runtime : '';
+            return true;
+          });
 
         self.initialConsumes = [];
         self.moduleIdToSourceMapping = {};

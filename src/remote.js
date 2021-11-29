@@ -328,7 +328,7 @@ function remote(url, options = {}) {
 
           const hotUpdateGlobal = manifest.hotUpdateGlobal || 'webpackHotUpdate';
           const hotSourceRegx = hotUpdateGlobal
-            ? new RegExp(`${(!libraryTarget || libraryTarget === 'var') ? '^(\\/\\*[A-z\\s*():/.",-]+\\*\\/\\n)?' : ''}${
+            ? new RegExp(`${(!libraryTarget || libraryTarget === 'var') ? '^((?:"use strict";\n)?\\/\\*[A-z\\s*():/.",-]+\\*\\/\\n)?' : ''}${
               globalObject}(?:(?:\\[")|\\.)${hotUpdateGlobal}(?:"\\])?`)
             : null;
 

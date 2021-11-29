@@ -35,9 +35,10 @@ function createRuntime({
 
   if (!context[jsonpFunction]) innumerable(context, jsonpFunction, []);
 
-  let chunkLoadingGlobal = context[jsonpFunction];
-  let parentChunkLoadingFunction = chunkLoadingGlobal.push.bind(chunkLoadingGlobal);
-  chunkLoadingGlobal.push = webpackJsonpCallback;
+
+  let chunkLoadingGlobal = context[jsonpFunction] = context[jsonpFunction] || [];
+  chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
+
   if (webpackVersion > 4 && remotes.loading
     && cached === globalCached && !self[jsonpFunction]) self[jsonpFunction] = chunkLoadingGlobal;
 
@@ -222,7 +223,7 @@ function createRuntime({
   };
 
   /* webpack/runtime/get update manifest filename */
-  __webpack_require__.hmrF = () => '' + __webpack_require__.h() + '.hot-update.json';
+  __webpack_require__.hmrF = () => (remotes.runtimeName ? remotes.runtimeName + '.' : '') + __webpack_require__.h() + '.hot-update.json';
 
   /* webpack/runtime/getFullHash */
   __webpack_require__.h = () => hash;
@@ -1006,7 +1007,6 @@ function createRuntime({
   // undefined = chunk not loaded, null = chunk preloaded/prefetched
   // Promise = chunk loading, 0 = chunk loaded
   let installedChunks = {};
-  let deferredModules = [];
 
   __webpack_require__.f.j = (chunkId, promises) => {
     // JSONP chunk loading for javascript
@@ -1086,7 +1086,7 @@ function createRuntime({
   let currentUpdateRemovedChunks;
   let currentUpdateRuntime;
 
-  innumerable(context, hotUpdateGlobal || 'webpackHotUpdate', (chunkId, moreModules, runtime) => {
+  context[hotUpdateGlobal || 'webpackHotUpdate'] = (chunkId, moreModules, runtime) => {
     if (currentUpdate) {
       for (let moduleId in moreModules) {
         if (__webpack_require__.o(moreModules, moduleId)) {
@@ -1103,7 +1103,7 @@ function createRuntime({
       installedChunks[chunkId][0]();
       installedChunks[chunkId] = 0;
     }
-  });
+  };
   // if (webpackVersion > 4 && hotUpdateGlobal && !self[hotUpdateGlobal]) self[hotUpdateGlobal] = context[hotUpdateGlobal];
 
   function applyHandler(options) {
@@ -1543,111 +1543,84 @@ function createRuntime({
         let update = JSON.parse(await fetch(requestPath, { timeout: requestTimeout }));
         resolve(webpackVersion >= 5 ? update : undefined);
       } catch (e) {
-        if (e && e.xhr && e.xhr.status === 404) return resolve();
-        reject(e);
+        // if (e && e.xhr && e.xhr.status === 404) return resolve();
+        // reject(e);
+        resolve();
       }
     });
   };
 
-  let checkDeferredModules = () => {
-
-  };
-  function checkDeferredModulesImpl() {
-    let result;
-    for (let i = 0; i < deferredModules.length; i++) {
-      let deferredModule = deferredModules[i];
-      let fulfilled = true;
-      for (let j = 1; j < deferredModule.length; j++) {
-        let depId = deferredModule[j];
-        if (installedChunks[depId] !== 0) fulfilled = false;
-      }
-      if (fulfilled) {
-        deferredModules.splice(i--, 1);
-        result = __webpack_require__(__webpack_require__.s = deferredModule[0]);
-      }
-    }
-    if (deferredModules.length === 0) {
-      __webpack_require__.x();
-      __webpack_require__.x = () => {
-
-      };
-    }
-    return result;
-  }
-
   // install a JSONP callback for chunk loading
-  function webpackJsonpCallback(data) {
-    if (!Array.isArray(data)) return;
-    let [chunkIds, moreModules, runtime, executeModules] = data;
-    if (webpackVersion < 5) {
-      executeModules = runtime;
-      runtime = undefined;
-    }
-    // add "moreModules" to the modules object,
-    // then flag all "chunkIds" as loaded and fire callback
-    let moduleId; let chunkId;
-    let i = 0;
-    let resolves = [];
-    for (;i < chunkIds.length; i++) {
-      chunkId = chunkIds[i];
-      if (__webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId]) {
-        resolves.push(installedChunks[chunkId][0]);
-      }
-      installedChunks[chunkId] = 0;
-    }
-    for (moduleId in moreModules) {
-      if (__webpack_require__.o(moreModules, moduleId)
-        && !__webpack_require__.o(__webpack_require__.m, moduleId)) {
-        __webpack_require__.m[moduleId] = moreModules[moduleId];
-      }
-    }
-    if (runtime) runtime(__webpack_require__);
-    parentChunkLoadingFunction(data);
-    while (resolves.length) {
-      resolves.shift()();
-    }
-
-    // add entry modules from loaded chunk to deferred list
-    if (executeModules) deferredModules.push.apply(deferredModules, executeModules);
-
-    // run deferred modules when all chunks ready
-    return checkDeferredModules();
-  }
-
-  // let webpackJsonpCallback2 = (parentChunkLoadingFunction, data) => {
-  //   let result;
-  //   let [chunkIds, moreModules, runtime] = data;
+  // function webpackJsonpCallback(data) {
+  //   if (!Array.isArray(data)) return;
+  //   let [chunkIds, moreModules, runtime, executeModules] = data;
+  //   if (webpackVersion < 5) {
+  //     executeModules = runtime;
+  //     runtime = undefined;
+  //   }
   //   // add "moreModules" to the modules object,
   //   // then flag all "chunkIds" as loaded and fire callback
-  //   let moduleId; let chunkId; let i = 0;
-  //   if (chunkIds.some(id => (installedChunks[id] !== 0))) {
-  //     for (moduleId in moreModules) {
-  //       if (__webpack_require__.o(moreModules, moduleId)) {
-  //         __webpack_require__.m[moduleId] = moreModules[moduleId];
-  //       }
-  //     }
-  //     if (runtime) result = runtime(__webpack_require__);
-  //   }
-  //   if (parentChunkLoadingFunction) parentChunkLoadingFunction(data);
+  //   let moduleId; let chunkId;
+  //   let i = 0;
+  //   let resolves = [];
   //   for (;i < chunkIds.length; i++) {
   //     chunkId = chunkIds[i];
   //     if (__webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId]) {
-  //       installedChunks[chunkId][0]();
+  //       resolves.push(installedChunks[chunkId][0]);
   //     }
-  //     installedChunks[chunkIds[i]] = 0;
+  //     installedChunks[chunkId] = 0;
   //   }
-  //   return __webpack_require__.O(result);
-  // };
+  //   for (moduleId in moreModules) {
+  //     if (__webpack_require__.o(moreModules, moduleId)
+  //       && !__webpack_require__.o(__webpack_require__.m, moduleId)) {
+  //       __webpack_require__.m[moduleId] = moreModules[moduleId];
+  //     }
+  //   }
+  //   if (runtime) runtime(__webpack_require__);
+  //   parentChunkLoadingFunction(data);
+  //   while (resolves.length) {
+  //     resolves.shift()();
+  //   }
 
-  /** ********************************************************************* */
-  // module cache are used so entry inlining is disabled
-  // run startup
-  // reset startup function so it can be called again when more startup code is added
-  __webpack_require__.x = () => {};
-  chunkLoadingGlobal = chunkLoadingGlobal.slice();
-  for (let i = 0; i < chunkLoadingGlobal.length; i++) webpackJsonpCallback(chunkLoadingGlobal[i]);
-  (checkDeferredModules = checkDeferredModulesImpl)();
+  //   // add entry modules from loaded chunk to deferred list
+  //   if (executeModules) deferredModules.push.apply(deferredModules, executeModules);
 
+  //   // run deferred modules when all chunks ready
+  //   return checkDeferredModules();
+  // }
+
+  function webpackJsonpCallback(parentChunkLoadingFunction, data) {
+    if (!Array.isArray(data)) return;
+    let [chunkIds, moreModules, runtime] = data;
+    if (webpackVersion < 5) {
+      if (Array.isArray(runtime)) runtime = undefined;
+    }
+
+    let result;
+
+    // add "moreModules" to the modules object,
+    // then flag all "chunkIds" as loaded and fire callback
+    let moduleId; let chunkId; let i = 0;
+    if (chunkIds.some(id => (installedChunks[id] !== 0))) {
+      for (moduleId in moreModules) {
+        if (__webpack_require__.o(moreModules, moduleId) && !__webpack_require__.o(__webpack_require__.m, moduleId)) {
+          __webpack_require__.m[moduleId] = moreModules[moduleId];
+        }
+      }
+      if (runtime) result = runtime(__webpack_require__);
+    }
+    if (parentChunkLoadingFunction) parentChunkLoadingFunction(data);
+    for (;i < chunkIds.length; i++) {
+      chunkId = chunkIds[i];
+      if (__webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId]) {
+        installedChunks[chunkId][0]();
+      }
+      installedChunks[chunkIds[i]] = 0;
+    }
+    return __webpack_require__.O(result);
+  }
+
+  chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
   return __webpack_require__;
 }
 
