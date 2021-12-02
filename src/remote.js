@@ -328,13 +328,13 @@ function remote(url, options = {}) {
 
           const hotUpdateGlobal = manifest.hotUpdateGlobal || 'webpackHotUpdate';
           const hotSourceRegx = hotUpdateGlobal
-            ? new RegExp(`${(!libraryTarget || libraryTarget === 'var') ? '^((?:"use strict";\n)?\\/\\*[A-z\\s*():/.",-]+\\*\\/\\n)?' : ''}${
+            ? new RegExp(`${(!libraryTarget || libraryTarget === 'var') ? '^(?:"use strict";\\n?)?(\\/\\*[A-z\\s*():/.",-]+\\*\\/\\n)?' : ''}${
               globalObject}(?:(?:\\[")|\\.)${hotUpdateGlobal}(?:"\\])?`)
             : null;
 
           const jsonpFunction = manifest.jsonpFunction || 'webpackJsonp';
           const jsonpSourceRegx = new RegExp(`${
-            (!libraryTarget || libraryTarget === 'var') ? '^(?:(?:"use strict";\n)?\\/\\*[A-Za-z0-9\\s*():/.",\\-!_$@#%&~]+\\*\\/\\n)?' : ''
+            (!libraryTarget || libraryTarget === 'var') ? '^(?:"use strict";\\n?)?(?:\\/\\*[A-Za-z0-9\\s*():/.",\\-!_$@#%&~]+\\*\\/\\n)?' : ''
           }(?:var ([A-Za-z0-9_$]+);[A-Za-z0-9_$\\s=]+\\n?)?\\(${globalObject}(?:(?:\\[")|\\.)${jsonpFunction}(?:"\\])?\\s?=\\s?${
             globalObject}(?:(?:\\[")|\\.)${jsonpFunction}(?:"\\])?\\s?\\|\\|\\s?\\[\\]\\)`);
 
