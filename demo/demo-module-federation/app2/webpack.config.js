@@ -1,43 +1,43 @@
-const HtmlWebpackPlugin = require("html-webpack-plugin");
-const ImportRemotePlugin = require("import-remote/plugin");
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+// const ImportRemotePlugin = require('import-remote/plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const { ModuleFederationPlugin } = require("webpack").container;
+const { ModuleFederationPlugin } = require('webpack').container;
 const webpack = require('webpack');
-const path = require("path");
+const path = require('path');
 
 const useMinicss = false;
 
 const cssRegex = /\.css$/;
 // common function to get style loaders
-const getStyleLoaders = (cssOptions, preProcessor,preOptions) => {
+const getStyleLoaders = (cssOptions, preProcessor, preOptions) => {
   const loaders = [
     useMinicss ? {
-          loader: MiniCssExtractPlugin.loader,
-          options: Object.assign(
-              {}
-          ),
-      } : null,
-      {
-          loader: require.resolve('css-loader'),
-          options: cssOptions,
-      },
-      // {
-      //     // Options for PostCSS as we reference these options twice
-      //     // Adds vendor prefixing based on your specified browser support in
-      //     // package.json
-      //     loader: require.resolve('postcss-loader'),
-      //     options: {
-      //         sourceMap: true,
-      //     },
-      // },
+      loader: MiniCssExtractPlugin.loader,
+      options: Object.assign(
+        {}
+      ),
+    } : null,
+    {
+      loader: require.resolve('css-loader'),
+      options: cssOptions,
+    },
+    // {
+    //     // Options for PostCSS as we reference these options twice
+    //     // Adds vendor prefixing based on your specified browser support in
+    //     // package.json
+    //     loader: require.resolve('postcss-loader'),
+    //     options: {
+    //         sourceMap: true,
+    //     },
+    // },
   ].filter(Boolean);
   if (preProcessor) {
-      loaders.push({
-          loader: require.resolve(preProcessor),
-          options: Object.assign({
-              sourceMap: true,
-          },preOptions),
-      });
+    loaders.push({
+      loader: require.resolve(preProcessor),
+      options: Object.assign({
+        sourceMap: true,
+      }, preOptions),
+    });
   }
   return loaders;
 };
@@ -48,9 +48,9 @@ const config = {
     // index: './src/test',
     index: './src/index'
   },
-  mode: ['production', "development"][1],
+  mode: ['production', 'development'][1],
   output: {
-    publicPath: "http://localhost:3003/",
+    publicPath: 'http://localhost:3003/',
     filename: 'assets/[name]-[contenthash:5].js',
     chunkFilename: 'assets/[name]-[contenthash:5].js',
   },
@@ -58,10 +58,10 @@ const config = {
     rules: [
       {
         test: /\.jsx?$/,
-        loader: "babel-loader",
+        loader: 'babel-loader',
         exclude: /node_modules/,
         options: {
-          presets: ["@babel/preset-react"],
+          presets: ['@babel/preset-react'],
         },
       },
       {
@@ -80,8 +80,8 @@ const config = {
         test: [/\.bmp$/, /\.gif$/, /\.jpe?g$/, /\.png$/],
         loader: 'url-loader',
         options: {
-            limit: 10000,
-            name: 'assets/[name].[hash:8].[ext]',
+          limit: 10000,
+          name: 'assets/[name].[hash:8].[ext]',
         },
       },
       {
@@ -116,48 +116,49 @@ const config = {
   //   },
   // }],
   devServer: {
-    port: 3003,
-    publicPath: '/',
-    contentBase: path.join(__dirname, "dist"),
-    headers: { 'Access-Control-Allow-Origin': '*' },
-    writeToDisk: true,
-    useLocalIp: true,
     hot: true,
-    overlay: false,
-    quiet: true,
     host: '0.0.0.0',
-    disableHostCheck: true,
-    inline: true,
-    stats: {
-      colors: true,
+    port: 3003,
+    allowedHosts: 'all',
+    client: {
+      overlay: false,
+      logging: 'none',
     },
+    static: {
+      directory: path.join(__dirname, 'dist'),
+      publicPath: '/',
+    },
+    headers: { 'Access-Control-Allow-Origin': '*' },
+    // writeToDisk: true,
   },
-  //http://localhost:3003/remoteEntry.js
+  // http://localhost:3003/remoteEntry.js
   plugins: [
     new webpack.HotModuleReplacementPlugin(),
     new ModuleFederationPlugin({
-      name: "app2",
-      filename: "remoteEntry.js",
+      name: 'app2',
+      filename: 'remoteEntry.js',
       exposes: {
-        "./NewsList": "./src/NewsList",
+        './NewsList': './src/NewsList',
       },
       remotes: {
-        app1: "app1@http://localhost:3001/remoteEntry.js",
+        app1: 'app1@http://localhost:3001/remoteEntry.js',
       },
       shared: {
         react: { singleton: true },
-        "react-dom": { singleton: true }
+        'react-dom': { singleton: true }
       },
     }),
     new HtmlWebpackPlugin({
-      template: "./public/index.html",
+      template: './public/index.html',
+      scriptLoading: 'blocking',
+      chunks: ['index']
     }),
     useMinicss
       ? new MiniCssExtractPlugin({
-      filename: `assets/[name]-[contenthash:5].css`,
-      chunkFilename: `assets/[name]-[contenthash:5].chunk.css`
-    })
-    : null
+        filename: 'assets/[name]-[contenthash:5].css',
+        chunkFilename: 'assets/[name]-[contenthash:5].chunk.css'
+      })
+      : null
   ].filter(Boolean),
 };
 

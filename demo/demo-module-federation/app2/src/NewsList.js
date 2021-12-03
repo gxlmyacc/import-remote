@@ -25,6 +25,6 @@ const NewsList = () => {
       ))}
     </ul>
   );
-}
+};
 
 export default NewsList;

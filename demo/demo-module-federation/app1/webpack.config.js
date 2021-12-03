@@ -45,22 +45,25 @@ const getStyleLoaders = (cssOptions, preProcessor, preOptions) => {
 };
 
 const devServerOpt = {
-  port: 3001,
-  publicPath: '/',
-  contentBase: path.join(__dirname, 'dist'),
-  headers: { 'Access-Control-Allow-Origin': '*' },
-  writeToDisk: true,
-  useLocalIp: true,
   hot: true,
-  overlay: false,
-  quiet: true,
   host: '0.0.0.0',
-  disableHostCheck: true,
-  inline: true,
-  stats: {
-    colors: true,
+  port: 3001,
+  allowedHosts: 'all',
+  client: {
+    overlay: false,
+    logging: 'none',
   },
-  before(app, server) {
+  static: {
+    directory: path.join(__dirname, 'dist'),
+    publicPath: '/',
+  },
+  devMiddleware: {
+    index: true,
+    writeToDisk: true,
+  },
+  headers: { 'Access-Control-Allow-Origin': '*' },
+  onBeforeSetupMiddleware(server) {
+    const app = server.app;
     // This lets us fetch source contents from webpack for the error overlay
     app.use(evalSourceMapMiddleware(server));
     // This lets us open files from the runtime error overlay.
@@ -71,7 +74,8 @@ const devServerOpt = {
 const config = {
   devtool: 'eval',
   entry: {
-    index: './src/index'
+    index: './src/index',
+    test: './src/test'
   },
   mode: ['production', 'development'][1],
   output: {
@@ -154,18 +158,19 @@ const config = {
         app2: 'app2@http://localhost:3003/remoteEntry.js',
       },
       shared: {
-        react: { singleton: true, },
+        react: { singleton: true },
         'react-dom': { singleton: true }
       },
     }),
 
     new ImportRemotePlugin({
-      template: 'auto',
+      filename: 'index.js',
       shareModules: [
-        {
-          name: 'react',
-          version: (v, m, utils) => utils.versionLt('16.8.0', v) // : ['16.8.0', '17']
-        },
+        // {
+        //   name: 'react',
+        //   version: (v, m, utils) => utils.versionLt('16.8.0', v) // : ['16.8.0', '17']
+        // },
+        'react',
         'react-dom',
         /dpl\.css$/
       ],
@@ -173,6 +178,8 @@ const config = {
     }),
     new HtmlWebpackPlugin({
       template: './public/index.html',
+      scriptLoading: 'blocking',
+      chunks: ['index']
     }),
     useMinicss
       ? new MiniCssExtractPlugin({

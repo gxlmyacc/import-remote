@@ -14,5 +14,5 @@
 
 // export default AppWrapper;
 
-import("./bootstrap");
+import('./bootstrap');
 

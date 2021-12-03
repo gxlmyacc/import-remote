@@ -5,7 +5,7 @@ const images = [
   // 'https://w.wallhaven.cc/full/lm/wallhaven-lmlgy2.png',
   // 'https://w.wallhaven.cc/full/gj/wallhaven-gj22ge.png',
   // 'https://w.wallhaven.cc/full/d5/wallhaven-d5lezl.png'
-]
+];
 
 console.log('Slide', React, useState);
 
@@ -13,14 +13,14 @@ const Slides = () => {
   const [num, changeNum] = useState(0);
   const left = () => {
     if (num > 0) {
-      changeNum(num - 1)
+      changeNum(num - 1);
     }
-  }
+  };
   const right = () => {
     if (num < 3) {
-      changeNum(num + 1)
+      changeNum(num + 1);
     }
-  }
+  };
   const btnStyle = {
     cursor: 'pointer',
     display: 'inline-block',
@@ -35,7 +35,7 @@ const Slides = () => {
     background: 'rgba(0, 0, 0, 0.3)',
     borderRadius: '50%',
     textAlign: 'center',
-  }
+  };
   return (
     <div style={{ position: 'relative', height: 400, margin: '0 20px', overflow: 'hidden' }}>
       <div style={{
@@ -50,7 +50,7 @@ const Slides = () => {
       <span style={{ ...btnStyle, left: 5, }} onClick={left}>{'<'}</span>
       <span style={{ ...btnStyle, right: 5 }} onClick={right}>{'>'}</span>
     </div>
-  )
+  );
 };
 
 Slides.React = React;

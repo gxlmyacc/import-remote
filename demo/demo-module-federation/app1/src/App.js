@@ -1,7 +1,8 @@
-import React from "react";
+import React from 'react';
 import Slides from './Slides';
+
 const RemoteNewsList = React.lazy(() => {
-  const ret = import("app2/NewsList");
+  const ret = import('app2/NewsList');
   console.log('ret', ret);
   return ret;
 });

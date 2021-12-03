@@ -1,6 +1,8 @@
 .DS_Store
+.history
 __MACOSX
 node_modules
-dist/
+dist
+dist1
 package-lock.json
 yarn.lock
