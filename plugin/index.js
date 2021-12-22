@@ -690,6 +690,31 @@ class ModuleWebpackPlugin {
       });
     }
 
+    const emitLibraryFile = () => {
+      let libraryFileName = self.options.libraryFileName;
+      if (libraryFileName) {
+        const src = path.resolve(__dirname, '../dist/import-remote.min.js');
+        let dist = typeof libraryFileName === 'string'
+          ? path.resolve(
+            compiler.options.output.path,
+            libraryFileName.endsWith('/') ? `${libraryFileName}import-remote.min.js` : libraryFileName
+          )
+          : path.resolve(compiler.options.output.path, 'import-remote.min.js');
+        if (!fs.existsSync(dist) || !isSameFile(src, dist)) {
+          fs.mkdirSync(path.dirname(dist), { recursive: true });
+          fs.copyFileSync(src, dist);
+          if (self.options.libraryWithMap && fs.existsSync(`${src}.map`)) fs.copyFileSync(`${src}.map`, `${dist}.map`);
+          const statSrc = fs.statSync(src);
+          const fd = fs.openSync(dist, 'r+');
+          try {
+            fs.futimesSync(fd, statSrc.atime, statSrc.mtime);
+          } finally {
+            fs.closeSync(fd);
+          }
+        }
+      }
+    };
+
     /**
      * Hook into the webpack emit phase
      * @param {WebpackCompilation} compilation
@@ -814,28 +839,7 @@ class ModuleWebpackPlugin {
           return finalOutputName;
         })
         .then(finalOutputName => {
-          let libraryFileName = self.options.libraryFileName;
-          if (libraryFileName) {
-            const src = path.resolve(__dirname, '../dist/import-remote.min.js');
-            let dist = typeof libraryFileName === 'string'
-              ? path.resolve(
-                compiler.options.output.path,
-                libraryFileName.endsWith('/') ? `${libraryFileName}import-remote.min.js` : libraryFileName
-              )
-              : path.resolve(compiler.options.output.path, 'import-remote.min.js');
-            if (!fs.existsSync(dist) || !isSameFile(src, dist)) {
-              fs.mkdirSync(path.dirname(dist), { recursive: true });
-              fs.copyFileSync(src, dist);
-              if (self.options.libraryWithMap && fs.existsSync(`${src}.map`)) fs.copyFileSync(`${src}.map`, `${dist}.map`);
-              const statSrc = fs.statSync(src);
-              const fd = fs.openSync(dist, 'r+');
-              try {
-                fs.futimesSync(fd, statSrc.atime, statSrc.mtime);
-              } finally {
-                fs.closeSync(fd);
-              }
-            }
-          }
+          if (webpackMajorVersion < 5) emitLibraryFile();
           return finalOutputName;
         })
         .then(finalOutputName => getModuleWebpackPluginHooks(compilation).afterEmit.promise({
@@ -918,6 +922,11 @@ class ModuleWebpackPlugin {
             })
           );
         });
+
+      compiler.hooks.emit.tapAsync('ModuleWebpackPlugin', (compilation, callback) => {
+        emitLibraryFile();
+        callback();
+      });
     }
   }
 
