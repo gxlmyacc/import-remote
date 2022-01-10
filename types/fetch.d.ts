@@ -76,9 +76,9 @@ declare class AsyncRemoteModule {
 
   requireMeta<T = any>(moduleName?: string, options?: FetchOptions): Promise<T>
 
-  require<T = any>(moduleName?: string, options?: FetchOptions): Promise<T>
+  require<T = any>(moduleName?: string, options?: RemoteOptions): Promise<T>
 
-  import<T = any>(moduleName?: string, options?: FetchOptions): Promise<T>
+  import<T = any>(moduleName?: string, options?: RemoteOptions): Promise<T>
 }
 
 declare global {

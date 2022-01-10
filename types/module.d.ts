@@ -24,13 +24,13 @@ declare class RemoteModule {
 
   requireMetaSync<T = any>(moduleName?: string, options?: FetchOptions): T
 
-  require<T = any>(moduleName?: string, options?: FetchOptions): Promise<T>
+  require<T = any>(moduleName?: string, options?: RemoteOptions): Promise<T>
 
-  requireSync<T = any>(moduleName?: string, options?: FetchOptions): T
+  requireSync<T = any>(moduleName?: string, options?: RemoteOptions): T
 
-  import<T = any>(moduleName?: string, options?: FetchOptions): Promise<T>
+  import<T = any>(moduleName?: string, options?: RemoteOptions): Promise<T>
 
-  importSync<T = any>(moduleName?: string, options?: FetchOptions): T
+  importSync<T = any>(moduleName?: string, options?: RemoteOptions): T
 }
 
 export default RemoteModule;
