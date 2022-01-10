@@ -1,4 +1,5 @@
 
+/** @type {import('../types/jsonp').default}  */
 function jsonp(url, options = {}) {
   return new Promise((resolve, reject) => {
     let script; let needAttach;
@@ -12,7 +13,7 @@ function jsonp(url, options = {}) {
     if (!script) {
       needAttach = true;
       script = document.createElement('script');
-  
+
       script.charset = 'utf-8';
       script.timeout = 120;
       script.setAttribute('data-webpack', options.key);

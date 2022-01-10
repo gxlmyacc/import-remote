@@ -2,6 +2,7 @@
 import fetch, { globalCached } from './fetch';
 import { innumerable } from './utils';
 
+/** @type {import('../types/importJson').default}  */
 function importJson(href, { cached = globalCached, ...options } = {}) {
   if (!cached._json) innumerable(cached, '_json', {});
   if (cached._json[href]) return cached._json[href];

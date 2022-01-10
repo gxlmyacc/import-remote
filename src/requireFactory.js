@@ -11,12 +11,14 @@ function defaultRequireFactory(modulesMap) {
   };
 }
 
+/** @type {import('../types/requireFactory').default} */
 function createRequireFactory(factory) {
   if (isPlainObject(factory)) factory = defaultRequireFactory(factory);
   innumerable(factory, '__import_remote_require_factory__', true);
   return factory;
 }
 
+/** @type {import('../types/requireFactory').isRequireFactory} */
 function isRequireFactory(fn) {
   return fn && fn.__import_remote_require_factory__;
 }

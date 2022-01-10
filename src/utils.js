@@ -69,6 +69,7 @@ function isFunction(fn) {
     && (!fn.prototype || fn.prototype === Function || fn.constructor === Function);
 }
 
+/** @type {import('../types').mergeObject} */
 function mergeObject(target) {
   function _mergeObject(target, source, copiedObjects) {
     if (!target) return target;
@@ -95,6 +96,11 @@ function mergeObject(target) {
   return ret;
 }
 
+/**
+ * @template T
+ * @param {T} target
+ * @returns {T}
+ */
 function walkMainifest(target) {
   let copied = [];
   let _getItem = function (ret) {
@@ -135,6 +141,7 @@ function walkMainifest(target) {
   return _walk(target, copied);
 }
 
+/** @type {import('../types').innumerable} */
 function innumerable(
   obj,
   key,
@@ -145,6 +152,9 @@ function innumerable(
   return obj;
 }
 
+/**
+ * @param {string} url
+ */
 function getHostFromUrl(url) {
   url = url.replace(/((https?:)?\/\/[^?#]*).*/g, '$1');
   if (!/\.js$/.test(url)) return url;
@@ -153,15 +163,23 @@ function getHostFromUrl(url) {
   return urls.join('/');
 }
 
+/**
+ * @param {string|boolean} devtool
+ */
 function isEvalDevtool(devtool) {
   return typeof devtool === 'string' && /^(eval|inline)/.test(String(devtool));
 }
 
+/** @type {import('../types').requireWithVersion} */
 function requireWithVersion(module, version) {
   if (module && !module.version) innumerable(module, 'version', version);
   return module;
 }
 
+/**
+ * @param {string} host1
+ * @param {string} host2
+ */
 function isSameHost(host1, host2) {
   host1 = host1.replace(/\/+$/, '');
   host2 = host2.replace(/\/+$/, '');
@@ -170,6 +188,11 @@ function isSameHost(host1, host2) {
 
 const sourceMappingURLCssRegx = /\/\*# sourceMappingURL=([0-9A-Za-z_.-]+\.(?:js|css)\.map)\*\/$/;
 const sourceMappingURLJsRegx = /\/\/# sourceMappingURL=([0-9A-Za-z_.-]+\.(?:js|css)\.map)$/;
+/**
+ * @param {string} href
+ * @param {string} source
+ * @param {import('../types/importJs').RemoteImportOptions} [options]
+ */
 function transformSourcemapUrl(href, source, { devtool, sourcemapHost, scopeName, host, publicPath, webpackChunk } = { }) {
   if (devtool) {
     if (isFunction(sourcemapHost)) sourcemapHost = sourcemapHost({ scopeName, host, publicPath, href, source, webpackChunk });

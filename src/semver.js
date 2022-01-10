@@ -1,4 +1,4 @@
-/** @typedef {(string|number|undefined|[])[]} SemVerRange */
+/** @typedef {import('../types/semver').SemVerRange} SemVerRange */
 
 /**
  * @param {string} str version string
@@ -61,7 +61,7 @@ const versionLt = (a, b, withEqual = false) => {
     if (aType == bType) {
       if (aType !== 'o' && aType !== 'u' && aValue !== bValue) {
         return withEqual
-          ? aValue <= bValue  
+          ? aValue <= bValue
           : aValue < bValue;
       }
       i++;
@@ -103,7 +103,7 @@ const rangeToString = range => {
           : (needDot > 0 ? '.' : '') + ((needDot = 2), item); // number or string: add the item, set flag to add an "." between two of them
     }
     return str;
-  } 
+  }
   let stack = [];
   // eslint-disable-next-line no-redeclare
   for (let i = 1; i < range.length; i++) {
@@ -120,7 +120,7 @@ const rangeToString = range => {
     );
   }
   return pop();
-  
+
   function pop() {
     return stack.pop().replace(/^\((.+)\)$/, '$1');
   }
@@ -160,7 +160,7 @@ const parseRange = str => {
     } if (range.length === 3) {
       // Special case for "1.2" is "1.2.x" instead of "=1.2"
       return [2, ...range.slice(1)];
-    } 
+    }
     return [range.length, ...range.slice(1)];
   };
   const negate = range => [-range[0] - 1, ...range.slice(1)];

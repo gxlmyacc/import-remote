@@ -172,6 +172,7 @@ function requireManifest(url, options) {
   });
 }
 
+/** @type {import('../types/remote').default}  */
 function remote(url, options = {}) {
   url = resolveRelativeUrl(url, {
     host: options.host,

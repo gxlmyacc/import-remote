@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "main": "esm/index.js",
   "module": "esm/index.js",
+  "typings": "types/index.d.ts",
   "files": [
     "esm",
-    "src"
+    "src",
+    "types"
   ]
 }

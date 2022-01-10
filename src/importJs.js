@@ -5,6 +5,7 @@ import { innumerable, requireFromStr, isEvalDevtool, DEFAULT_TIMEOUT, transformS
 
 const scopeNameRegx = /\(import-remote\)\/((?:@[^/]+\/[^/]+)|(?:[^@][^/]+))/;
 
+/** @type {import('../types/importJs').default}  */
 function importJs(href, {
   cached = globalCached,
   timeout = DEFAULT_TIMEOUT,

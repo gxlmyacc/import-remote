@@ -12,6 +12,7 @@ let arePropertyDescriptorsSupported = (function () {
 })();
 let supportsDescriptors = Object.defineProperty && arePropertyDescriptorsSupported;
 
+/** @type {import('../types').objectDefineProperty} */
 function objectDefineProperty(a, b, c) {
   if (Object.defineProperty && (supportsDescriptors || a.nodeType == 1)) {
     return Object.defineProperty(a, b, c);

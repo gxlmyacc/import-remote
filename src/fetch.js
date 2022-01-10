@@ -45,6 +45,7 @@ function innumerable(
   return obj;
 }
 
+/** @type {import('../types/fetch').fetch} */
 function fetch(url, { timeout = 120000, sync, nocache, method = 'GET', headers } = {}) {
   if (!globalCached._fetched) innumerable(globalCached, '_fetched', {});
   const fetched = globalCached._fetched;
@@ -122,6 +123,7 @@ function fetch(url, { timeout = 120000, sync, nocache, method = 'GET', headers }
 
 fetch.queue = queue;
 
+/** @type {import('../types/fetch').requireJs} */
 function requireJs(url, options = {}) {
   const cached = options.cached || globalCached;
   if (!cached._rs) innumerable(cached, '_rs', {});
@@ -150,10 +152,18 @@ function requireJs(url, options = {}) {
   });
 }
 
+/**
+ * @param {string} url
+ * @returns
+ */
 function isAbsoluteUrl(url) {
   return typeof url === 'string' && /^(((https?:)?\/\/)|(data:))/.test(url);
 }
 
+/**
+ * @param {string} host
+ * @param {string} [path]
+ */
 function joinUrl(host, path) {
   if (path && /^["'].+["']$/.test(path)) path = path.substr(1, path.length - 2);
   if (!host || isAbsoluteUrl(path) /* || /^\//.test(path) */) return path;
@@ -163,6 +173,10 @@ function joinUrl(host, path) {
   return `${host}${/^\//.test(path) ? path : `/${path}`}`;
 }
 
+/**
+ * @param {string} host
+ * @param {string} [moduleName]
+ */
 function resolveModuleUrl(host, moduleName = 'index.js') {
   if (!/\.js$/.test(moduleName)) moduleName += '.js';
   return joinUrl(host, moduleName);

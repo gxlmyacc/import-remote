@@ -1,9 +1,9 @@
 {
   "name": "import-remote",
-  "version": "0.0.18-alpha.8",
+  "version": "0.0.18-alpha.10",
   "main": "esm/index.js",
   "module": "esm/index.js",
-  "types": "typings.d.ts",
+  "typings": "types/index.d.ts",
   "keywords": [
     "import",
     "remote",
@@ -20,8 +20,10 @@
   "files": [
     "dist",
     "esm",
+    "types",
     "plugin",
-    "view/esm"
+    "view/esm",
+    "view/types"
   ],
   "scripts": {
     "webpack": "webpack --config ./build/webpack.config.js --progress",

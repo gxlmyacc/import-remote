@@ -2,6 +2,7 @@ import remote, { requireManifest } from './remote';
 import { resolveModuleUrl, existModule } from './fetch';
 import { mergeObject, innumerable, resolveRelativeUrl } from './utils';
 
+/** @type {import('../types/module').RemoteModule} */
 class RemoteModule {
 
   constructor(host, options = {}) {

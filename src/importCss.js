@@ -28,6 +28,7 @@ function transformStyleHost(source, host) {
   // .replace(/@import\s+(["'])([^"']+)["']/ig, (m, p0, p1) => `@import ${p0 + joinUrl(host, p1) + p0}`);
 }
 
+/** @type {import('../types/importCss').default}  */
 function fetchStyle(href, {
   cached = globalCached,
   timeout = DEFAULT_TIMEOUT,
@@ -80,6 +81,7 @@ export {
   ATTR_CSS_TRANSFORMED
 };
 
+/** @type {import('../types/importCss').default}  */
 export default function (href, options = {}) {
   return fetchStyle(href, options);
 }
