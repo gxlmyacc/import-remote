@@ -1,20 +1,20 @@
 import { RemoteOptions } from './types';
-import { resolveModuleUrl, FetchOptions } from './fetch';
+import { RemoteModuleOptions, FetchOptions } from './fetch';
 
 declare class RemoteModule {
 
   public host: string
   public pathname: string
   public options: RemoteOptions
-  public resolveModuleUrl: typeof resolveModuleUrl
+  public resolveModuleUrl: RemoteModuleOptions['resolveModuleUrl']
 
   readonly __import_remote_module_class__: true
 
-  constructor(host: string, options?: RemoteOptions)
+  constructor(host: string, options?: RemoteModuleOptions)
 
   external(name: string, module: any): void
 
-  isRequired(moduleName?: string): boolean
+  isRequired(moduleName?: string): Promise<boolean>
 
   prefetch(prefetchs: string[]): Promise<any[]>
 

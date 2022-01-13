@@ -6,11 +6,14 @@ import { mergeObject, innumerable, resolveRelativeUrl } from './utils';
 class RemoteModule {
 
   constructor(host, options = {}) {
-    if (!host) throw new Error('[RemoteModule]`host` can not empty！');
+    if (!options.resolveModuleUrl && !host) throw new Error('[RemoteModule]`host` can not empty！');
     this.host = resolveRelativeUrl(host);
     this.pathname = options.pathname || '';
+
+    this.resolveModuleUrl = options.resolveModuleUrl || resolveModuleUrl;
+    delete options.resolveModuleUrl;
+
     this.options = options || {};
-    this.resolveModuleUrl = resolveModuleUrl;
   }
 
   external(name, module) {
@@ -20,7 +23,10 @@ class RemoteModule {
   }
 
   isRequired(moduleName = 'index.js') {
-    return Boolean(remote.cached[resolveModuleUrl(this.host + this.pathname, moduleName)]);
+    let url = this.resolveModuleUrl(this.host + this.pathname, moduleName, resolveModuleUrl);
+    return url.then
+      ? url.then(url => Boolean(remote.cached[url]))
+      : Promise.resolve(Boolean(remote.cached[url]));
   }
 
   prefetch(prefetchs = []) {
@@ -32,8 +38,10 @@ class RemoteModule {
   }
 
   requireMeta(moduleName = 'index.js', options = {}) {
-    return requireManifest(resolveModuleUrl(this.host + this.pathname, moduleName), mergeObject({ meta: true }, options))
-      .then(r => (r && r.meta) || {});
+    const url = this.resolveModuleUrl(this.host + this.pathname, moduleName, resolveModuleUrl, options.sync);
+    const next = url => requireManifest(url, mergeObject({ meta: true }, options)).then(r => (r && r.meta) || {});
+    if (url.then) return url.then(next);
+    return next(url);
   }
 
   requireMetaSync(moduleName = 'index.js', options = {}) {
@@ -45,7 +53,10 @@ class RemoteModule {
   }
 
   require(moduleName = 'index.js', options = {}) {
-    return remote(resolveModuleUrl(this.host + this.pathname, moduleName), mergeObject({}, this.options, options, { host: this.host }));
+    const url = this.resolveModuleUrl(this.host + this.pathname, moduleName, resolveModuleUrl, options.sync);
+    const next = url => remote(url, mergeObject({}, this.options, options, { host: this.host }));
+    if (url.then) return url.then(next);
+    return next(url);
   }
 
   requireSync(moduleName = 'index.js', options = {}) {

@@ -1,12 +1,13 @@
+import React from 'react';
 import RemoteModule from '../../types/module';
 
 type RemoteViewProp = {
   id?: string
   className?: string,
-  style?: Record<string, any>,
+  style?: React.CSSProperties,
   disabled?: boolean,
 
-  bodyStyle?: Record<string, number|string>,
+  bodyStyle?: React.CSSProperties,
   scopeStyle?: boolean|'always',
   scopePrefix?: string,
   classPrefix?: string,

@@ -22,7 +22,7 @@ declare class RemoteAppView<P = RemoteAppViewProp, S = RemoteAppViewState, SS = 
   _getAppProps(): {
     id?: string
     className?: string,
-    style?: Record<string, any>,
+    style?: React.CSSProperties,
     otherProps: Record<string, any>,
   }
 

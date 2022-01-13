@@ -13,7 +13,7 @@ interface RemoteImportOptions extends FetchOptions {
   sourcemapHost?: string|SourcemapCallback,
 }
 
-declare function importJs<T = any>(href: string, options?: RemoteImportOptions): Promise<T>;
+declare function importJs<T = any>(url: string, options?: RemoteImportOptions): Promise<T>;
 
 export {
   RemoteImportOptions

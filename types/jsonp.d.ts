@@ -3,6 +3,6 @@
 declare function jsonp(url: string, options: {
   key?: string,
   timeout?: number
-} = {}): Promise<any>;
+}): Promise<any>;
 
 export default jsonp;

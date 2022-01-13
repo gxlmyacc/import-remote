@@ -58,17 +58,20 @@ type RemoteModuleRuntime = {
   readonly __remoteModuleWebpack__: RemoteModuleWebpack
 }
 
-declare function requireJs<T = any>(href: string, options?: FetchOptions): Promise<T>;
+declare function requireJs<T = any>(url: string, options?: FetchOptions): Promise<T>;
 
 declare function resolveModuleUrl(host: string, moduleName?: string): string;
+interface RemoteModuleOptions extends RemoteOptions {
+  resolveModuleUrl?: (this: RemoteModule, host: string, moduleName: string, originResolveModuleUrl?: typeof resolveModuleUrl, sync?: boolean) => string|Promise<string>;
+}
 
 declare class AsyncRemoteModule {
 
   public libraryUrl: string
   public host: string
-  public options: RemoteOptions
+  public options: RemoteModuleOptions
 
-  constructor(libraryUrl: string, host: string, options?: RemoteOptions)
+  constructor(libraryUrl: string, host: string, options?: RemoteModuleOptions)
 
   readyRuntime(): Promise<RemoteModule>
 
@@ -95,7 +98,8 @@ export {
   ImportRemoteCache,
   requireJs,
   resolveModuleUrl,
-  AsyncRemoteModule
+  AsyncRemoteModule,
+  RemoteModuleOptions
 }
 
 export default fetch;
