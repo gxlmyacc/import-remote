@@ -1,5 +1,6 @@
 import { AsyncSeriesWaterfallHook } from "tapable";
 import WebpackCompiler from 'webpack/lib/Compiler';
+import WebpackCompilation from 'webpack/lib/Compilation';
 
 export = ModuleWebpackPlugin;
 
@@ -8,7 +9,7 @@ declare class ModuleWebpackPlugin {
 
   apply(compiler: WebpackCompiler): void;
 
-  static getHooks(compilation: compilation.Compilation): HtmlWebpackPlugin.Hooks;
+  static getHooks(compilation: WebpackCompilation): ModuleWebpackPlugin.Hooks;
 
   static readonly version: number;
 }

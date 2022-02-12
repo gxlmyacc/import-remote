@@ -1,22 +1,26 @@
 import RemoteModule from './module';
 import { RemoteManifest, RemoteOptions } from './types';
 import createRequireFactory from './requireFactory';
-import remote from './remote';
+import remote, { requireManifest } from './remote';
 
 import importCss from './importCss';
-import importJs from './importJs';
+import importJs, { RemoteImportOptions } from './importJs';
 import importJson from './importJson';
-import fetch, { FetchOptions, requireJs } from './fetch';
+import fetch, { requireJs, FetchOptions, RemoteModuleOptions } from './fetch';
 import jsonp from './jsonp';
 
 export * from './utils';
 export * from './semver';
+export * from './types';
 
-declare function requireManifest(url: string, options?: FetchOptions): RemoteManifest;
 
 declare var version: string;
 
 export {
+  FetchOptions,
+  RemoteModuleOptions,
+  RemoteImportOptions,
+
   RemoteOptions,
   RemoteManifest,
   RemoteModule,

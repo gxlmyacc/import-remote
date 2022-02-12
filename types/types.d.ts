@@ -23,7 +23,7 @@ type SourcemapCallback = (
   webpackChunk?: boolean
 )=> string;
 
-type BatchReplaceItem = [string|RegExp, string];
+type BatchReplaceItem = [string|RegExp, string|((substring: string, ...args: any[]) => string)];
 
 type BeforeSourceCallback = (source: string, type: 'js'|'css', href: string, options?: { isEval: boolean }) => string;
 

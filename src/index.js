@@ -10,7 +10,6 @@ import importCss from './importCss';
 import jsonp from './jsonp';
 import { satisfy, versionLt } from './semver';
 
-// eslint-disable-next-line no-undef
 const version = typeof __packageversion__ === 'undefined' ? undefined : __packageversion__;
 
 export {

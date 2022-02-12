@@ -14,9 +14,6 @@ module.exports = {
     es6: true,
     node: true
   },
-  globals: {
-    '__packagename': true,
-  },
   extends: [
     'airbnb-base',
     'react-app'
@@ -25,15 +22,7 @@ module.exports = {
   settings: {
   },
   globals: {
-    'define': true,
-    '__DEV__': true,
-    '__ENV__': true,
-    '__VERSION__': true,
-    '__WATCH__': true,
-    '$': true,
-    'importCss': true,
-    'importJs': true,
-    '__timestamp': true,
+    '__packageversion__': true,
   },
   rules: {
     'jsx-a11y/href-no-hash': 'off',
