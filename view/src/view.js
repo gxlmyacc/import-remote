@@ -82,7 +82,7 @@ class RemoteView extends React.Component {
   _loadView() {
     let {
       src, externals, scopePrefix, scopeStyle, module, moduleName, classPrefix, shadow, exportName,
-      transfromHtmlBodyTagClass,
+      transfromHtmlBodyTagClass, hoc,
       onViewLoading, onViewError
     } = this.props;
     let { viewSrc } = this.state;
@@ -177,10 +177,12 @@ class RemoteView extends React.Component {
       if (typeof view === 'function' && !isReactComponent(view) && !isForwardComponent(view)) {
         view = createAppView(view);
       }
+      if (hoc) view = hoc(view);
       Object.assign(state, { view, viewSrc: src });
       _finally();
     }).catch(ex => {
       let errorView = onViewError && onViewError(ex);
+      if (hoc) errorView = hoc(errorView, ex);
       if (errorView !== undefined) Object.assign(state, { view: errorView, viewSrc: '' });
       _finally();
     });
@@ -270,6 +272,7 @@ RemoteView.propTypes = {
   externals: PropTypes.object,
   onViewLoading: PropTypes.func,
   onViewError: PropTypes.func,
+  hoc: PropTypes.func
 };
 
 RemoteView.defaultProps = {

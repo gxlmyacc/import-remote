@@ -1,0 +1,13 @@
+{
+	"folders": [
+    {
+			"path": "./app1"
+		},
+		{
+			"path": "./app2"
+		}
+	],
+	"settings": {
+		"javascript.implicitProjectConfig.experimentalDecorators": true
+	}
+}

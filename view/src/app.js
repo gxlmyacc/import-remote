@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { innumerable, supportShadow, createShadowRoot, isReactComponent, isForwardComponent } from './utils';
 import remote from '../..';
 
 function createAppView(view, options = {}) {
-  if (view && view.__esModule) view = view.default;
+  if (view && view.__esModule) view = view[options.exportName || 'default'];
   if (!view) return null;
   if (typeof view === 'function' || isReactComponent(view) || isForwardComponent(view)) {
     return view;
@@ -81,8 +81,63 @@ function requireApp(url, options = {}) {
   return remote(url, options).then(view => createAppView(view, options));
 }
 
+const RemoteApp = React.forwardRef(
+  /**
+   * @param {import('../types/app').RemoteAppProps} props
+   * @param {*} ref
+   */
+  (props, ref) => {
+    const {
+      src = '', module, moduleName, exportName = 'default', hoc, children,
+      clearWhenError = true,
+      ...restProps
+    } = props;
+    const [app, setApp] = useState({ App: null });
+
+    const [$refs] = useState({});
+    const App = app.App;
+
+    $refs.hoc = hoc;
+    $refs.clearWhenError = clearWhenError;
+
+    useEffect(() => {
+      if (!src && (!module || !moduleName)) return;
+      (src
+        ? remote(src)
+        : module.require(moduleName))
+        .then(esModule => {
+          let App = createAppView(esModule.__esModule
+            ? esModule[exportName]
+            : esModule);
+
+          if ($refs.hoc) App = $refs.hoc(App);
+
+          setApp({ App });
+        }).catch(e => {
+          if ($refs.clearWhenError) {
+            let App = $refs.hoc(null, e) || null;
+            setApp({ App });
+          }
+          return e;
+        });
+    }, [src, module, moduleName, exportName, $refs]);
+
+    return App
+      ? (<App
+        {...(ref ? { ref } : {})}
+        {...restProps}
+      >
+        {children}
+      </App>
+      )
+      : null;
+  }
+);
+
+
 export {
-  createAppView
+  createAppView,
+  RemoteApp
 };
 
 export default requireApp;

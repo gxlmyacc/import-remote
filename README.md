@@ -711,3 +711,50 @@ const Test = await requireApp('http://localhost:3000/test.js');
 - `onViewLoading: (loading) => void` - 远程模块加载中的回调事件，分别会在加载前后调用
 
 - `onViewError: (error) => void` - 远程模块加载失败的回调事件
+
+- `hoc: Function` - 对导出组件的高阶封装，参数格式：`(Component: React.ComponentType | React.ForwardRefExoticComponent, error?: any) => React.ComponentType | React.ForwardRefExoticComponent`
+
+### RemoteApp
+
+`RemoteApp`是一个即插即用的React组件，当远程模块返回的结果本身就是React组件时，可以使用该组件加载对应的模块。它和`RemoteView`的区别是：`RemoteView`会局部化远程模块的作用域空间，而`RemoteApp`不会：
+
+```js
+import React from 'react';
+import { RemoteModule } from 'import-remote';
+import { RemoteApp } from 'import-remote/view';
+// or 
+import { RemoteApp } from 'import-remote/view/app';
+ 
+const testModule = new RemoteModule('http://localhost:3000/test', {
+  externals: { 
+    react: require('react'), 
+    'react-dom': require('react-dom'),
+    'lodash': require('lodash'),
+  }
+});
+
+function Test(props) {
+  return <div>
+    <RemoteApp
+      module={testModule}
+      moduleName="index"
+      aa="1"
+      bb="2"
+    />
+  </div>;
+}
+```
+
+#### RemoteApp的props
+
+- `src: string` - 远程模块的入口文件地址
+
+- `module: RemoteModule` - 远程模块对象，和`moduleName`配合使用，与`src`属性互斥
+
+- `moduleName: string` - 远程模块名称，和`module`配合使用，与`src`属性互斥
+
+- `exportName: string` - 当远程模块的结果为一个`esModule`时，取`esModule`的导出`key`名，默认为`default`
+
+- `hoc: Function` - 对导出组件的高阶封装，参数格式：`(Component: React.ComponentType | React.ForwardRefExoticComponent, error?: any) => React.ComponentType | React.ForwardRefExoticComponent`
+
+- `clearWhenError: boolean` - 当加载远程组件失败时是否清除当前显示的组件，即上次加载的组件。默认为`true`。

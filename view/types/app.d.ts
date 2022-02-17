@@ -1,10 +1,7 @@
 import React from 'react';
+import { RemoteModule } from '../../types';
 
-type RemoteAppViewProp = {
-  id?: string
-  className?: string,
-  style?: Record<string, any>,
-
+interface RemoteAppViewProp extends React.HTMLAttributes {
   [key: string]: any
 }
 
@@ -58,10 +55,28 @@ declare function createAppView(
 declare function requireApp(
   url: string,
   options?: RemoteAppOptions
-): RemoteAppView
+): RemoteAppView;
+
+interface RemoteAppProps extends React.HTMLAttributes {
+  src?: string,
+  module?: RemoteModule,
+  moduleName?: string,
+  exportName?: string,
+  hoc?: (Component: React.ComponentType | React.ForwardRefExoticComponent, error?: any) => React.ComponentType | React.ForwardRefExoticComponent,
+  children?: React.ReactNode,
+  clearWhenError?: boolean,
+  props?: Record<string, any>
+  [key: string]: any
+}
+
+declare const RemoteApp: React.ForwardRefExoticComponent<
+  Pick<RemoteAppProps, string | number> & React.RefAttributes<unknown>
+>;
 
 export {
-  createAppView
+  createAppView,
+  RemoteApp,
+  RemoteAppProps
 }
 
 export default requireApp;

@@ -947,14 +947,21 @@ class ModuleWebpackPlugin {
       source = source.replace('var MODULE_WEBPACK_PLUGIN_RESULT =', '');
     } else if (source.includes('var MODULE_WEBPACK_PLUGIN_RESULT;')) {
       source = source.replace('var MODULE_WEBPACK_PLUGIN_RESULT;', '')
-        .replace('MODULE_WEBPACK_PLUGIN_RESULT =', 'return');
+        .replace(/MODULE_WEBPACK_PLUGIN_RESULT =\n?(\/\**\/)?/, 'module.exports =');
     }
+
+    const sourceModule = { __esModule: true };
     const template = this.options.template.replace(/^.+!/, '').replace(/\?.+$/, '');
-    const vmContext = vm.createContext(_.extend({ MODULE_WEBPACK_PLUGIN: true, require, console }, global));
-    const vmScript = new vm.Script(source, { filename: template });
-    // Evaluate code and cast to string
+    const vmContext = vm.createContext(_.extend({
+      ODULE_WEBPACK_PLUGIN: true,
+      module: sourceModule,
+      require, console
+    }, global));
+
     let newSource;
     try {
+      const vmScript = new vm.Script(source, { filename: template });
+      // Evaluate code and cast to string
       newSource = vmScript.runInContext(vmContext);
     } catch (e) {
       return Promise.reject(e);
@@ -962,6 +969,8 @@ class ModuleWebpackPlugin {
     if (typeof newSource === 'object' && newSource.__esModule && newSource.default) {
       newSource = newSource.default;
     }
+    if (sourceModule.exports) newSource = sourceModule.exports;
+
     return typeof newSource === 'string' || typeof newSource === 'function'
       ? Promise.resolve(newSource)
       : Promise.reject(new Error('The loader "' + this.options.template + '" didn\'t return html.'));
