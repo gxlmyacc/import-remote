@@ -226,7 +226,7 @@ class AsyncRemoteModule {
 
 }
 
-['requireMeta', 'require', 'import'].forEach(key => AsyncRemoteModule.prototype[key] = function () {
+['requireMeta', 'requireEntries', 'require', 'import'].forEach(key => AsyncRemoteModule.prototype[key] = function () {
   return this.readyRuntime().then(runtime => runtime[key].apply(runtime, arguments));
 });
 

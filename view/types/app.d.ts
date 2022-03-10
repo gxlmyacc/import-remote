@@ -73,8 +73,11 @@ declare const RemoteApp: React.ForwardRefExoticComponent<
   Pick<RemoteAppProps, string | number> & React.RefAttributes<unknown>
 >;
 
+declare function createModuleApp<P = RemoteAppProps>(remoteModule: RemoteModule): React.ForwardRefExoticComponent<P>;
+
 export {
   createAppView,
+  createModuleApp,
   RemoteApp,
   RemoteAppProps
 }

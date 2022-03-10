@@ -358,6 +358,9 @@ function findHMRPluginIndex(config) {
 //   if (~idx) config.plugins.splice(idx, 1);
 // }
 
+const ENTRIES = {};
+let globalLastEntriesJson;
+
 class ModuleWebpackPlugin {
 
   /**
@@ -378,6 +381,7 @@ class ModuleWebpackPlugin {
       runtimeChunk: true,
       libraryFileName: '',
       libraryWithMap: true,
+      entryFileName: '',
       hash: false,
       compile: true,
       cache: true,
@@ -427,6 +431,9 @@ class ModuleWebpackPlugin {
   apply(compiler) {
     const self = this;
     const webpack = compiler.webpack;
+
+    let entryName = self.options.filename || 'index.js';
+    self.entryInfo = ENTRIES[entryName] = { plugin: self, outputName: '' };
 
     if (self.options.runtimeChunk) {
       const optimization = compiler.options.optimization;
@@ -715,6 +722,40 @@ class ModuleWebpackPlugin {
       }
     };
 
+    const emitEntryFile = compilation => {
+      const options = self.options;
+      let entryFileName = options.entryFileName;
+      if (!entryFileName) return;
+      let entriesJson = {
+        timestamp: BUILD_TIMESTAMP,
+        name: options.package.name,
+        version: options.package.version || '',
+        entries: {}
+      };
+      Object.keys(ENTRIES).forEach(entryName => {
+        let entryInfo = ENTRIES[entryName];
+        if (!entryName || !entryInfo) return;
+        entriesJson.entries[entryInfo.outputName] = {
+          chunks: entryInfo.plugin.options.chunks || [],
+          meta: entryInfo.plugin.options.meta || {}
+        };
+      });
+      const entriesJsonStr = JSON.stringify(entriesJson);
+      if (globalLastEntriesJson && globalLastEntriesJson === entriesJsonStr) return;
+
+      let dist = typeof entryFileName === 'string'
+        ? path.resolve(
+          compiler.options.output.path,
+          entryFileName.endsWith('/') ? `${entryFileName}import-remote-entries.js` : entryFileName
+        )
+        : path.resolve(compiler.options.output.path, 'import-remote-entries.js');
+      if (!fs.existsSync(dist)) {
+        fs.mkdirSync(path.dirname(dist), { recursive: true });
+      }
+      fs.writeFileSync(dist, entriesJsonStr);
+      globalLastEntriesJson = entriesJsonStr;
+    };
+
     /**
      * Hook into the webpack emit phase
      * @param {WebpackCompilation} compilation
@@ -832,6 +873,7 @@ class ModuleWebpackPlugin {
               parseInt(maxLength, 10)
             )
           );
+          self.entryInfo.outputName = finalOutputName;
           // Add the evaluated html code to the webpack assets
           emitAsset(finalOutputName, source);
           self.previousEmittedAssets.push({ name: finalOutputName, source });
@@ -839,7 +881,10 @@ class ModuleWebpackPlugin {
           return finalOutputName;
         })
         .then(finalOutputName => {
-          if (webpackMajorVersion < 5) emitLibraryFile();
+          if (webpackMajorVersion < 5) {
+            emitEntryFile(compilation);
+            emitLibraryFile();
+          }
           return finalOutputName;
         })
         .then(finalOutputName => getModuleWebpackPluginHooks(compilation).afterEmit.promise({
@@ -924,6 +969,7 @@ class ModuleWebpackPlugin {
         });
 
       compiler.hooks.emit.tapAsync('ModuleWebpackPlugin', (compilation, callback) => {
+        emitEntryFile(compilation);
         emitLibraryFile();
         callback();
       });
@@ -955,7 +1001,8 @@ class ModuleWebpackPlugin {
     const vmContext = vm.createContext(_.extend({
       ODULE_WEBPACK_PLUGIN: true,
       module: sourceModule,
-      require, console
+      require,
+      console
     }, global));
 
     let newSource;

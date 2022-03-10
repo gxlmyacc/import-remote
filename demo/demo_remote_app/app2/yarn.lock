@@ -2334,10 +2334,10 @@ import-local@^3.0.2:
     pkg-dir "^4.2.0"
     resolve-cwd "^3.0.0"
 
-import-remote@^0.0.18-alpha.13:
-  version "0.0.18-alpha.13"
-  resolved "http://npm.dc.servyou-it.com/import-remote/-/import-remote-0.0.18-alpha.13.tgz#1859bb993b566eada388c47301720fe6994079f1"
-  integrity sha512-Gbc0iV2vj7wXf8cgCg9ZG9IKkSWQ7idRLevA7r13oT3/03qat7361ooUrGH0hwv1JGYiGKNLi3uDR4F9NqsZuw==
+import-remote@^0.0.18-alpha.14:
+  version "0.0.18-alpha.14"
+  resolved "http://npm.dc.servyou-it.com/import-remote/-/import-remote-0.0.18-alpha.14.tgz#6cc3c97db64a4726acd3a62a67ab820c007235ed"
+  integrity sha512-WU4WHKi823N1t13L5vergwxN2qFyTQvGMU8fB866vsOp5qsV0v8XA3Ve1e5BWKalhvFXFyEnI1mu4MZ/xUDqeQ==
   dependencies:
     "@babel/core" "^7.11.4"
     base-64 "^1.0.0"

@@ -134,9 +134,19 @@ const RemoteApp = React.forwardRef(
   }
 );
 
+function createModuleApp(remoteModule, initProps = {}) {
+  const RemoteAppWrapper = React.forwardRef((props, ref) => React.createElement(RemoteApp, {
+    module: remoteModule,
+    ...initProps,
+    ...(ref ? { ref } : {}),
+    ...props
+  }, props.children));
+  return RemoteAppWrapper;
+}
 
 export {
   createAppView,
+  createModuleApp,
   RemoteApp
 };
 

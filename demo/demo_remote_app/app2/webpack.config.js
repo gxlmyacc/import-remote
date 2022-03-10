@@ -58,6 +58,7 @@ module.exports = {
     ...(entryList.map(entry => new ImportRemotePlugin({
       filename: `${entry}.js`,
       libraryFileName: true,
+      entryFileName: true,
       shareModules: [
         // {
         //   name: 'react',

@@ -97,6 +97,11 @@ declare namespace ModuleWebpackPlugin {
     libraryFileName?: string|boolean;
     libraryWithMap?: boolean;
     /**
+     * The file path of import-remote-entrys.js write to.
+     * @default ''
+     */
+    entryFileName?: string|boolean;
+    /**
      * If `true` then append a unique `webpack` compilation hash to all included scripts and CSS files.
      * This is useful for cache busting
      */

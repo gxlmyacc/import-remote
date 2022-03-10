@@ -1,4 +1,4 @@
-import { RemoteOptions } from './types';
+import { RemoteOptions, EntriesInfo } from './types';
 import { RemoteModuleOptions, FetchOptions } from './fetch';
 
 declare class RemoteModule {
@@ -20,6 +20,8 @@ declare class RemoteModule {
 
   exist(moduleName?: string, options?: FetchOptions): Promise<null|Record<string, string>>
 
+  requireEntries<T = {}>(entriesName?: string, options?: FetchOptions): Promise<EntriesInfo>
+
   requireMeta<T = any>(moduleName?: string, options?: FetchOptions): Promise<T>
 
   requireMetaSync<T = any>(moduleName?: string, options?: FetchOptions): T
@@ -31,6 +33,8 @@ declare class RemoteModule {
   import<T = any>(moduleName?: string, options?: RemoteOptions): Promise<T>
 
   importSync<T = any>(moduleName?: string, options?: RemoteOptions): T
+
+  [key: string]: any
 }
 
 export default RemoteModule;

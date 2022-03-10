@@ -1,6 +1,7 @@
 import remote, { requireManifest } from './remote';
-import { resolveModuleUrl, existModule } from './fetch';
+import fetch, { resolveModuleUrl, existModule } from './fetch';
 import { mergeObject, innumerable, resolveRelativeUrl } from './utils';
+
 
 /** @type {import('../types/module').RemoteModule} */
 class RemoteModule {
@@ -35,6 +36,12 @@ class RemoteModule {
 
   exist(moduleName = 'index.js', options = {}) {
     return existModule(this.host + this.pathname, moduleName, options);
+  }
+
+  requireEntries(entriesName = 'import-remote-entries.js', options = {}) {
+    let url = this.resolveModuleUrl(this.host + this.pathname, entriesName, resolveModuleUrl);
+    const next = url => fetch(url, options).then(v => (v ? JSON.parse(v) : {}));
+    return url.then ? url.then(next) : next(url);
   }
 
   requireMeta(moduleName = 'index.js', options = {}) {

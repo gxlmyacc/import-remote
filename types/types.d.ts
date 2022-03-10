@@ -105,6 +105,19 @@ interface RemoteManifest {
   sourcemapHost?: string| SourcemapCallback,
 }
 
+interface EntriesInfo {
+  name: string,
+  version: string,
+  timestamp: number,
+  entries: {
+    [key: string]: {
+      chunks: string[],
+      meta: Record<string, any>
+    }
+  },
+  [key: string]: any
+}
+
 export {
   ExternalItem,
   ShareModule,
@@ -112,5 +125,6 @@ export {
   RemoteOptions,
   SourcemapCallback,
   BeforeSourceCallback,
-  RemoteManifest
+  RemoteManifest,
+  EntriesInfo
 }

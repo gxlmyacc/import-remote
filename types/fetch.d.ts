@@ -1,5 +1,5 @@
 import RemoteModule from "./module";
-import { RemoteManifest, RemoteOptions } from './types';
+import { RemoteManifest, RemoteOptions, EntriesInfo } from './types';
 
 type ImportRemoteCache = {
   _rs?: Record<string, Promise<any>>,
@@ -77,11 +77,15 @@ declare class AsyncRemoteModule {
 
   exist(moduleName?: string, options?: FetchOptions): Promise<null|Record<string, string>>
 
+  requireEntries<T = {}>(entriesName?: string, options?: FetchOptions): Promise<EntriesInfo>
+
   requireMeta<T = any>(moduleName?: string, options?: FetchOptions): Promise<T>
 
   require<T = any>(moduleName?: string, options?: RemoteOptions): Promise<T>
 
   import<T = any>(moduleName?: string, options?: RemoteOptions): Promise<T>
+
+  [key: string]: any
 }
 
 declare global {
