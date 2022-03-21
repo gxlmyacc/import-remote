@@ -3260,10 +3260,10 @@ import-local@^3.0.2:
     pkg-dir "^4.2.0"
     resolve-cwd "^3.0.0"
 
-import-remote@^0.0.18-alpha.13:
-  version "0.0.18-alpha.13"
-  resolved "http://npm.dc.servyou-it.com/import-remote/-/import-remote-0.0.18-alpha.13.tgz#1859bb993b566eada388c47301720fe6994079f1"
-  integrity sha512-Gbc0iV2vj7wXf8cgCg9ZG9IKkSWQ7idRLevA7r13oT3/03qat7361ooUrGH0hwv1JGYiGKNLi3uDR4F9NqsZuw==
+import-remote@^0.0.18-alpha.14:
+  version "0.0.18-alpha.16"
+  resolved "https://registry.yarnpkg.com/import-remote/-/import-remote-0.0.18-alpha.16.tgz#a0ff4940840088a302b1511141de55c5e85e3918"
+  integrity sha512-KKwXtDnUu8dVw16T2j6YPSz0O8kQpPfvivvB1bKv3zp99zrz7WX5vtUz651ojfF2FOy0HzqC28JgFCts9m7ozA==
   dependencies:
     "@babel/core" "^7.11.4"
     base-64 "^1.0.0"
@@ -3920,9 +3920,9 @@ nan@^2.12.1:
   integrity sha512-M2ufzIiINKCuDfBSAUr1vWQ+vuVcA9kqx8JJUsbQi6yf1uGRyb7HfpdfUr5qLXf3B/t8dPvcjhKMmlfnP47EzQ==
 
 nanoid@^3.1.23:
-  version "3.1.25"
-  resolved "http://npm.dc.servyou-it.com/nanoid/-/nanoid-3.1.25.tgz#09ca32747c0e543f0e1814b7d3793477f9c8e152"
-  integrity sha1-CcoydHwOVD8OGBS303k0d/nI4VI=
+  version "3.3.1"
+  resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-3.3.1.tgz#6347a18cac88af88f58af0b3594b723d5e99bb35"
+  integrity sha512-n6Vs/3KGyxPQd6uO0eH4Bv0ojGSUvuLlIHtC3Y0kEO23YRge8H9x1GCzLn28YX0H66pMkxuaeESFq4tKISKwdw==
 
 nanomatch@^1.2.9:
   version "1.2.13"
