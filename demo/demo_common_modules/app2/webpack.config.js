@@ -2,6 +2,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const path = require('path');
 const ImportRemotePlugin = require('import-remote/plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const ReactRefreshPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
 const webpack = require('webpack');
 
 const entryList = ['app', 'button'];
@@ -45,6 +46,9 @@ module.exports = {
         exclude: /node_modules/,
         options: {
           presets: ['@babel/preset-react'],
+          plugins: [
+            require.resolve('react-refresh/babel')
+          ]
         },
       },
       {
@@ -69,5 +73,6 @@ module.exports = {
       template: './public/index.html',
       filename: 'index.html'
     }),
+    new ReactRefreshPlugin(),
   ],
 };

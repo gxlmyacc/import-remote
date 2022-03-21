@@ -27,13 +27,51 @@ type BatchReplaceItem = [string|RegExp, string|((substring: string, ...args: any
 
 type BeforeSourceCallback = (source: string, type: 'js'|'css', href: string, options?: { isEval: boolean }) => string;
 
+interface RemoteRuntimeManifest {
+  timestamp: number,
+  host: string,
+  hot: boolean,
+  jsChunks: Record<string|number, string>,
+  cssChunks: Record<string|number, string>,
+  entrys: Record<string, RemoteManifest>,
+  nodeModulesPath: string
+}
 
+
+type RemoteModuleWebpack = {
+  __moduleManifests__: Record<string, RemoteRuntimeManifest>,
+  cached: ImportRemoteCache,
+};
+
+type RemoteModuleRuntime = {
+  require<T>(moduleId: string|number, entryFile?: string): T,
+  webpackHotUpdate(chunkId: string|number, moreModules: Record<string, any>, runtime: RemoteModuleRuntime): void,
+  window: Window,
+  __context__: RemoteModuleRuntime,
+  __windowProxy__: {
+    doc: {
+      body: HTMLElement,
+      createElement(tagName: string, options?: ElementCreationOptions): HTMLElement,
+      getElementById(elementId: string, scoped?: boolean): HTMLElement | null;
+      head: HTMLElement,
+      html: HTMLElement,
+    },
+    globals: Record<string, any>,
+    __REACT_ERROR_OVERLAY_GLOBAL_HOOK__: any
+  }
+  readonly webpackChunk: [string[], Record<string, any>[]][],
+  readonly __HOST__: string
+  readonly __remoteModuleWebpack__: RemoteModuleWebpack,
+
+  [key: string]: any
+}
 interface RemoteOptions {
   timeout?: number,
   externals?: Record<string, any>,
   globals?: Record<string, any>,
   getManifestCallback?: (manifest: RemoteManifest) => any|Promise<any>,
   onRuntimeChanged?: (newManifest: RemoteManifest, oldManifest: RemoteManifest) => any|Promise<any>,
+  afterCreateRuntime?: (__webpack_require__: any, ctx: RemoteModuleRuntime) => any,
   host?: string,
   sync?: boolean,
   sourcemapHost?: string|SourcemapCallback,
@@ -126,5 +164,9 @@ export {
   SourcemapCallback,
   BeforeSourceCallback,
   RemoteManifest,
-  EntriesInfo
+  EntriesInfo,
+
+  RemoteRuntimeManifest,
+  RemoteModuleWebpack,
+  RemoteModuleRuntime
 }

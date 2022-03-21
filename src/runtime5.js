@@ -304,6 +304,67 @@ function createRuntime({
     return module;
   };
 
+  /* webpack/runtime/react refresh */
+  (() => {
+    __webpack_require__.i.push(function (options) {
+      let originalFactory = options.factory;
+      options.factory = function (moduleObject, moduleExports, webpackRequire) {
+        __webpack_require__.$Refresh$.setup(options.id);
+        try {
+          originalFactory.call(this, moduleObject, moduleExports, webpackRequire);
+        } finally {
+          if (typeof Promise !== 'undefined' && moduleObject.exports instanceof Promise) {
+            options.module.exports = options.module.exports.then(
+              function (result) {
+                __webpack_require__.$Refresh$.cleanup(options.id);
+                return result;
+              },
+              function (reason) {
+                __webpack_require__.$Refresh$.cleanup(options.id);
+                return Promise.reject(reason);
+              }
+            );
+          } else {
+            __webpack_require__.$Refresh$.cleanup(options.id);
+          }
+        }
+      };
+    });
+
+    __webpack_require__.$Refresh$ = {
+      register() { return undefined; },
+      signature() { return function (type) { return type; }; },
+      runtime: {
+        createSignatureFunctionForTransform() { return function (type) { return type; }; },
+        register() { return undefined; }
+      },
+      setup(currentModuleId) {
+        let prevModuleId = __webpack_require__.$Refresh$.moduleId;
+        let prevRegister = __webpack_require__.$Refresh$.register;
+        let prevSignature = __webpack_require__.$Refresh$.signature;
+        let prevCleanup = __webpack_require__.$Refresh$.cleanup;
+
+        __webpack_require__.$Refresh$.moduleId = currentModuleId;
+
+        __webpack_require__.$Refresh$.register = function (type, id) {
+          let typeId = currentModuleId + ' ' + id;
+          __webpack_require__.$Refresh$.runtime.register(type, typeId);
+        };
+
+        __webpack_require__.$Refresh$.signature = function () { return __webpack_require__.$Refresh$.runtime.createSignatureFunctionForTransform(); };
+
+        __webpack_require__.$Refresh$.cleanup = function (cleanupModuleId) {
+          if (currentModuleId === cleanupModuleId) {
+            __webpack_require__.$Refresh$.moduleId = prevModuleId;
+            __webpack_require__.$Refresh$.register = prevRegister;
+            __webpack_require__.$Refresh$.signature = prevSignature;
+            __webpack_require__.$Refresh$.cleanup = prevCleanup;
+          }
+        };
+      }
+    };
+  })();
+
   /* webpack/runtime/remotes loading */
   let chunkMapping = remotes.chunkMapping || {};
   let idToExternalAndNameMapping = remotes.idToExternalAndNameMapping || {};
@@ -726,14 +787,14 @@ function createRuntime({
       }
 
       // Now in "dispose" phase
-      setStatus('dispose');
+      let disposePromise = setStatus('dispose');
 
       results.forEach(function (result) {
         if (result.dispose) result.dispose();
       });
 
       // Now in "apply" phase
-      setStatus('apply');
+      let applyPromise = setStatus('apply');
 
       let error;
       let reportError = function (err) {
@@ -752,24 +813,26 @@ function createRuntime({
         }
       });
 
-      // handle errors in accept handlers and self accepted module load
-      if (error) {
-        return setStatus('fail').then(function () {
-          throw error;
-        });
-      }
-
-      if (queuedInvalidatedModules) {
-        return internalApply(options).then(function (list) {
-          outdatedModules.forEach(function (moduleId) {
-            if (list.indexOf(moduleId) < 0) list.push(moduleId);
+      return Promise.all([disposePromise, applyPromise]).then(function () {
+        // handle errors in accept handlers and self accepted module load
+        if (error) {
+          return setStatus('fail').then(function () {
+            throw error;
           });
-          return list;
-        });
-      }
+        }
 
-      return setStatus('idle').then(function () {
-        return outdatedModules;
+        if (queuedInvalidatedModules) {
+          return internalApply(options).then(function (list) {
+            outdatedModules.forEach(function (moduleId) {
+              if (list.indexOf(moduleId) < 0) list.push(moduleId);
+            });
+            return list;
+          });
+        }
+
+        return setStatus('idle').then(function () {
+          return outdatedModules;
+        });
       });
     }
 
@@ -1019,7 +1082,7 @@ function createRuntime({
   // object to store loaded and loading chunks
   // undefined = chunk not loaded, null = chunk preloaded/prefetched
   // Promise = chunk loading, 0 = chunk loaded
-  let installedChunks = {};
+  let installedChunks = __webpack_require__.hmrS_jsonp = __webpack_require__.hmrS_jsonp || {};
 
   __webpack_require__.f.j = (chunkId, promises) => {
     // JSONP chunk loading for javascript

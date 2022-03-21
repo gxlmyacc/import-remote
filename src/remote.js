@@ -437,6 +437,7 @@ function remote(url, options = {}) {
               return source;
             }
           });
+          options.afterCreateRuntime && options.afterCreateRuntime(ctx.require, ctx);
         }
 
         const context = __remoteModuleWebpack__[scopeName];

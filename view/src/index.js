@@ -1,4 +1,4 @@
-import requireApp, { createAppView, RemoteApp } from './app';
+import requireApp, { createAppView, RemoteApp, createModuleApp } from './app';
 import RemoteView from './view';
 import { innumerable } from './utils';
 
@@ -27,7 +27,8 @@ RemoteView.install = function (remote) {
 export {
   createAppView,
   requireApp,
-  RemoteApp
+  RemoteApp,
+  createModuleApp
 };
 
 export default RemoteView;

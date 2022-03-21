@@ -11,9 +11,11 @@
     "html-webpack-plugin": "4.5.0",
     "mini-css-extract-plugin": "2.3.0",
     "serve": "11.3.2",
-    "webpack": "5.11.0",
+    "webpack": "5.57.0",
     "webpack-cli": "4.2.0",
-    "webpack-dev-server": "3.11.0"
+    "webpack-dev-server": "3.11.0",
+    "@pmmmwh/react-refresh-webpack-plugin": "^0.5.4",
+    "react-refresh": "^0.11.0"
   },
   "scripts": {
     "start": "webpack-cli serve",
@@ -23,7 +25,7 @@
   },
   "dependencies": {
     "antd": "^4.16.13",
-    "import-remote": "^0.0.18-alpha.14",
+    "import-remote": "^0.0.18-alpha.15",
     "react": "^16.13.0",
     "react-dom": "^16.13.0"
   }

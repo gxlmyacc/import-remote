@@ -1,5 +1,10 @@
 import RemoteModule from "./module";
-import { RemoteManifest, RemoteOptions, EntriesInfo } from './types';
+import {
+  RemoteOptions,
+  EntriesInfo,
+  RemoteModuleWebpack,
+  RemoteModuleRuntime
+} from './types';
 
 type ImportRemoteCache = {
   _rs?: Record<string, Promise<any>>,
@@ -21,42 +26,7 @@ interface FetchOptions {
 
 declare function fetch<T = any>(url: string, options?: FetchOptions): Promise<T>;
 
-interface RemoteRuntimeManifest {
-  timestamp: number,
-  host: string,
-  hot: boolean,
-  jsChunks: Record<string|number, string>,
-  cssChunks: Record<string|number, string>,
-  entrys: Record<string, RemoteManifest>,
-  nodeModulesPath: string
-}
 
-
-type RemoteModuleWebpack = {
-  __moduleManifests__: Record<string, RemoteRuntimeManifest>,
-  cached: ImportRemoteCache,
-};
-
-type RemoteModuleRuntime = {
-  require<T>(moduleId: string|number, entryFile?: string): T,
-  webpackHotUpdate(chunkId: string|number, moreModules: Record<string, any>, runtime: RemoteModuleRuntime): void,
-  window: Window,
-  __context__: RemoteModuleRuntime,
-  __windowProxy__: {
-    doc: {
-      body: HTMLElement,
-      createElement(tagName: string, options?: ElementCreationOptions): HTMLElement,
-      getElementById(elementId: string, scoped?: boolean): HTMLElement | null;
-      head: HTMLElement,
-      html: HTMLElement,
-    },
-    globals: Record<string, any>,
-    __REACT_ERROR_OVERLAY_GLOBAL_HOOK__: any
-  }
-  readonly webpackChunk: [string[], Record<string, any>[]][],
-  readonly __HOST__: string
-  readonly __remoteModuleWebpack__: RemoteModuleWebpack
-}
 
 declare function requireJs<T = any>(url: string, options?: FetchOptions): Promise<T>;
 
