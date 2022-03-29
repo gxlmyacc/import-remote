@@ -27,6 +27,13 @@ type BatchReplaceItem = [string|RegExp, string|((substring: string, ...args: any
 
 type BeforeSourceCallback = (source: string, type: 'js'|'css', href: string, options?: { isEval: boolean }) => string;
 
+type ImportRemoteCache = {
+  _rs?: Record<string, Promise<any>>,
+  _js?: Record<string, Promise<any>>,
+  _css?: Record<string, Promise<HTMLStyleElement>>,
+  _json?: Record<string, Promise<any>>,
+  _fetched?: Record<string, Promise<string>>,
+}
 interface RemoteRuntimeManifest {
   timestamp: number,
   host: string,
@@ -36,7 +43,6 @@ interface RemoteRuntimeManifest {
   entrys: Record<string, RemoteManifest>,
   nodeModulesPath: string
 }
-
 
 type RemoteModuleWebpack = {
   __moduleManifests__: Record<string, RemoteRuntimeManifest>,
@@ -166,6 +172,7 @@ export {
   RemoteManifest,
   EntriesInfo,
 
+  ImportRemoteCache,
   RemoteRuntimeManifest,
   RemoteModuleWebpack,
   RemoteModuleRuntime

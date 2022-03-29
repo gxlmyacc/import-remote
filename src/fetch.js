@@ -61,24 +61,25 @@ function fetch(url, { timeout = 120000, sync, nocache, method = 'GET', headers }
 
       const xhr = new XMLHttpRequest();
       let timerId;
+      let isTimedOut = false;
       xhr.onreadystatechange = () => {
         if (xhr.readyState === 4) {
           (timerId && clearTimeout(timerId)) || (timerId = 0);
           if (xhr.status === 0) {
             // timeout
-            const err = new Error('fetch [' + url + '] timed out.');
+            const err = new Error(`fetch [${url}] ${isTimedOut ? 'timed out' : 'failed due to an unknown error'}.`);
             err.xhr = xhr;
             err.url = url;
             res.fail(err);
           } else if (xhr.status === 404) {
             // no update available
-            const err = new Error('fetch [' + url + '] not found.');
+            const err = new Error(`fetch [${url}] not found.`);
             err.xhr = xhr;
             err.url = url;
             res.fail(err);
           } else if (xhr.status !== 200 && xhr.status !== 304) {
             // other failure
-            const err = new Error('fetch [' + url + '] failed.');
+            const err = new Error(`fetch [${url}] failed:${xhr.status}.`);
             err.xhr = xhr;
             err.url = url;
             res.fail(err);
@@ -111,6 +112,7 @@ function fetch(url, { timeout = 120000, sync, nocache, method = 'GET', headers }
         xhr.send(null);
 
         timerId = setTimeout(() => {
+          isTimedOut = true;
           xhr.abort();
           xhr.onreadystatechange = null;
           timerId = 0;
@@ -134,7 +136,7 @@ function requireJs(url, options = {}) {
   const next = url => {
     if (cached._rs[url]) return cached._rs[url];
 
-    return cached._rs[url] = fetch(url, options).then(src => {
+    return cached._rs[url] = fetch(url, options).then(src => new Promise((resolve, reject) => {
       // eslint-disable-next-line no-new-func
       const fn = new Function('module', 'exports', 'require', src);
       const _module = { exports: {} };
@@ -146,14 +148,13 @@ function requireJs(url, options = {}) {
             throw new Error(`[import-remote:requireJs]module [${name}] cannot be found!`);
           })
         );
+        resolve(_module.exports);
       } catch (ex) {
-        throw ex;
+        reject(ex);
       }
-
-      return _module.exports;
-    }).catch(ex => {
+    })).catch(ex => {
       delete cached._rs[url];
-      return ex;
+      throw ex;
     });
   };
   if (url.then) return url.then(next);

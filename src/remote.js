@@ -395,7 +395,7 @@ function remote(url, options = {}) {
                     const [, prefixVar] = source.substr(offset - 7, 7).match(/(window|self|global)\.$/) || [];
                     if (prefixVar) offset = Math.max(offset - prefixVar.length - 1, 0);
                   }
-                  return (offset && ['.', '\'', '"'].includes(source[offset - 1])) ? match : replaceStr;
+                  return (offset && ['.', '\'', '"', '$', '_'].includes(source[offset - 1])) ? match : replaceStr;
                 };
                 const sources = splitSource(source, /[\s<>|&{}:,;()"'+=*![\]/\\]/);
                 sources.forEach((src, i) => {

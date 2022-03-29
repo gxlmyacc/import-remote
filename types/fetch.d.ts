@@ -6,14 +6,6 @@ import {
   RemoteModuleRuntime
 } from './types';
 
-type ImportRemoteCache = {
-  _rs?: Record<string, Promise<any>>,
-  _js?: Record<string, Promise<any>>,
-  _css?: Record<string, Promise<HTMLStyleElement>>,
-  _json?: Record<string, Promise<any>>,
-  _fetched?: Record<string, Promise<string>>,
-}
-
 type FetchMethod = 'GET'|'POST'|'HEAD'|'OPTIONS';
 
 interface FetchOptions {
