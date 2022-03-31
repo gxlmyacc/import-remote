@@ -25,7 +25,10 @@ type SourcemapCallback = (
 
 type BatchReplaceItem = [string|RegExp, string|((substring: string, ...args: any[]) => string)];
 
-type BeforeSourceCallback = (source: string, type: 'js'|'css', href: string, options?: { isEval: boolean }) => string;
+type BeforeSourceOptions = {
+  isEval?: boolean,
+};
+type BeforeSourceCallback = (source: string, type: 'js'|'css', href: string, options?: BeforeSourceOptions) => string;
 
 type ImportRemoteCache = {
   _rs?: Record<string, Promise<any>>,

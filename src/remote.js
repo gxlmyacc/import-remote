@@ -362,7 +362,7 @@ function remote(url, options = {}) {
             cached,
             sourcemapHost: sourcemapHost || manifest.sourcemapHost,
             requireExternal,
-            beforeSource(source, type, href, { isEval } = {}) {
+            beforeSource(source, type, href, options = {}) {
               if (type === 'js') {
                 let sourcePrefix;
                 if (jsonpSourceRegx) {
@@ -421,7 +421,7 @@ function remote(url, options = {}) {
                     src = batchReplace(src, manifest.globalToScopes.map(varName => {
                       if (Array.isArray(varName)) return varName;
                       return [
-                        new RegExp(`\\b${isEval ? '(\\\\n)?' : ''}(?:global|window)\\.${escapeStringRegexp(varName)}\\b`, 'g'),
+                        new RegExp(`\\b${options.isEval ? '(\\\\n)?' : ''}(?:global|window)\\.${escapeStringRegexp(varName)}\\b`, 'g'),
                         `__windowProxy__.globals.${varName}`
                       ];
                     }));
@@ -432,7 +432,7 @@ function remote(url, options = {}) {
                 return sources.join('');
               }
 
-              if (beforeSource) source = beforeSource(source, type, manifest);
+              if (beforeSource) source = beforeSource(source, type, href, options);
 
               return source;
             }
