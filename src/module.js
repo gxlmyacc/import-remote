@@ -60,7 +60,10 @@ class RemoteModule {
 
   require(moduleName = 'index.js', options = {}) {
     const url = this.resolveModuleUrl(this.host + this.pathname, moduleName, resolveModuleUrl, options.sync);
-    const next = url => remote(url, mergeObject({}, this.options, options, { host: this.host }));
+    const next = url => {
+      const _options = { ...this.options };
+      return remote(url, mergeObject(_options, options, { host: this.host }));
+    };
     if (url.then) return url.then(next);
     return next(url);
   }

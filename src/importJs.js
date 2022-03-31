@@ -59,7 +59,7 @@ function importJs(url, {
           resolve(result);
         } catch (err) {
           if (err && !err.url) err.url = url;
-          console.error(err, source);
+          console.error(err,  url, source);
           reject(err);
         }
       }).catch(ex => {

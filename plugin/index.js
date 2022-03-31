@@ -46,6 +46,45 @@ function isSameFile(file1, file2) {
   });
 }
 
+if (webpackMajorVersion >= 5) {
+  const ExportInfo = require('webpack/lib/ExportsInfo.js').ExportInfo;
+  const _getUsedName = ExportInfo.prototype.getUsedName;
+  if (_getUsedName) {
+    ExportInfo.prototype.getUsedName = function (fallbackName, runtime) {
+      const used = _getUsedName.apply(this, arguments);
+      if (used !== false
+        // @ts-ignore
+        || !this._usedInRuntime
+        // @ts-ignore
+        || !this._hasUseInRuntimeInfo
+        // @ts-ignore
+        || this._globalUsed !== undefined
+        || !runtime
+        || typeof runtime === 'string') return used;
+
+      // @ts-ignore
+      const _usedInRuntime = [...this._usedInRuntime].map(runtime => {
+        if (typeof runtime === 'string') return runtime;
+        if (Array.isArray(runtime) && typeof runtime[0] === 'string') return runtime[0];
+      }).filter(Boolean);
+
+      if (
+        Array.from(runtime).every(
+          runtime => (typeof runtime === 'string'
+            ? _usedInRuntime.includes(runtime)
+          // @ts-ignore
+            : !this._usedInRuntime.has(runtime))
+        )
+      ) {
+        return false;
+      }
+      // @ts-ignore
+      if (this._usedName !== null) return this._usedName;
+      return this.name || fallbackName;
+    };
+  }
+}
+
 /**
  * resolve scopeName
   * @param {ProcessedModuleWebpackOptions} options
@@ -924,12 +963,6 @@ class ModuleWebpackPlugin {
          * @param {WebpackCompilation} compilation
         */
         compilation => {
-          // compilation.hooks.moduleIds.tap(
-          //   'ModuleWebpackPlugin',
-          //   modules => {
-          //     console.log('modules', modules);
-          //   }
-          // );
           compilation.hooks.optimizeChunkModules.tap(
             'ModuleWebpackPlugin',
             (chunks, modules) => {
@@ -941,7 +974,11 @@ class ModuleWebpackPlugin {
                 const entryModule = compilation.chunkGraph.getChunkRootModules(c).find(m => m.type === 'javascript/auto');
                 if (entryModule && c.runtime) {
                   const exportsInfo = compilation.moduleGraph.getExportsInfo(entryModule);
-                  if (!exportsInfo.isUsed(c.runtime)) exportsInfo.setUsedWithoutInfo(c.runtime);
+                  if (exportsInfo && !exportsInfo.isUsed(c.runtime)) {
+                    exportsInfo.setUsedWithoutInfo(c.runtime);
+                    exportsInfo.setUsedInUnknownWay(c.runtime);
+                    exportsInfo.setAllKnownExportsUsed(c.runtime);
+                  }
                 }
               });
             }
