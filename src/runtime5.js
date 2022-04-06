@@ -7,30 +7,37 @@ import importJs from './importJs';
 import jsonp from './jsonp';
 import { versionLt, rangeToString, satisfy } from './semver';
 
-function createRuntime({
-  jsonpFunction = 'webpackJsonp',
-  publicPath = '',
-  host = '',
-  devtool = false,
-  hot,
-  hash = '',
-  uniqueName = '',
-  scopeName = '',
-  hotUpdateGlobal = '',
-  sourcemapHost = '',
-  cssChunks = {},
-  jsChunks = {},
-  context = {},
-  webpackVersion = 4,
-  cached = globalCached,
-  timeout = DEFAULT_TIMEOUT,
-  requireExternal,
-  beforeSource,
-  remotes = {}
-} = {}) {
+function createRuntime(options = {}) {
+  const {
+    jsonpFunction = 'webpackJsonp',
+    publicPath = '',
+    host = '',
+    devtool = false,
+    hot,
+    hash = '',
+    uniqueName = '',
+    scopeName = '',
+    hotUpdateGlobal = '',
+    sourcemapHost = '',
+    cssChunks = {},
+    jsChunks = {},
+    context = {},
+    webpackVersion = 4,
+    timeout = DEFAULT_TIMEOUT,
+    requireExternal,
+    beforeSource,
+    remotes = {}
+  } = options;
+
+  /**
+   * @type {{
+   *  _js?: Record<string, Promise<any>>,
+   *  _css?: Record<string, Promise<HTMLStyleElement>>,
+   * }}
+   * */
+  let __webpack_chunk_cache__ = {};
+
   let __webpack_modules__ = {};
-  /** ********************************************************************* */
-  // The module cache
   let __webpack_module_cache__ = {};
 
   if (!context[jsonpFunction]) innumerable(context, jsonpFunction, []);
@@ -40,7 +47,7 @@ function createRuntime({
   chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
 
   if (webpackVersion > 4 && remotes.loading
-    && cached === globalCached && !self[jsonpFunction]) self[jsonpFunction] = chunkLoadingGlobal;
+    && options.cached === globalCached && !self[jsonpFunction]) self[jsonpFunction] = chunkLoadingGlobal;
 
   // The require function
   function __webpack_require__(moduleId, entryFile) {
@@ -90,6 +97,7 @@ function createRuntime({
 
   // expose the module cache
   __webpack_require__.c = __webpack_module_cache__;
+  __webpack_require__.c_ = __webpack_chunk_cache__;
 
   // expose the module execution interceptor
   __webpack_require__.i = [];
@@ -274,12 +282,11 @@ function createRuntime({
     return Promise.all(url.map(u => fn(u, {
       timeout,
       global: context,
-      cached,
+      cached: __webpack_chunk_cache__,
       scopeName,
       host,
       devtool,
       beforeSource,
-      webpackChunk: true,
       sourcemapHost,
       publicPath: __webpack_require__.p,
       key: key ? `${uniqueName}:${key}` : ''
@@ -1049,7 +1056,7 @@ function createRuntime({
           host,
           devtool,
           beforeSource,
-          cached,
+          cached: __webpack_chunk_cache__,
           sourcemapHost,
           publicPath: __webpack_require__.p,
         }).then(resolve).catch(function (err) {

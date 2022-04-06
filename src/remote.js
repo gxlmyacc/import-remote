@@ -3,7 +3,7 @@ import { globalCached, checkRemoteModuleWebpack, requireJs } from './fetch';
 import {
   DEFAULT_TIMEOUT, ATTR_SCOPE_NAME,
   isFunction, getHostFromUrl, resolveRelativeUrl, walkMainifest,
-  innumerable, isPlainObject, joinUrl, isSameHost
+  innumerable, isPlainObject, joinUrl, isSameHost, getCacheUrl
 } from './utils';
 import createRuntime5 from './runtime5';
 import { transformStyleHost, ATTR_CSS_TRANSFORMED } from './importCss';
@@ -193,31 +193,39 @@ function remote(url, options = {}) {
     windowProxy = { document: { html: document.documentElement, body: document.body, head: document.head } },
     isCommonModule,
   } = options;
+  let { scopeName } = options;
   const __remoteModuleWebpack__ = checkRemoteModuleWebpack(windowProxy.context);
   const cached = (windowProxy.context && windowProxy.context.cached) || globalCached;
-  if (cached[url]) {
-    return cached[url].result.then(async r => {
-      getManifestCallback && (await getManifestCallback(cached[url].manifest));
+
+  if (typeof scopeName === 'function') scopeName = scopeName(url, options);
+  const cacheUrl = getCacheUrl(url, scopeName);
+
+  if (cached[cacheUrl]) {
+    return cached[cacheUrl].result.then(async r => {
+      getManifestCallback && (await getManifestCallback(cached[cacheUrl].manifest));
       return resolveResult(r, options);
     });
   }
-  cached[url] = {
+  cached[cacheUrl] = {
     manifest: null,
     result: new Promise(async (resolve, _reject) => {
       const reject = function () {
-        delete cached[url];
+        delete cached[cacheUrl];
         return _reject.apply(this, arguments);
       };
       try {
         const manifest = await requireManifest(url, { timeout, global: window, nocache: true, sync, cached, method });
         if (!manifest.scopeName) throw new Error('[import-remote:remote]scopeName can not be empty!');
-        const scopeName = getScopeName(__remoteModuleWebpack__, manifest.scopeName, host);
-        if (manifest.scopeName !== scopeName) manifest.scopeName = scopeName;
+
+        if (scopeName && manifest.scopeName !== scopeName) manifest.scopeName = scopeName;
+        const newScopeName = getScopeName(__remoteModuleWebpack__, manifest.scopeName, host);
+        if (scopeName != newScopeName) scopeName = manifest.scopeName = newScopeName;
+
         if (isCommonModule && typeof isCommonModule === 'string' && isCommonModule !== scopeName) {
           console.error(`[import-remote]warning:commonModule's name(${isCommonModule}) is not matched the socpeName(${scopeName})`);
         }
 
-        cached[url] && (cached[url].manifest = manifest);
+        if (cached[cacheUrl]) cached[cacheUrl].manifest = manifest;
         getManifestCallback && (await getManifestCallback(manifest));
 
         // if (__remoteModuleWebpack__[scopeName]) {
@@ -347,10 +355,22 @@ function remote(url, options = {}) {
             });
           });
 
+          // eslint-disable-next-line arrow-body-style
+          const checkOffset = (source, offset, match, replaceStr) => {
+            // if (/^ ?=/.test(source.substr(offset + match.length, 2))) return match;
+            if (!offset) return replaceStr;
+            if (!/^(window|self|global)\./.test(match)) {
+              const [, prefixVar] = source.substr(offset - 7, 7).match(/(window|self|global)\.$/) || [];
+              if (prefixVar) offset = Math.max(offset - prefixVar.length - 1, 0);
+            }
+            return (offset && ['.', '\'', '"', '$', '_', '`'].includes(source[offset - 1])) ? match : replaceStr;
+          };
+
           const ctx = __remoteModuleWebpack__[scopeName] = createContext(windowProxy.context);
           Object.assign(ctx, remote.globals, globals);
           innumerable(ctx, '__remoteModuleWebpack__', __remoteModuleWebpack__);
           innumerable(ctx, '__HOST__', host);
+          // innumerable(ctx, 'cached', cached);
           ctx.__windowProxy__ = createWindowProxy(windowProxy, {
             scoped: manifest.scopeName, host, beforeSource
           });
@@ -387,16 +407,6 @@ function remote(url, options = {}) {
                   }
                 }
 
-                // eslint-disable-next-line arrow-body-style
-                const checkOffset = (source, offset, match, replaceStr) => {
-                  // if (/^ ?=/.test(source.substr(offset + match.length, 2))) return match;
-                  if (!offset) return replaceStr;
-                  if (!/^(window|self|global)\./.test(match)) {
-                    const [, prefixVar] = source.substr(offset - 7, 7).match(/(window|self|global)\.$/) || [];
-                    if (prefixVar) offset = Math.max(offset - prefixVar.length - 1, 0);
-                  }
-                  return (offset && ['.', '\'', '"', '$', '_'].includes(source[offset - 1])) ? match : replaceStr;
-                };
                 const sources = splitSource(source, /[\s<>|&{}:,;()"'+=*![\]/\\]/);
                 sources.forEach((src, i) => {
                   const replaceStr1 = 'document'.concat('.documentElement.getElementsBy');
@@ -433,6 +443,10 @@ function remote(url, options = {}) {
               }
 
               if (beforeSource) source = beforeSource(source, type, href, options);
+              if (manifest.beforeSource) {
+                source = manifest.beforeSource(source, type, href, options,
+                  { versionLt, satisfy, batchReplace, checkOffset });
+              }
 
               return source;
             }
@@ -508,7 +522,7 @@ function remote(url, options = {}) {
       }
     })
   };
-  return cached[url].result.then(r => resolveResult(r, options));
+  return cached[cacheUrl].result.then(r => resolveResult(r, options));
 }
 remote.externals = {};
 remote.globals = {

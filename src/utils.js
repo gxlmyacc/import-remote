@@ -193,9 +193,9 @@ const sourceMappingURLJsRegx = /\/\/# sourceMappingURL=([0-9A-Za-z_.-]+\.(?:js|c
  * @param {string} source
  * @param {import('../types/importJs').RemoteImportOptions} [options]
  */
-function transformSourcemapUrl(href, source, { devtool, sourcemapHost, scopeName, host, publicPath, webpackChunk } = { }) {
+function transformSourcemapUrl(href, source, { devtool, sourcemapHost, scopeName, host, publicPath } = { }) {
   if (devtool) {
-    if (isFunction(sourcemapHost)) sourcemapHost = sourcemapHost({ scopeName, host, publicPath, href, source, webpackChunk });
+    if (isFunction(sourcemapHost)) sourcemapHost = sourcemapHost({ scopeName, host, publicPath, href, source });
 
     if (!sourcemapHost) sourcemapHost = href.split('/').slice(0, -1).join('/');
     else {
@@ -219,11 +219,16 @@ function transformSourcemapUrl(href, source, { devtool, sourcemapHost, scopeName
   return source;
 }
 
+function getCacheUrl(url, scopeName) {
+  if (!scopeName || typeof scopeName !== 'string') return url;
+  return url + `${url.indexOf('?') >= 0 ? '&' : '?'}scopeName=${encodeURIComponent(scopeName)}`;
+}
 
 export {
   DEFAULT_TIMEOUT,
   ATTR_SCOPE_NAME,
 
+  getCacheUrl,
   walkMainifest,
 
   isSameHost,

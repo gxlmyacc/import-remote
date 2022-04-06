@@ -49,35 +49,11 @@ function isSameFile(file1, file2) {
 if (webpackMajorVersion >= 5) {
   const ExportInfo = require('webpack/lib/ExportsInfo.js').ExportInfo;
   const _getUsedName = ExportInfo.prototype.getUsedName;
+  const ALWAYS_USED_NAMES = ['__esModule'];
   if (_getUsedName) {
     ExportInfo.prototype.getUsedName = function (fallbackName, runtime) {
       const used = _getUsedName.apply(this, arguments);
-      if (used !== false
-        // @ts-ignore
-        || !this._usedInRuntime
-        // @ts-ignore
-        || !this._hasUseInRuntimeInfo
-        // @ts-ignore
-        || this._globalUsed !== undefined
-        || !runtime
-        || typeof runtime === 'string') return used;
-
-      // @ts-ignore
-      const _usedInRuntime = [...this._usedInRuntime].map(runtime => {
-        if (typeof runtime === 'string') return runtime;
-        if (Array.isArray(runtime) && typeof runtime[0] === 'string') return runtime[0];
-      }).filter(Boolean);
-
-      if (
-        Array.from(runtime).every(
-          runtime => (typeof runtime === 'string'
-            ? _usedInRuntime.includes(runtime)
-          // @ts-ignore
-            : !this._usedInRuntime.has(runtime))
-        )
-      ) {
-        return false;
-      }
+      if (used !== false || !ALWAYS_USED_NAMES.includes(fallbackName)) return used;
       // @ts-ignore
       if (this._usedName !== null) return this._usedName;
       return this.name || fallbackName;
@@ -379,23 +355,34 @@ function templateParametersGenerator(compilation, assets, options, version) {
   };
 }
 
-function findHMRPluginIndex(config) {
+function findWebpackPluginIndex(config, Plugin) {
   if (!config.plugins) {
     config.plugins = [];
     return -1;
   }
-  return config.plugins.findIndex(plugin => plugin.constructor === webpack.HotModuleReplacementPlugin);
+  return config.plugins.findIndex(plugin => plugin.constructor === Plugin);
 }
 
 // function addHMRPlugin(config) {
-//   const idx = findHMRPluginIndex(config);
+//   const idx = findWebpackPluginIndex(config, webpack.HotModuleReplacementPlugin);
 //   if (idx < 0) config.plugins.push(new webpack.HotModuleReplacementPlugin());
 // }
 
 // function removeHMRPlugin(config) {
-//   const idx = findHMRPluginIndex(config);
+//   const idx = findWebpackPluginIndex(config, webpack.HotModuleReplacementPlugin);
 //   if (~idx) config.plugins.splice(idx, 1);
 // }
+
+function addFlagEntryExportAsUsedPlugin(config) {
+  const FlagEntryExportAsUsedPlugin = require('webpack/lib/FlagEntryExportAsUsedPlugin');
+  const idx = findWebpackPluginIndex(config, FlagEntryExportAsUsedPlugin);
+  if (idx < 0) {
+    config.plugins.push(new FlagEntryExportAsUsedPlugin(
+      config.libraryTarget !== 'module',
+      'used a import-remote export'
+    ));
+  }
+}
 
 const ENTRIES = {};
 let globalLastEntriesJson;
@@ -533,6 +520,8 @@ class ModuleWebpackPlugin {
     });
 
     if (webpackMajorVersion >= 5) {
+      addFlagEntryExportAsUsedPlugin(compiler.options);
+
       compiler.hooks.compilation.tap('ModuleWebpackPlugin', compilation => {
         // @ts-ignore
         const RuntimeGlobals = require('webpack/lib/RuntimeGlobals');
@@ -974,10 +963,9 @@ class ModuleWebpackPlugin {
                 const entryModule = compilation.chunkGraph.getChunkRootModules(c).find(m => m.type === 'javascript/auto');
                 if (entryModule && c.runtime) {
                   const exportsInfo = compilation.moduleGraph.getExportsInfo(entryModule);
-                  if (exportsInfo && !exportsInfo.isUsed(c.runtime)) {
+                  if (!exportsInfo) return;
+                  if (!exportsInfo.isUsed(c.runtime)) {
                     exportsInfo.setUsedWithoutInfo(c.runtime);
-                    exportsInfo.setUsedInUnknownWay(c.runtime);
-                    exportsInfo.setAllKnownExportsUsed(c.runtime);
                   }
                 }
               });
@@ -1249,7 +1237,7 @@ class ModuleWebpackPlugin {
       // is hot
       hot: compilation.compiler.watchMode != null
         ? Boolean(compilation.compiler.watchMode)
-        : findHMRPluginIndex(compilation.options) > -1,
+        : findWebpackPluginIndex(compilation.options, webpack.HotModuleReplacementPlugin) > -1,
       remotes: {},
       shareModules: [],
       batchReplaces: [],

@@ -57,6 +57,7 @@ module.exports = function ({
   if (batchReplaces && batchReplaces.length) data.batchReplaces = batchReplaces;
   if (options.commonModules) data.commonModules = options.commonModules;
   if (options.sourcemapHost) data.sourcemapHost = options.sourcemapHost;
+  if (options.beforeSource) data.beforeSource = options.beforeSource;
   return `module.exports=function(){return ${JSON.stringify(data, (key, value) => {
     if (typeof value === 'function') {
       let str = value.toString();

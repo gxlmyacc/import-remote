@@ -137,6 +137,7 @@ module.exports = {
     'no-trailing-spaces': 0,
     // 禁止标识符中有下划线
     'no-underscore-dangle': 0,
+    'no-unreachable': 0,
     // 禁止在finally语句中使用return，throw，break，和continue
     'no-unsafe-finally': 0,
     // 禁止出现未使用过的表达式 allowShortCircuit:允许短路写法 allowTernary:允许三元表达式

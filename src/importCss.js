@@ -1,21 +1,23 @@
 import fetch, { globalCached } from './fetch';
-import { ATTR_SCOPE_NAME, innumerable, DEFAULT_TIMEOUT, joinUrl, transformSourcemapUrl } from './utils';
+import { ATTR_SCOPE_NAME, innumerable, DEFAULT_TIMEOUT, joinUrl, transformSourcemapUrl, getCacheUrl } from './utils';
 
 const ATTR_CSS_TRANSFORMED = 'data-import-remote-transformed';
 
-function hasFetched(href, head) {
+function hasFetched(href, head, scopeName = '') {
   if (!head) head = document.documentElement.getElementsByTagName('head')[0];
   let existingLinkTags = head.getElementsByTagName('link');
   for (let i = 0; i < existingLinkTags.length; i++) {
     let tag = existingLinkTags[i];
     let dataHref = tag.getAttribute('data-href') || tag.getAttribute('href');
-    if (tag.rel === 'stylesheet' && (dataHref === href)) return true;
+    let dataScopeName = tag.getAttribute(ATTR_SCOPE_NAME) || '';
+    if (tag.rel === 'stylesheet' && (dataHref === href) && dataScopeName === scopeName) return true;
   }
   let existingStyleTags = head.getElementsByTagName('style');
   for (let i = 0; i < existingStyleTags.length; i++) {
     let tag = existingStyleTags[i];
     let dataHref = tag.getAttribute('data-href');
-    if (dataHref === href) return true;
+    let dataScopeName = tag.getAttribute(ATTR_SCOPE_NAME) || '';
+    if (dataHref === href && dataScopeName === scopeName) return true;
   }
   return false;
 }
@@ -33,27 +35,28 @@ function fetchStyle(url, {
   cached = globalCached,
   timeout = DEFAULT_TIMEOUT,
   sync, head, scopeName, host, beforeSource, method,
-  devtool, sourcemapHost, publicPath, webpackChunk
+  devtool, sourcemapHost, publicPath
 } = {}) {
   if (!cached._css) innumerable(cached, '_css', {});
   const next = url => {
-    if (cached._css[url]) return cached._css[url];
+    const cacheUrl = getCacheUrl(url, scopeName);
+    if (cached._css[cacheUrl]) return cached._css[cacheUrl];
 
-    return cached._css[url] = new Promise((resolve, reject) => {
+    return cached._css[cacheUrl] = new Promise((resolve, reject) => {
     // const resolve = r => {
-    //   delete cached._css[href];
+    //   delete cached._css[cacheUrl];
     //   return _resolve(r);
     // };
     // const reject = r => {
-    //   delete cached._css[href];
+    //   delete cached._css[cacheUrl];
     //   return _reject(r);
     // };
       if (!head) head = document.getElementsByTagName('head')[0];
-      if (hasFetched(url, head)) return resolve();
+      if (hasFetched(url, head, scopeName)) return resolve();
       fetch(url, { timeout, sync, method }).then(source => {
         try {
           source = transformStyleHost(source, host);
-          source = transformSourcemapUrl(url, source, { devtool, sourcemapHost, scopeName, host, publicPath, webpackChunk });
+          source = transformSourcemapUrl(url, source, { devtool, sourcemapHost, scopeName, host, publicPath });
 
           if (beforeSource) source = beforeSource(source, 'css', url, {});
 
@@ -71,7 +74,7 @@ function fetchStyle(url, {
           reject(err);
         }
       }).catch(ex => {
-        delete cached._css[url];
+        delete cached._css[cacheUrl];
         return reject(ex);
       });
     });

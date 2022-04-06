@@ -1,7 +1,7 @@
 
 import base64 from 'base-64';
 import fetch, { globalCached } from './fetch';
-import { innumerable, requireFromStr, isEvalDevtool, DEFAULT_TIMEOUT, transformSourcemapUrl } from './utils';
+import { innumerable, requireFromStr, isEvalDevtool, DEFAULT_TIMEOUT, transformSourcemapUrl, getCacheUrl } from './utils';
 
 const scopeNameRegx = /\(import-remote\)\/((?:@[^/]+\/[^/]+)|(?:[^@][^/]+))/;
 
@@ -10,11 +10,12 @@ function importJs(url, {
   cached = globalCached,
   timeout = DEFAULT_TIMEOUT,
   global, sync, scopeName, host, devtool, nocache, beforeSource, method,
-  webpackChunk, publicPath, sourcemapHost,
+  publicPath, sourcemapHost,
 } = {}) {
   if (!cached._js) innumerable(cached, '_js', {});
   const next = url => {
-    if (!webpackChunk && cached._js[url]) return cached._js[url];
+    const cacheUrl = getCacheUrl(url, scopeName);
+    if (cached._js[cacheUrl]) return cached._js[cacheUrl];
 
     const prom = new Promise((resolve, reject) => {
       fetch(url, { timeout, sync, nocache, beforeSource, method }).then(source => {
@@ -51,7 +52,7 @@ function importJs(url, {
                   }`;
                 });
             } else {
-              source = transformSourcemapUrl(url, source, { devtool, sourcemapHost, scopeName, host, publicPath, webpackChunk });
+              source = transformSourcemapUrl(url, source, { devtool, sourcemapHost, scopeName, host, publicPath });
             }
           }
           if (beforeSource) source = beforeSource(source, 'js', url, { isEval });
@@ -63,12 +64,12 @@ function importJs(url, {
           reject(err);
         }
       }).catch(ex => {
-        delete cached._js[url];
+        delete cached._js[cacheUrl];
         return reject(ex);
       });
     });
 
-    if (!webpackChunk) cached._js[url] = prom;
+    cached._js[cacheUrl] = prom;
 
     return prom;
   };

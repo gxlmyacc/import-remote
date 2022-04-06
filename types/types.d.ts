@@ -20,7 +20,6 @@ type SourcemapCallback = (
   publicPath: string,
   href: string,
   source: string,
-  webpackChunk?: boolean
 )=> string;
 
 type BatchReplaceItem = [string|RegExp, string|((substring: string, ...args: any[]) => string)];
@@ -32,10 +31,13 @@ type BeforeSourceCallback = (source: string, type: 'js'|'css', href: string, opt
 
 type ImportRemoteCache = {
   _rs?: Record<string, Promise<any>>,
-  _js?: Record<string, Promise<any>>,
-  _css?: Record<string, Promise<HTMLStyleElement>>,
   _json?: Record<string, Promise<any>>,
   _fetched?: Record<string, Promise<string>>,
+} & {
+  [key: string]: {
+    manifest: null|RemoteManifest,
+    result: Promise<any>
+  }
 }
 interface RemoteRuntimeManifest {
   timestamp: number,
@@ -74,7 +76,10 @@ type RemoteModuleRuntime = {
 
   [key: string]: any
 }
+
+type ScopeNameFunction = (url: string, options: RemoteOptions) => string|void;
 interface RemoteOptions {
+  scopeName?: string|ScopeNameFunction,
   timeout?: number,
   externals?: Record<string, any>,
   globals?: Record<string, any>,

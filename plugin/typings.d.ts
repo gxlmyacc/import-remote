@@ -141,6 +141,10 @@ declare namespace ModuleWebpackPlugin {
      */
     sourcemapHost?: string|Function;
     /**
+     * the hook before eval css/js
+     */
+    beforeSource?: (source: string, type: 'css'|'js', href: string, options: Partial<any>, utils: Partial<any>) => string
+    /**
      * In addition to the options actually used by this plugin, you can use this hash to pass arbitrary data through
      * to your template.
      */

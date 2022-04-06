@@ -8,7 +8,6 @@ interface RemoteImportOptions extends FetchOptions {
   host?: string,
   devtool?: boolean|string,
   beforeSource?: BeforeSourceCallback,
-  webpackChunk?: boolean,
   publicPath?: string,
   sourcemapHost?: string|SourcemapCallback,
 }
