@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { innumerable, supportShadow, createShadowRoot, isReactComponent, isForwardComponent } from './utils';
 import remote from '../..';
 
@@ -89,7 +89,8 @@ const RemoteApp = React.forwardRef(
   (props, ref) => {
     const {
       src = '', module, moduleName, exportName = 'default', hoc, children,
-      clearWhenError = true,
+      clearWhenError = true, style = {},
+      showChildren,
       ...restProps
     } = props;
     const [app, setApp] = useState({ App: null });
@@ -122,15 +123,38 @@ const RemoteApp = React.forwardRef(
         });
     }, [src, module, moduleName, exportName, $refs]);
 
+    const displayStyle = useMemo(() => {
+      if ($refs.App) return style;
+
+      const _style = { ...style };
+      if (restProps.height && !_style.height) _style.height = restProps.height;
+      if (restProps.width && !_style.width) _style.width = restProps.width;
+      return _style;
+    }, [$refs.App, style, restProps.height, restProps.width]);
+
     return App
-      ? (<App
-        {...(ref ? { ref } : {})}
-        {...restProps}
-      >
-        {children}
-      </App>
+      ? React.createElement(
+        App,
+        {
+          ...(ref ? { ref } : {}),
+          style: displayStyle,
+          ...restProps
+        },
+        children
       )
-      : null;
+      : (showChildren !== false) && children && (!Array.isArray(children) || children.length)
+        ? React.createElement(
+          'i',
+          {
+            className: restProps.className,
+            style: {
+              ...displayStyle,
+              visibility: 'hidden',
+            }
+          },
+          children
+        )
+        : null;
   }
 );
 

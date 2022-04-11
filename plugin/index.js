@@ -47,6 +47,50 @@ function isSameFile(file1, file2) {
 }
 
 if (webpackMajorVersion >= 5) {
+  const RuntimeGlobals = require('webpack/lib/RuntimeGlobals');
+  const HarmonyExportExpressionDependency = require('webpack/lib/dependencies/HarmonyExportExpressionDependency');
+  const HarmonyExportDependencyTemplate = HarmonyExportExpressionDependency.Template;
+  // @ts-ignore
+  if (!HarmonyExportDependencyTemplate.__importRemoteHooked) {
+    HarmonyExportExpressionDependency.Template = class HarmonyExportDependencyTemplateWrapper extends (
+      HarmonyExportDependencyTemplate
+    ) {
+
+      apply(
+        dependency,
+        source,
+        options
+      ) {
+        let ret = super.apply.apply(this, arguments);
+        const {
+          module,
+          moduleGraph,
+          runtimeRequirements,
+          runtime,
+        } = options;
+
+        if (module) {
+          const exportsName = module.exportsArgument;
+          const used = moduleGraph
+            .getExportsInfo(module)
+            .getUsedName('default', runtime);
+          if (used) {
+            runtimeRequirements.add(RuntimeGlobals.makeNamespaceObject);
+            const content = `${RuntimeGlobals.makeNamespaceObject}(${exportsName});`;
+            if (!source.source().startsWith(content)) {
+              source.insert(0, content + '\n');
+            }
+          }
+        }
+        return ret;
+      }
+
+    };
+    Object.defineProperty(HarmonyExportExpressionDependency.Template, '_importRemoteHooked', {
+      value: true
+    });
+  }
+
   const ExportInfo = require('webpack/lib/ExportsInfo.js').ExportInfo;
   const _getUsedName = ExportInfo.prototype.getUsedName;
   const ALWAYS_USED_NAMES = ['__esModule'];

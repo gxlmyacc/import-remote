@@ -53,8 +53,10 @@ function createRuntime(options = {}) {
   function __webpack_require__(moduleId, entryFile) {
     if (Array.isArray(moduleId)) return moduleId.map((id, i) => __webpack_require__(id, entryFile[i]));
     // Check if module is in cache
-    if (__webpack_module_cache__[moduleId]) {
-      return __webpack_module_cache__[moduleId].exports;
+    let cachedModule = __webpack_module_cache__[moduleId];
+    if (cachedModule !== undefined) {
+      if (cachedModule.error !== undefined) throw cachedModule.error;
+      return cachedModule.exports;
     }
     if (!__webpack_modules__[moduleId] && entryFile && __webpack_modules__[entryFile]) moduleId = entryFile;
     if (!__webpack_modules__[moduleId]) {
@@ -75,14 +77,18 @@ function createRuntime(options = {}) {
     };
 
     // Execute the module function
-    let execOptions = { id: moduleId, module, factory: __webpack_modules__[moduleId], require: __webpack_require__ };
-    __webpack_require__.i.forEach(function (handler) { handler(execOptions); });
-    module = execOptions.module;
-    execOptions.factory.call(module.exports, module, module.exports, execOptions.require);
-
-    // Flag the module as loaded
-    if (Object.getOwnPropertyDescriptor(module, 'loaded').value !== undefined) {
-      module.loaded = true;
+    try {
+      let execOptions = { id: moduleId, module, factory: __webpack_modules__[moduleId], require: __webpack_require__ };
+      __webpack_require__.i.forEach(function (handler) { handler(execOptions); });
+      module = execOptions.module;
+      execOptions.factory.call(module.exports, module, module.exports, execOptions.require);
+      // Flag the module as loaded
+      if (Object.getOwnPropertyDescriptor(module, 'loaded').value !== undefined) {
+        module.loaded = true;
+      }
+    } catch (e) {
+      module.error = e;
+      throw e;
     }
 
     // Return the exports of the module
@@ -267,7 +273,7 @@ function createRuntime(options = {}) {
   /* webpack/runtime/load script */
   let inProgress = {};
   // loadScript function to load a script via script tag
-  __webpack_require__.l = (url, done, key) => {
+  __webpack_require__.l = (url, done, key, chunkId) => {
     if (inProgress[url]) { inProgress[url].push(done); return; }
     inProgress[url] = [done];
     let onScriptComplete = ex => {
@@ -371,6 +377,16 @@ function createRuntime(options = {}) {
       }
     };
   })();
+
+  /* webpack fix load 'export default' module issue */
+  // (() => {
+  //   __webpack_require__.i.push(function (options) {
+  //     let exports = options.module && options.module.exports;
+  //     if (!exports || !isPlainObject(exports)) return;
+  //     let keys = Object.keys(exports);
+  //     if (keys.length === 1 && keys[0] === 'default') __webpack_require__.r(exports);
+  //   });
+  // })();
 
   /* webpack/runtime/remotes loading */
   let chunkMapping = remotes.chunkMapping || {};
@@ -650,7 +666,7 @@ function createRuntime(options = {}) {
               );
               break;
             default:
-            // ignore requests in error states
+              // ignore requests in error states
               break;
           }
         },
@@ -1088,7 +1104,7 @@ function createRuntime(options = {}) {
 
   // object to store loaded and loading chunks
   // undefined = chunk not loaded, null = chunk preloaded/prefetched
-  // Promise = chunk loading, 0 = chunk loaded
+  // [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
   let installedChunks = __webpack_require__.hmrS_jsonp = __webpack_require__.hmrS_jsonp || {};
 
   __webpack_require__.f.j = (chunkId, promises) => {
