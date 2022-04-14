@@ -97,7 +97,9 @@ if (webpackMajorVersion >= 5) {
   if (_getUsedName) {
     ExportInfo.prototype.getUsedName = function (fallbackName, runtime) {
       const used = _getUsedName.apply(this, arguments);
-      if (used !== false || !ALWAYS_USED_NAMES.includes(fallbackName)) return used;
+      if (used !== false || !ALWAYS_USED_NAMES.includes(fallbackName)
+        // @ts-ignore
+        || !this._usedInRuntime || !this._usedInRuntime.size) return used;
       // @ts-ignore
       if (this._usedName !== null) return this._usedName;
       return this.name || fallbackName;

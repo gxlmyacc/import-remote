@@ -70,7 +70,7 @@ class RemoteModule {
 
   requireSync(moduleName = 'index.js', options = {}) {
     let result;
-    this.require(moduleName, mergeObject({}, options, { sync: true }))
+    this.require(moduleName, Object.assign({}, options, { sync: true }))
       .then(r => result = r);
     return result;
   }

@@ -78,7 +78,7 @@ function mergeObject(target) {
     Object.keys(source).forEach(key => {
       let v = source[key];
       if (isPlainObject(v)) {
-        let copied = copiedObjects.find(c => c.target === v);
+        let copied = copiedObjects.find(c => c.source === v);
         if (copied) target[key] = copied.target;
         else {
           let w = target[key];

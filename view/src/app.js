@@ -142,7 +142,7 @@ const RemoteApp = React.forwardRef(
         },
         children
       )
-      : (showChildren !== false) && children && (!Array.isArray(children) || children.length)
+      : children && (!Array.isArray(children) || children.length)
         ? React.createElement(
           'i',
           {
@@ -152,7 +152,7 @@ const RemoteApp = React.forwardRef(
               visibility: 'hidden',
             }
           },
-          children
+          showChildren ? children : null
         )
         : null;
   }
