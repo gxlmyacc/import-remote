@@ -1492,6 +1492,11 @@ copy-to-clipboard@^3.2.0:
   dependencies:
     toggle-selection "^1.0.6"
 
+core-js@^2:
+  version "2.6.12"
+  resolved "https://registry.yarnpkg.com/core-js/-/core-js-2.6.12.tgz#d9333dfa7b065e347cc5682219d6f690859cc2ec"
+  integrity sha512-Kb2wC0fvsWfQrgk8HU5lW6U/Lcs8+9aaYcy4ZFc6DDlo4nZ7n70dEgE5rtR0oG6ufKDUnrwfWL1mXR5ljDatrQ==
+
 core-util-is@~1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/core-util-is/-/core-util-is-1.0.2.tgz#b5fd54220aa2bc5ab57aab7140c940754503c1a7"
@@ -2504,13 +2509,14 @@ import-local@^3.0.2:
     pkg-dir "^4.2.0"
     resolve-cwd "^3.0.0"
 
-import-remote@^0.0.18-alpha.3:
-  version "0.0.18-alpha.3"
-  resolved "http://npm.dc.servyou-it.com/import-remote/-/import-remote-0.0.18-alpha.3.tgz#4979f309c00048ae86952c5109a326be5a490d54"
-  integrity sha1-SXnzCcAASK6GlSxRCaMmvlpJDVQ=
+import-remote@^0.0.18-alpha.14:
+  version "0.0.18-alpha.21"
+  resolved "https://registry.yarnpkg.com/import-remote/-/import-remote-0.0.18-alpha.21.tgz#573a6923c7b3e71d0dabdf38927a1194e1bd3fc1"
+  integrity sha512-zlO29KajGJv8HDHAf8oeN8QW7z2092bTdbfH4kXNQwHcD8fggq8do7DRTWeuCWswz3XmapodutQURTuD3iapUg==
   dependencies:
     "@babel/core" "^7.11.4"
     base-64 "^1.0.0"
+    core-js "^2"
     escape-string-regexp "^2.0.0"
     find-up "^4.1.0"
     hash-sum "^2.0.0"
@@ -3069,9 +3075,9 @@ minimatch@3.0.4, minimatch@^3.0.4:
     brace-expansion "^1.1.7"
 
 minimist@^1.2.0, minimist@^1.2.5:
-  version "1.2.5"
-  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.5.tgz#67d66014b66a6a8aaa0c083c5fd58df4e4e97602"
-  integrity sha512-FM9nNUYrRBAELZQT3xeZQ7fmMOBg6nWNmJKTcgsJeaLstP/UODVpGsr5OhXhhXg6f+qtJ8uiZ+PUxkDWcgIXLw==
+  version "1.2.6"
+  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.6.tgz#8637a5b759ea0d6e98702cfb3a9283323c93af44"
+  integrity sha512-Jsjnk4bw3YJqYzbdyBiNsPWHPfO++UGG749Cxs6peCu5Xg4nrena6OVxOYxrQTqww0Jmwt+Ref8rggumkTLz9Q==
 
 mixin-deep@^1.2.0:
   version "1.3.2"
