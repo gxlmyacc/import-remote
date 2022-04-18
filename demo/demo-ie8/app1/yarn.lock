@@ -1869,9 +1869,9 @@ async-validator@^3.0.3:
   integrity sha1-aOhmqWgk6LJpT/eoMcGiXETV5QA=
 
 async@^2.6.2:
-  version "2.6.3"
-  resolved "https://registry.yarnpkg.com/async/-/async-2.6.3.tgz#d72625e2344a3656e3a3ad4fa749fa83299d82ff"
-  integrity sha512-zflvls11DCy+dQWzTW2dzuilv8Z5X/pjfmZOWba6TNIVDm+2UDaJmXSOXlasHKfNBs8oo3M0aT50fDEWfKZjXg==
+  version "2.6.4"
+  resolved "https://registry.yarnpkg.com/async/-/async-2.6.4.tgz#706b7ff6084664cd7eae713f6f965433b5504221"
+  integrity sha512-mzo5dfJYwAn29PeiJ0zvwTo04zj8HDJj0Mn8TD7sno7q12prdbnasKJHhkm2c1LgrhlJ0teaea8860oxi51mGA==
   dependencies:
     lodash "^4.17.14"
 
@@ -3435,10 +3435,10 @@ import-local@^3.0.2:
     pkg-dir "^4.2.0"
     resolve-cwd "^3.0.0"
 
-import-remote@^0.0.18-alpha.13:
-  version "0.0.18-alpha.13"
-  resolved "http://npm.dc.servyou-it.com/import-remote/-/import-remote-0.0.18-alpha.13.tgz#1859bb993b566eada388c47301720fe6994079f1"
-  integrity sha512-Gbc0iV2vj7wXf8cgCg9ZG9IKkSWQ7idRLevA7r13oT3/03qat7361ooUrGH0hwv1JGYiGKNLi3uDR4F9NqsZuw==
+import-remote@^0.0.18-alpha.14:
+  version "0.0.18-alpha.21"
+  resolved "https://registry.yarnpkg.com/import-remote/-/import-remote-0.0.18-alpha.21.tgz#573a6923c7b3e71d0dabdf38927a1194e1bd3fc1"
+  integrity sha512-zlO29KajGJv8HDHAf8oeN8QW7z2092bTdbfH4kXNQwHcD8fggq8do7DRTWeuCWswz3XmapodutQURTuD3iapUg==
   dependencies:
     "@babel/core" "^7.11.4"
     base-64 "^1.0.0"
