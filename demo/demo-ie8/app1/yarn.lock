@@ -3435,10 +3435,10 @@ import-local@^3.0.2:
     pkg-dir "^4.2.0"
     resolve-cwd "^3.0.0"
 
-import-remote@^0.0.18-alpha.13:
-  version "0.0.18-alpha.13"
-  resolved "http://npm.dc.servyou-it.com/import-remote/-/import-remote-0.0.18-alpha.13.tgz#1859bb993b566eada388c47301720fe6994079f1"
-  integrity sha512-Gbc0iV2vj7wXf8cgCg9ZG9IKkSWQ7idRLevA7r13oT3/03qat7361ooUrGH0hwv1JGYiGKNLi3uDR4F9NqsZuw==
+import-remote@^0.0.18-alpha.14:
+  version "0.0.18-alpha.21"
+  resolved "https://registry.yarnpkg.com/import-remote/-/import-remote-0.0.18-alpha.21.tgz#573a6923c7b3e71d0dabdf38927a1194e1bd3fc1"
+  integrity sha512-zlO29KajGJv8HDHAf8oeN8QW7z2092bTdbfH4kXNQwHcD8fggq8do7DRTWeuCWswz3XmapodutQURTuD3iapUg==
   dependencies:
     "@babel/core" "^7.11.4"
     base-64 "^1.0.0"
@@ -4018,9 +4018,9 @@ minimatch@3.0.4, minimatch@^3.0.4:
     brace-expansion "^1.1.7"
 
 minimist@^1.2.0, minimist@^1.2.5:
-  version "1.2.5"
-  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.5.tgz#67d66014b66a6a8aaa0c083c5fd58df4e4e97602"
-  integrity sha512-FM9nNUYrRBAELZQT3xeZQ7fmMOBg6nWNmJKTcgsJeaLstP/UODVpGsr5OhXhhXg6f+qtJ8uiZ+PUxkDWcgIXLw==
+  version "1.2.6"
+  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.6.tgz#8637a5b759ea0d6e98702cfb3a9283323c93af44"
+  integrity sha512-Jsjnk4bw3YJqYzbdyBiNsPWHPfO++UGG749Cxs6peCu5Xg4nrena6OVxOYxrQTqww0Jmwt+Ref8rggumkTLz9Q==
 
 mixin-deep@^1.2.0:
   version "1.3.2"
