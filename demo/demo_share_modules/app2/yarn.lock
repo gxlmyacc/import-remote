@@ -835,9 +835,9 @@ async-validator@^3.0.3:
   integrity sha1-aOhmqWgk6LJpT/eoMcGiXETV5QA=
 
 async@^2.6.2:
-  version "2.6.3"
-  resolved "https://registry.yarnpkg.com/async/-/async-2.6.3.tgz#d72625e2344a3656e3a3ad4fa749fa83299d82ff"
-  integrity sha512-zflvls11DCy+dQWzTW2dzuilv8Z5X/pjfmZOWba6TNIVDm+2UDaJmXSOXlasHKfNBs8oo3M0aT50fDEWfKZjXg==
+  version "2.6.4"
+  resolved "https://registry.yarnpkg.com/async/-/async-2.6.4.tgz#706b7ff6084664cd7eae713f6f965433b5504221"
+  integrity sha512-mzo5dfJYwAn29PeiJ0zvwTo04zj8HDJj0Mn8TD7sno7q12prdbnasKJHhkm2c1LgrhlJ0teaea8860oxi51mGA==
   dependencies:
     lodash "^4.17.14"
 
@@ -1297,6 +1297,11 @@ copy-to-clipboard@^3.2.0:
   integrity sha1-EVqhqZmP+rYZb5MHatbaO5E2Yq4=
   dependencies:
     toggle-selection "^1.0.6"
+
+core-js@^2:
+  version "2.6.12"
+  resolved "https://registry.yarnpkg.com/core-js/-/core-js-2.6.12.tgz#d9333dfa7b065e347cc5682219d6f690859cc2ec"
+  integrity sha512-Kb2wC0fvsWfQrgk8HU5lW6U/Lcs8+9aaYcy4ZFc6DDlo4nZ7n70dEgE5rtR0oG6ufKDUnrwfWL1mXR5ljDatrQ==
 
 core-util-is@~1.0.0:
   version "1.0.2"
@@ -2329,13 +2334,14 @@ import-local@^3.0.2:
     pkg-dir "^4.2.0"
     resolve-cwd "^3.0.0"
 
-import-remote@^0.0.18-alpha.3:
-  version "0.0.18-alpha.3"
-  resolved "http://npm.dc.servyou-it.com/import-remote/-/import-remote-0.0.18-alpha.3.tgz#4979f309c00048ae86952c5109a326be5a490d54"
-  integrity sha1-SXnzCcAASK6GlSxRCaMmvlpJDVQ=
+import-remote@^0.0.18-alpha.14:
+  version "0.0.18-alpha.21"
+  resolved "https://registry.yarnpkg.com/import-remote/-/import-remote-0.0.18-alpha.21.tgz#573a6923c7b3e71d0dabdf38927a1194e1bd3fc1"
+  integrity sha512-zlO29KajGJv8HDHAf8oeN8QW7z2092bTdbfH4kXNQwHcD8fggq8do7DRTWeuCWswz3XmapodutQURTuD3iapUg==
   dependencies:
     "@babel/core" "^7.11.4"
     base-64 "^1.0.0"
+    core-js "^2"
     escape-string-regexp "^2.0.0"
     find-up "^4.1.0"
     hash-sum "^2.0.0"
