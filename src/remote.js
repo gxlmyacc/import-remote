@@ -123,6 +123,7 @@ function getScopeName(__remoteModuleWebpack__, scopeName, host, order = 0) {
   return newScopeName;
 }
 
+/** @type {import('../types/remote').batchReplace} */
 function batchReplace(source, replaces) {
   replaces && replaces.filter(Boolean).forEach(([regx, replace]) => {
     source = source.replace(regx, replace);
@@ -451,6 +452,7 @@ function remote(url, options = {}) {
               return source;
             }
           });
+          manifest.afterCreateRuntime && manifest.afterCreateRuntime(ctx.require, ctx);
           options.afterCreateRuntime && options.afterCreateRuntime(ctx.require, ctx);
         }
 
@@ -530,7 +532,8 @@ remote.globals = {
 };
 
 export {
-  requireManifest
+  requireManifest,
+  batchReplace
 };
 
 export default remote;

@@ -143,7 +143,11 @@ declare namespace ModuleWebpackPlugin {
     /**
      * the hook before eval css/js
      */
-    beforeSource?: (source: string, type: 'css'|'js', href: string, options: Partial<any>, utils: Partial<any>) => string
+    beforeSource?: (source: string, type: 'css'|'js', href: string, options: Partial<any>, utils: Partial<any>) => string;
+    /**
+     * the hook after create Runtime
+     */
+    afterCreateRuntime?: (webpack_require: any, ctx: RemoteModuleRuntime) => void,
     /**
      * In addition to the options actually used by this plugin, you can use this hash to pass arbitrary data through
      * to your template.

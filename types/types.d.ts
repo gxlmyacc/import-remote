@@ -1,3 +1,6 @@
+import {  versionLt, satisfy } from './semver';
+import { batchReplace } from './remote';
+
 type ShareModule = {
   name: string,
   id: string|number,
@@ -85,7 +88,7 @@ interface RemoteOptions {
   globals?: Record<string, any>,
   getManifestCallback?: (manifest: RemoteManifest) => any|Promise<any>,
   onRuntimeChanged?: (newManifest: RemoteManifest, oldManifest: RemoteManifest) => any|Promise<any>,
-  afterCreateRuntime?: (__webpack_require__: any, ctx: RemoteModuleRuntime) => any,
+  afterCreateRuntime?: (webpack_require: any, ctx: RemoteModuleRuntime) => void,
   host?: string,
   sync?: boolean,
   sourcemapHost?: string|SourcemapCallback,
@@ -155,6 +158,18 @@ interface RemoteManifest {
   batchReplaces?: BatchReplaceItem[],
   commonModules?: CommonModule[],
   sourcemapHost?: string| SourcemapCallback,
+  beforeSource?: (
+    source: string,
+    type: 'js'|'css',
+    href: string,
+    options: BeforeSourceOptions,
+    utils: {
+      versionLt: typeof versionLt,
+      satisfy: typeof satisfy,
+      batchReplace: typeof batchReplace,
+      checkOffset: (source: string, offset: number, match: string, replaceStr: string) => string
+    }
+  ) => ReturnType<BeforeSourceCallback>,
 }
 
 interface EntriesInfo {
