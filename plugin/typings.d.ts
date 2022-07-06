@@ -1,6 +1,7 @@
 import { AsyncSeriesWaterfallHook } from "tapable";
 import WebpackCompiler from 'webpack/lib/Compiler';
 import WebpackCompilation from 'webpack/lib/Compilation';
+import { CommonModule } from "^/types/types";
 
 export = ModuleWebpackPlugin;
 
@@ -56,7 +57,7 @@ declare namespace ModuleWebpackPlugin {
     /**
      * common module
      */
-    commonModules?: { name?: string, url: string, host?: string, scoped?: boolean };
+    commonModules?: CommonModule[];
 
     batchReplaces?: {
       [key: string]: [RegExp, string][]|((

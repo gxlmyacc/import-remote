@@ -108,8 +108,8 @@ interface RemoteOptions {
 
 type CommonModule = {
   url: string|((this: CommonModule, options: RemoteOptions, manifest: RemoteManifest) => string),
+  name?: string|((this: CommonModule, options: RemoteOptions, manifest: RemoteManifest) => string),
   host?: string,
-  name?: string|true,
   scoped?: boolean
 }
 

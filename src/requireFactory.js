@@ -1,9 +1,12 @@
-import { innumerable, isPlainObject } from './utils';
+import { innumerable, isPlainObject, isFunction, hasOwnProp } from './utils';
 
 function defaultRequireFactory(modulesMap) {
   return async function _requireFactory(externals) {
-    let moduleExternals = externals.filter(external => modulesMap[external.name]);
-    let modules = await Promise.all(moduleExternals.map(external => modulesMap[external.name]()));
+    const moduleExternals = externals.filter(external => hasOwnProp(modulesMap, external.name));
+    const modules = await Promise.all(moduleExternals.map(external => {
+      const v = modulesMap[external.name];
+      return isFunction(v) ? v() : v;
+    }));
     return moduleExternals.reduce((p, external, i) => {
       p[external.name] = modules[i];
       return p;

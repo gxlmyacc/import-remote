@@ -6,7 +6,8 @@
     "experimentalDecorators": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "^/*": ["./*"]
     },
     "target": "esnext",
     "module": "ES2022",

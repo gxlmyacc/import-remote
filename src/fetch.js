@@ -204,6 +204,13 @@ function existModule(host, moduleName = 'index.js', options = {}) {
   );
 }
 
+/**
+ * @type {new (
+ *   libraryUrl: string,
+ *   host: string,
+ *   options?: import('../types/fetch').RemoteModuleOptions
+ * ) => import('../types/fetch').AsyncRemoteModule}
+ */
 class AsyncRemoteModule {
 
   constructor(libraryUrl, host, options = {}) {

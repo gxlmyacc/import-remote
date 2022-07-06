@@ -152,6 +152,16 @@ function innumerable(
   return obj;
 }
 
+const _hasOwnProperty = Object.prototype.hasOwnProperty;
+/**
+ * @param {object} obj
+ * @param {string} propName
+ * @returns
+ */
+function hasOwnProp(obj, propName) {
+  return _hasOwnProperty.call(obj, propName);
+}
+
 /**
  * @param {string} url
  */
@@ -230,6 +240,7 @@ export {
 
   getCacheUrl,
   walkMainifest,
+  hasOwnProp,
 
   isSameHost,
   requireFromStr,

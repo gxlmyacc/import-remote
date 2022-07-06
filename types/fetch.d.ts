@@ -33,7 +33,7 @@ declare class AsyncRemoteModule {
   public host: string
   public options: RemoteModuleOptions
 
-  constructor(libraryUrl: string, host: string, options?: RemoteModuleOptions)
+  constructor(libraryUrl: string|RemoteModule, host: string, options?: RemoteModuleOptions)
 
   readyRuntime(): Promise<RemoteModule>
 

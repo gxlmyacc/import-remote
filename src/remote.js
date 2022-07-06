@@ -162,18 +162,20 @@ function requireModule(__require__, manifest) {
 
 function requireManifest(url, options) {
   return requireJs(url, options).then(manifest => {
-    if (isFunction(manifest)) {
-      let target = manifest(remote, options);
-      if (target) {
-        if (options.meta) target = target.meta;
-        manifest = target && (manifest.iref ? walkMainifest : v => v)(target);
-      }
+    if (!isFunction(manifest) || !manifest.iref) {
+      options.done && options.done();
+      return manifest;
+    }
+    let target = manifest(remote, options);
+    if (target) {
+      if (options.meta) target = target.meta;
+      manifest = target && (manifest.iref ? walkMainifest : v => v)(target);
     }
     return manifest;
   });
 }
 
-/** @type {import('../types/remote').default}  */
+/** @type {import('^/types/remote').default} */
 function remote(url, options = {}) {
   url = resolveRelativeUrl(url, {
     host: options.host,
@@ -192,7 +194,6 @@ function remote(url, options = {}) {
     beforeSource,
     method,
     windowProxy = { document: { html: document.documentElement, body: document.body, head: document.head } },
-    isCommonModule,
   } = options;
   let { scopeName } = options;
   const __remoteModuleWebpack__ = checkRemoteModuleWebpack(windowProxy.context);
@@ -215,16 +216,22 @@ function remote(url, options = {}) {
         return _reject.apply(this, arguments);
       };
       try {
-        const manifest = await requireManifest(url, { timeout, global: window, nocache: true, sync, cached, method });
+        let isDone = false;
+        const manifest = await requireManifest(url, {
+          timeout,
+          global: window,
+          nocache: true,
+          sync,
+          cached,
+          method,
+          done: () => isDone = true
+        });
+        if (isDone) return resolve(manifest);
         if (!manifest.scopeName) throw new Error('[import-remote:remote]scopeName can not be empty!');
 
         if (scopeName && manifest.scopeName !== scopeName) manifest.scopeName = scopeName;
         const newScopeName = getScopeName(__remoteModuleWebpack__, manifest.scopeName, host);
         if (scopeName != newScopeName) scopeName = manifest.scopeName = newScopeName;
-
-        if (isCommonModule && typeof isCommonModule === 'string' && isCommonModule !== scopeName) {
-          console.error(`[import-remote]warning:commonModule's name(${isCommonModule}) is not matched the socpeName(${scopeName})`);
-        }
 
         if (cached[cacheUrl]) cached[cacheUrl].manifest = manifest;
         getManifestCallback && (await getManifestCallback(manifest));
@@ -247,6 +254,11 @@ function remote(url, options = {}) {
           ? await Promise.all(commonModuleOptions
             .filter(m => m && (m.url))
             .map(m => {
+              let name = m.name;
+              if (name) {
+                if (isFunction(name)) name = name.call(m, options, manifest);
+                if (name && !manifestExternals.some(v => v.name === name)) return;
+              }
               let url = m.url;
               const mHost = resolveRelativeUrl(isFunction(m.host) ? m.host(options, manifest) : m.host, { host });
               if (isFunction(url)) url = url.call(m, options, manifest);
@@ -259,7 +271,7 @@ function remote(url, options = {}) {
                   }
               });
               return remote(url, {
-                isCommonModule: m.name || true,
+                isCommonModule: true,
                 externals,
                 globals,
                 host: mHost || getHostFromUrl(url),
@@ -267,17 +279,22 @@ function remote(url, options = {}) {
                 method,
                 // getManifestCallback: m.scoped ? getManifestCallback : undefined,
                 windowProxy: m.scoped ? windowProxy : undefined,
-              });
+              }).then(result => (
+                name
+                  ? { [name]: (result && result.__esModule) ? result.default : result }
+                  : result
+              ));
             }))
           : [];
         commonModules = (await Promise.all(commonModules.filter(m => m).map(async m => {
+          if (!manifestExternals.length) return;
           if (m.__esModule) m = m.default;
-          if (!isRequireFactory(m)) return m;
-          const modules = await m(manifestExternals);
-          if (modules) {
-            Object.keys(modules).forEach(key => {
+          const modules = isRequireFactory(m) ? (await m(manifestExternals)) : m;
+          if (isPlainObject(modules)) {
+            Object.keys(modules).some(key => {
               const idx = manifestExternals.find(v => v.name === key);
               if (~idx) manifestExternals.splice(idx, 1);
+              return manifestExternals.length;
             });
           }
           return modules;
@@ -526,6 +543,7 @@ function remote(url, options = {}) {
   };
   return cached[cacheUrl].result.then(r => resolveResult(r, options));
 }
+
 remote.externals = {};
 remote.globals = {
   // _interopRequireDefault: require('babel-runtime/helpers/interopRequireDefault').default
