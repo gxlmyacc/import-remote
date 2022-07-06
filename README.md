@@ -389,9 +389,9 @@ module.exports = {
     new ImportRemotePlugin({
       commonModules: [
         // 当指定了name时，只有该name在externals中存在时，才会加载该公共包
-        { name: 'axios', url: 'http://localhost:3000/axios/index.js' },
+        { name: 'axios', url: 'http://localhost:3000/lib/axios.min.js' },
         // 未指定name事，只要externals不为空，就会加载该公共包
-        { url: 'http://localhost:3000/common/index.js' },
+        { url: 'http://localhost:3000/lib/commonLibs.js' },
       ]
     })
   ]
