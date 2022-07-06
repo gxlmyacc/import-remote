@@ -1,11 +1,11 @@
 # import-remote
 
+一个远程加载JS模块的库。支持webpack4/5，可以通过使你的项目支持微前端架构。
+
 [![NPM version](https://img.shields.io/npm/v/import-remote.svg?style=flat)](https://npmjs.com/package/import-remote)
 [![NPM downloads](https://img.shields.io/npm/dm/import-remote.svg?style=flat)](https://npmjs.com/package/import-remote)
 
 ## 说明
-
-一个远程加载JS模块的库。支持webpack4/5。
 
 它的初衷是：
 
