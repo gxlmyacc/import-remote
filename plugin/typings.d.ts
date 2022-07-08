@@ -2,6 +2,8 @@ import { AsyncSeriesWaterfallHook } from "tapable";
 import WebpackCompiler from 'webpack/lib/Compiler';
 import WebpackCompilation from 'webpack/lib/Compilation';
 import { CommonModule } from "^/types/types";
+import Remote from "^/types/remote";
+import { satisfy, versionLt } from "^/types/semver";
 
 export = ModuleWebpackPlugin;
 
@@ -149,6 +151,12 @@ declare namespace ModuleWebpackPlugin {
      * the hook after create Runtime
      */
     afterCreateRuntime?: (webpack_require: any, ctx: RemoteModuleRuntime) => void,
+
+    beforeSourceRegx?: (regxStr: string, type: 'hot'|'jsonp', options: {
+      remote: Remote,
+      versionLt: versionLt
+      satisfy: satisfy
+    }) => string,
     /**
      * In addition to the options actually used by this plugin, you can use this hash to pass arbitrary data through
      * to your template.

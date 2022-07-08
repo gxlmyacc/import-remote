@@ -15,6 +15,7 @@ interface remote<T> {
   use(plugin: { install(remote: remote<T>): void }): void
   readonly externals: Record<string, any>,
   readonly remote: Record<string, any>,
+  readonly version: string,
 }
 
 export {

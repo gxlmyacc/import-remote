@@ -1134,6 +1134,7 @@ function createRuntime(options = {}) {
               if (installedChunkData) {
                 let errorType = event && (event.type === 'load' ? 'missing' : event.type);
                 let realSrc = event && event.target && event.target.src;
+                console.error('[import-remote] Loading chunk ' + realSrc + ' failed.');
                 let error = new Error();
                 error.message = 'Loading chunk ' + chunkId + ' failed.\n(' + errorType + ': ' + realSrc + ')';
                 error.name = 'ChunkLoadError';

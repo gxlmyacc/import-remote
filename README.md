@@ -292,6 +292,7 @@ plugins: [
 import { createRequireFactory } from 'import-remote';
 
 export default createRequireFactory({
+  'import-remote': () => require('import-remote'),
   react: () => import(/* webpackChunkName: 'react' */ 'react'),
   'react-dom': () => import(/* webpackChunkName: 'react-dom' */ 'react-dom'),
   'prop-types': () => import(/* webpackChunkName: 'prop-types' */ 'prop-types'),
@@ -314,6 +315,16 @@ module.exports = {
   output: {
     filename: '[name]-[chunkhash:5].js'
   },
+  externals: [
+    {
+      'import-remote': {
+        root: 'importRemote',
+        amd: 'import-remote',
+        commonjs2: 'import-remote',
+        commonjs: 'import-remote',
+      },
+    },
+  ],
   plugins: [
     new ImportRemotePlugin()
   ]

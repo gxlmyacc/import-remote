@@ -59,6 +59,7 @@ module.exports = function ({
   if (options.sourcemapHost) data.sourcemapHost = options.sourcemapHost;
   if (options.beforeSource) data.beforeSource = options.beforeSource;
   if (options.afterCreateRuntime) data.afterCreateRuntime = options.afterCreateRuntime;
+  if (options.beforeSourceRegx) data.beforeSourceRegx = options.beforeSourceRegx;
   return `module.exports=function(){return ${JSON.stringify(data, (key, value) => {
     if (typeof value === 'function') {
       let str = value.toString();

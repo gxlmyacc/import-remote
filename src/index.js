@@ -58,5 +58,6 @@ remote.use = function (plugin) {
 };
 
 remote.externals['import-remote'] = remoteExternal;
+innumerable(remote, 'version', version);
 
 export default remote;

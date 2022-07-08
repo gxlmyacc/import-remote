@@ -353,17 +353,24 @@ function remote(url, options = {}) {
           const newGlobalObject = manifest.globalObject || '__context__';
           const libraryTarget = manifest.libraryTarget;
 
+          const beforeSourceRegx = manifest.beforeSourceRegx || (regxStr => regxStr);
+
           const hotUpdateGlobal = manifest.hotUpdateGlobal || 'webpackHotUpdate';
-          const hotSourceRegx = hotUpdateGlobal
-            ? new RegExp(`${(!libraryTarget || libraryTarget === 'var') ? '^(?:"use strict";\\n?)?(\\/\\*[A-z\\s*():/.",-]+\\*\\/\\n)?' : ''}${
-              globalObject}(?:(?:\\[")|\\.)${hotUpdateGlobal}(?:"\\])?`)
+          let hotSourceRegx = hotUpdateGlobal
+            ? new RegExp(beforeSourceRegx(`${(!libraryTarget || libraryTarget === 'var')
+              ? '^(\\/\\*[A-z\\s*():/.",-]+\\*\\/\\n)?(?:"use strict";\\n?)?(\\/\\*[A-z\\s*():/.",-]+\\*\\/\\n)?'
+              : ''
+            }${
+              globalObject}(?:(?:\\[")|\\.)${hotUpdateGlobal}(?:"\\])?`, 'hot', { remote, versionLt, satisfy }))
             : null;
 
           const jsonpFunction = manifest.jsonpFunction || 'webpackJsonp';
-          const jsonpSourceRegx = new RegExp(`${
-            (!libraryTarget || libraryTarget === 'var') ? '^(?:"use strict";\\n?)?(?:\\/\\*[A-Za-z0-9\\s*():/.",\\-!_$@#%&~]+\\*\\/\\n)?' : ''
+          const jsonpSourceRegx = new RegExp(beforeSourceRegx(`${
+            (!libraryTarget || libraryTarget === 'var')
+              ? '^(?:\\/\\*[A-Za-z0-9\\s*():/.",\\-!_$@#%&~]+\\*\\/\\n)?(?:"use strict";\\n?)?(?:\\/\\*[A-Za-z0-9\\s*():/.",\\-!_$@#%&~]+\\*\\/\\n)?'
+              : ''
           }(?:var ([A-Za-z0-9_$]+);[A-Za-z0-9_$\\s=]+\\n?)?\\(${globalObject}(?:(?:\\[")|\\.)${jsonpFunction}(?:"\\])?\\s?=\\s?${
-            globalObject}(?:(?:\\[")|\\.)${jsonpFunction}(?:"\\])?\\s?\\|\\|\\s?\\[\\]\\)`);
+            globalObject}(?:(?:\\[")|\\.)${jsonpFunction}(?:"\\])?\\s?\\|\\|\\s?\\[\\]\\)`, 'jsonp', { remote, versionLt, satisfy }));
 
           const batchReplaces = manifest.batchReplaces && manifest.batchReplaces.map(v => {
             if (!Array.isArray(v)) return v;
