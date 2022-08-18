@@ -13,6 +13,7 @@ function createRuntime(options = {}) {
     publicPath = '',
     host = '',
     devtool = false,
+    cacheDB,
     hot,
     hash = '',
     uniqueName = '',
@@ -22,6 +23,7 @@ function createRuntime(options = {}) {
     cssChunks = {},
     jsChunks = {},
     context = {},
+    sync = false,
     webpackVersion = 4,
     timeout = DEFAULT_TIMEOUT,
     requireExternal,
@@ -208,10 +210,11 @@ function createRuntime(options = {}) {
   __webpack_require__.f = {};
   // This file contains only the entry chunk.
   // The chunk loading function for additional chunks
-  __webpack_require__.e = chunkId => Promise.all(Object.keys(__webpack_require__.f).reduce((promises, key) => {
-    __webpack_require__.f[key](chunkId, promises);
-    return promises;
-  }, []));
+  __webpack_require__.e = (chunkId, isEntryId) => Promise.all(Object.keys(__webpack_require__.f)
+    .reduce((promises, key) => {
+      __webpack_require__.f[key](chunkId, promises, isEntryId);
+      return promises;
+    }, []));
 
   /* webpack/runtime/get javascript chunk filename */
   // This function allow to reference async chunks
@@ -273,7 +276,7 @@ function createRuntime(options = {}) {
   /* webpack/runtime/load script */
   let inProgress = {};
   // loadScript function to load a script via script tag
-  __webpack_require__.l = (url, done, key, chunkId) => {
+  __webpack_require__.l = (url, done, key, chunkId, isEntryId) => {
     if (inProgress[url]) { inProgress[url].push(done); return; }
     inProgress[url] = [done];
     let onScriptComplete = ex => {
@@ -289,12 +292,14 @@ function createRuntime(options = {}) {
       timeout,
       global: context,
       cached: __webpack_chunk_cache__,
+      cacheDB,
       scopeName,
       host,
       devtool,
       beforeSource,
       sourcemapHost,
       publicPath: __webpack_require__.p,
+      sync: isEntryId && sync,
       key: key ? `${uniqueName}:${key}` : ''
     })))
       .then(onScriptComplete)
@@ -1059,7 +1064,7 @@ function createRuntime(options = {}) {
   (() => {
     let installedCssChunks = {};
 
-    let loadStylesheet = chunkId => {
+    let loadStylesheet = (chunkId, sync) => {
       let href = __webpack_require__.miniCssF(chunkId);
       return new Promise((resolve, reject) => {
         if (!href) return resolve();
@@ -1073,7 +1078,9 @@ function createRuntime(options = {}) {
           devtool,
           beforeSource,
           cached: __webpack_chunk_cache__,
+          cacheDB,
           sourcemapHost,
+          sync,
           publicPath: __webpack_require__.p,
         }).then(resolve).catch(function (err) {
           delete installedCssChunks[chunkId];
@@ -1082,10 +1089,10 @@ function createRuntime(options = {}) {
       });
     };
 
-    __webpack_require__.f.miniCss = (chunkId, promises) => {
+    __webpack_require__.f.miniCss = (chunkId, promises, isEntryId) => {
       if (installedCssChunks[chunkId]) promises.push(installedCssChunks[chunkId]);
       else if (installedCssChunks[chunkId] !== 0) {
-        promises.push(installedCssChunks[chunkId] = loadStylesheet(chunkId).then(() => {
+        promises.push(installedCssChunks[chunkId] = loadStylesheet(chunkId, isEntryId && sync).then(() => {
           installedCssChunks[chunkId] = 0;
         }, e => {
           delete installedCssChunks[chunkId];
@@ -1107,7 +1114,7 @@ function createRuntime(options = {}) {
   // [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
   let installedChunks = __webpack_require__.hmrS_jsonp = __webpack_require__.hmrS_jsonp || {};
 
-  __webpack_require__.f.j = (chunkId, promises) => {
+  __webpack_require__.f.j = (chunkId, promises, isEntryId) => {
     // JSONP chunk loading for javascript
     let installedChunkData = __webpack_require__.o(installedChunks, chunkId) ? installedChunks[chunkId] : undefined;
     if (installedChunkData !== 0) { // 0 means "already installed".
@@ -1144,7 +1151,7 @@ function createRuntime(options = {}) {
               }
             }
           };
-          __webpack_require__.l(url, loadingEnded, 'chunk-' + chunkId);
+          __webpack_require__.l(url, loadingEnded, 'chunk-' + chunkId, chunkId, isEntryId);
         } else installedChunks[chunkId] = 0;
       }
     }
@@ -1158,7 +1165,7 @@ function createRuntime(options = {}) {
 
   let currentUpdatedModulesList;
   let waitingUpdateResolves = {};
-  function loadUpdateChunk(chunkId) {
+  function loadUpdateChunk(chunkId, isEntryId) {
     return new Promise((resolve, reject) => {
       waitingUpdateResolves[chunkId] = resolve;
       // start update chunk loading
@@ -1177,7 +1184,7 @@ function createRuntime(options = {}) {
           reject(error);
         }
       };
-      __webpack_require__.l(url, loadingEnded);
+      __webpack_require__.l(url, loadingEnded, undefined, chunkId, isEntryId);
     });
   }
 
@@ -1621,14 +1628,14 @@ function createRuntime(options = {}) {
       }
     });
     if (__webpack_require__.f) {
-      __webpack_require__.f.jsonpHmr = function (chunkId, promises) {
+      __webpack_require__.f.jsonpHmr = function (chunkId, promises, isEntryId) {
         if (
           currentUpdateChunks
               && !__webpack_require__.o(currentUpdateChunks, chunkId)
               && __webpack_require__.o(installedChunks, chunkId)
               && installedChunks[chunkId] !== undefined
         ) {
-          promises.push(loadUpdateChunk(chunkId));
+          promises.push(loadUpdateChunk(chunkId, isEntryId));
           currentUpdateChunks[chunkId] = true;
         }
       };

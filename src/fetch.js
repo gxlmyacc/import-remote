@@ -1,19 +1,46 @@
 import { objectDefineProperty } from './_objdp';
+import IndexedDBProxy from './db';
 
 const DEFAULT_HEAD_TIMEOUT = 30000;
+const TABLE_NAME = 'fetched';
+
+function getLastMonthTime() {
+  const now = new Date();
+  now.setMonth(now.getMonth() - 1);
+  return now.getTime();
+}
 
 function checkRemoteModuleWebpack(context = window) {
-  if (!context.__remoteModuleWebpack__) {
-    context.__remoteModuleWebpack__ = {
+  let globalModule = context.__remoteModuleWebpack__;
+  if (!globalModule) {
+    context.__remoteModuleWebpack__ = globalModule = {
       __moduleManifests__: {},
       cached: {},
     };
   }
-  return context.__remoteModuleWebpack__;
+  if (!globalModule.db && window.indexedDB) {
+    globalModule.cacheDB = false;
+    let db = globalModule.db = new IndexedDBProxy(
+      'import-remote-global-db',
+      [
+        {
+          name: TABLE_NAME,
+          key: 'url',
+          indexes: [{ name: 'timestamp' }]
+        }
+      ],
+    );
+    // delete last month cache
+    db.delete(TABLE_NAME, IDBKeyRange.upperBound(getLastMonthTime()), 'timestamp');
+  }
+
+  return globalModule;
 }
-checkRemoteModuleWebpack();
+const globalModule = checkRemoteModuleWebpack();
 
 const globalCached = window.__remoteModuleWebpack__.cached;
+const globalDB = window.__remoteModuleWebpack__.db;
+
 const queue = [];
 function pushQueue(url, resolve, reject) {
   const item = { url };
@@ -46,7 +73,7 @@ function innumerable(
 }
 
 /** @type {import('../types/fetch').default} */
-function fetch(url, { timeout = 120000, sync, nocache, method = 'GET', headers } = {}) {
+function fetch(url, { timeout = 120000, sync, cacheDB, nocache, method = 'GET', headers } = {}) {
   if (!globalCached._fetched) innumerable(globalCached, '_fetched', {});
   const fetched = globalCached._fetched;
   const next = url => {
@@ -66,11 +93,19 @@ function fetch(url, { timeout = 120000, sync, nocache, method = 'GET', headers }
         if (xhr.readyState === 4) {
           (timerId && clearTimeout(timerId)) || (timerId = 0);
           if (xhr.status === 0) {
-            // timeout
-            const err = new Error(`fetch [${url}] ${isTimedOut ? 'timed out' : 'failed due to an unknown error'}.`);
-            err.xhr = xhr;
-            err.url = url;
-            res.fail(err);
+            let cb = () => {
+              // timeout
+              const err = new Error(`fetch [${url}] ${isTimedOut ? 'timed out' : 'failed'}.`);
+              err.xhr = xhr;
+              err.url = url;
+              res.fail(err);
+            };
+            if ((cacheDB || globalModule.cacheDB) && globalDB) {
+              globalDB.get(TABLE_NAME, url).then(v => {
+                console.error(`warning:[import-remtoe]fetch [ ${url} ] failed, use cacheDB's cache instead.`);
+                res.success(v.text);
+              }).catch(cb);
+            } else cb();
           } else if (xhr.status === 404) {
             // no update available
             const err = new Error(`fetch [${url}] not found.`);
@@ -86,21 +121,30 @@ function fetch(url, { timeout = 120000, sync, nocache, method = 'GET', headers }
           } else {
             // success
             if (isHeadRequest) {
-              const rheaders = xhr.getAllResponseHeaders().split('\n').reduce((p, v) => {
+              const headers = xhr.getAllResponseHeaders().split('\n').reduce((p, v) => {
                 const [key, value] = v.split(': ');
                 if (!key) return p;
                 p[key] = value;
                 return p;
               }, {});
-              res.success(rheaders);
-            } else res.success(xhr.responseText);
+              res.success(headers);
+            } else {
+              if ((cacheDB || globalModule.cacheDB) && globalDB) {
+                globalDB.put(TABLE_NAME, {
+                  url,
+                  text: xhr.responseText,
+                  timestamp: Date.now(),
+                  modified: xhr.getResponseHeader('last-modified')
+                });
+              }
+              res.success(xhr.responseText);
+            }
           }
         }
       };
       try {
-        if (nocache) url += `${~url.indexOf('?') ? '&' : '?'}_=${Date.now()}`;
-        xhr.timeout = timeout;
-        xhr.open(method, url, !sync);
+        if (!sync) xhr.timeout = timeout;
+        xhr.open(method, nocache ? (url + `${~url.indexOf('?') ? '&' : '?'}_=${Date.now()}`) : url, !sync);
         xhr.setRequestHeader('Content-Type', 'text/plain;charset=UTF-8');
 
         if (headers) Object.keys(headers).forEach(key => xhr.setRequestHeader(key, headers[key]));
@@ -238,7 +282,12 @@ class AsyncRemoteModule {
   return this.readyRuntime().then(runtime => runtime[key].apply(runtime, arguments));
 });
 
+function enableCacheDB(enable = true) {
+  globalModule.cacheDB = enable;
+}
+
 export {
+  globalDB,
   globalCached,
   requireJs,
   checkRemoteModuleWebpack,
@@ -247,6 +296,7 @@ export {
   isAbsoluteUrl,
   joinUrl,
   existModule,
+  enableCacheDB,
 
   AsyncRemoteModule
 };

@@ -11,14 +11,13 @@ type FetchMethod = 'GET'|'POST'|'HEAD'|'OPTIONS';
 interface FetchOptions {
   timeout?: number,
   sync?: boolean,
+  cacheDB?: boolean,
   nocache?: boolean,
   method?: FetchMethod,
   headers?: Record<string, string>
 }
 
 declare function fetch<T = any>(url: string, options?: FetchOptions): Promise<T>;
-
-
 
 declare function requireJs<T = any>(url: string, options?: FetchOptions): Promise<T>;
 
@@ -59,13 +58,23 @@ declare global {
 
 }
 
+
+declare function isAbsoluteUrl(url: string): boolean;
+declare function joinUrl(host: string, path?: string): string;
+declare function existModule(host: string, moduleName?: boolean, options?: RemoteModuleOptions): Promise<null|Record<string, string>>
+declare function enableCacheDB(enable?: boolean): void;
+
 export {
   FetchOptions,
   ImportRemoteCache,
   requireJs,
   resolveModuleUrl,
   AsyncRemoteModule,
-  RemoteModuleOptions
+  RemoteModuleOptions,
+  isAbsoluteUrl,
+  joinUrl,
+  existModule,
+  enableCacheDB
 }
 
 export default fetch;

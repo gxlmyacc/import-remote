@@ -117,7 +117,7 @@ function getScopeName(__remoteModuleWebpack__, scopeName, host, order = 0) {
   let newScopeName = `${scopeName}${order ? `_${order}` : ''}`;
   const currentManifest = __remoteModuleWebpack__.__moduleManifests__[newScopeName];
   if (currentManifest && host && currentManifest.host && !isSameHost(currentManifest.host, host)) {
-    console.error(`[import-remote]warning: [${host}:${newScopeName}] scopename alreadly exist, will rename to [${scopeName}_${order + 1}]!`);
+    console.error(`warning:[import-remote][${host}:${newScopeName}] scopename alreadly exist, will rename to [${scopeName}_${order + 1}]!`);
     return getScopeName(__remoteModuleWebpack__, scopeName, host, ++order);
   }
   return newScopeName;
@@ -193,6 +193,7 @@ function remote(url, options = {}) {
     sourcemapHost,
     beforeSource,
     method,
+    cacheDB,
     windowProxy = { document: { html: document.documentElement, body: document.body, head: document.head } },
   } = options;
   let { scopeName } = options;
@@ -221,6 +222,7 @@ function remote(url, options = {}) {
           timeout,
           global: window,
           nocache: true,
+          cacheDB,
           sync,
           cached,
           method,
@@ -276,6 +278,7 @@ function remote(url, options = {}) {
                 globals,
                 host: mHost || getHostFromUrl(url),
                 sync,
+                cacheDB,
                 method,
                 // getManifestCallback: m.scoped ? getManifestCallback : undefined,
                 windowProxy: m.scoped ? windowProxy : undefined,
@@ -405,6 +408,8 @@ function remote(url, options = {}) {
             host,
             context: ctx,
             cached,
+            cacheDB,
+            sync,
             sourcemapHost: sourcemapHost || manifest.sourcemapHost,
             requireExternal,
             beforeSource(source, type, href, options = {}) {
@@ -498,7 +503,7 @@ function remote(url, options = {}) {
 
         // eslint-disable-next-line no-empty
         if (context.promisePending) try { await context.promisePending; } catch (ex) {}
-        innumerable(context, 'promisePending', Promise.all(manifest.entrys.ids.map(id => __require__.e(id))));
+        innumerable(context, 'promisePending', Promise.all(manifest.entrys.ids.map(id => __require__.e(id, true))));
         try {
           await context.promisePending;
         } finally { delete context.promisePending; }

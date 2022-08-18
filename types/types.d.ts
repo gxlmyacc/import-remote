@@ -1,5 +1,6 @@
 import {  versionLt, satisfy } from './semver';
 import { batchReplace } from './remote';
+import IndexedDBProxy from './db';
 
 type ShareModule = {
   name: string,
@@ -55,6 +56,8 @@ interface RemoteRuntimeManifest {
 type RemoteModuleWebpack = {
   __moduleManifests__: Record<string, RemoteRuntimeManifest>,
   cached: ImportRemoteCache,
+  cacheDB: boolean,
+  db: IndexedDBProxy
 };
 
 type RemoteModuleRuntime = {
@@ -91,6 +94,7 @@ interface RemoteOptions {
   afterCreateRuntime?: (webpack_require: any, ctx: RemoteModuleRuntime) => void,
   host?: string,
   sync?: boolean,
+  cacheDB?: boolean,
   sourcemapHost?: string|SourcemapCallback,
   beforeSource?: BeforeSourceCallback,
   method?: string,

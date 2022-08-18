@@ -41,6 +41,10 @@
 
   - `webpack library`包必须配置`publicPath`；`import-remote`无需配置`publicPath`或只需配置为`/`，加载方法(`remote`)在加载资源时会自动配置JS的`publicPath，并且查找CSS源代码中的相对路径，将其替换为绝对路径；
 
+### 和`webpack Module Fedetation`打包的区别
+
+  - `webpack Module Fedetation` 需要应用和宿主都是`webpack5`，`import-remote`没有这个要求，`webpack4/5`都可以，甚至宿主的打包环境使用的不是`webpack`也没问题；
+
 ### 实现原理
 
 #### 构建期
@@ -188,6 +192,28 @@ testIndex.dosomething();
 testOther.dosomething();
 
 ```
+
+### remote/RemoteModule的options
+
+- `scopeName: string` - 作用域名，不配置时，会使用远程模块项目的项目名(`package.json->name`)；
+
+- `timeout:number` - 资源加载的请求时间，为0表示不会超时；
+
+- `externals: Record<string, any>` - 传递给远程模块的依赖模块(webpack配置的externals)；
+
+- `getManifestCallback: (manifest: RemoteManifest) => any|Promise<any>` - 当加载到`manifest`后的回调函数；
+
+- `afterCreateRuntime: (webpack_require: any, ctx: RemoteModuleRuntime) => void` - 模块的runtime创建好后的回调函数；
+
+- `host: string` - 远程模块的`host`，相同`host`的远程模块会认为来自同一个项目，它们会共享同一个runtime运行时。当不传时，host将从url中去取(去掉url中最后一个`/`前的部分会认为是`host`);
+
+- `sync: boolean` - 使用使用`ajax`的同步请求来加载资源；
+
+- `cacheDB: boolean` - 是否开启`cacheDB`，当开启后，每次加载成功的远程资源会保存在一个名叫`import-remote-global-db`的`indexedDB`数据库中，当遇到某个资源ajax请求失败，`xhr.status`为`0`时，将会改为尝试从该数据库加载该资源。该数据每次启动时会清楚一个月之前的缓存，以避免缓存资源膨胀。
+  
+  `注`：你也可以通过`import-remote`导出的`enableCacheDB`方法来为所有模块开启`cacheDB`；
+
+- `useEsModuleDefault: boolean` - 是否在加载到远程模块后直接返回入口模块的`default`导出，而不是返回整个该入口模块；
 
 ### `import-remote/plugin`插件基本配置选项
 

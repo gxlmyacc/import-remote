@@ -1,6 +1,6 @@
 {
   "name": "import-remote",
-  "version": "0.0.19-alpha.2",
+  "version": "0.0.19-alpha.3",
   "main": "esm/index.js",
   "module": "esm/index.js",
   "typings": "types/index.d.ts",

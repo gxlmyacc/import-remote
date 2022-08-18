@@ -9,7 +9,7 @@ const scopeNameRegx = /\(import-remote\)\/((?:@[^/]+\/[^/]+)|(?:[^@][^/]+))/;
 function importJs(url, {
   cached = globalCached,
   timeout = DEFAULT_TIMEOUT,
-  global, sync, scopeName, host, devtool, nocache, beforeSource, method,
+  global, sync, cacheDB, scopeName, host, devtool, nocache, beforeSource, method,
   publicPath, sourcemapHost,
 } = {}) {
   if (!cached._js) innumerable(cached, '_js', {});
@@ -18,7 +18,7 @@ function importJs(url, {
     if (cached._js[cacheUrl]) return cached._js[cacheUrl];
 
     const prom = new Promise((resolve, reject) => {
-      fetch(url, { timeout, sync, nocache, beforeSource, method }).then(source => {
+      fetch(url, { timeout, sync, cacheDB, nocache, beforeSource, method }).then(source => {
         try {
           const isEval = /^eval/.test(String(devtool));
           if (host && source) {

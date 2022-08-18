@@ -1,5 +1,5 @@
 
-import fetch, { requireJs } from './fetch';
+import fetch, { requireJs, enableCacheDB } from './fetch';
 import { innumerable, mergeObject, requireWithVersion, objectDefineProperty } from './utils';
 import remote, { requireManifest } from './remote';
 import RemoteModule from './module';
@@ -28,7 +28,8 @@ export {
   versionLt,
   requireWithVersion,
   requireManifest,
-  version
+  version,
+  enableCacheDB
 };
 
 const remoteExternal = {
@@ -47,6 +48,7 @@ const remoteExternal = {
   requireWithVersion,
   requireManifest,
   version,
+  enableCacheDB,
 
   default: remote,
 };

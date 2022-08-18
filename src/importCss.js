@@ -34,7 +34,7 @@ function transformStyleHost(source, host) {
 function fetchStyle(url, {
   cached = globalCached,
   timeout = DEFAULT_TIMEOUT,
-  sync, head, scopeName, host, beforeSource, method,
+  sync, cacheDB, head, nocache, scopeName, host, beforeSource, method,
   devtool, sourcemapHost, publicPath
 } = {}) {
   if (!cached._css) innumerable(cached, '_css', {});
@@ -53,7 +53,7 @@ function fetchStyle(url, {
     // };
       if (!head) head = document.getElementsByTagName('head')[0];
       if (hasFetched(url, head, scopeName)) return resolve();
-      fetch(url, { timeout, sync, method }).then(source => {
+      fetch(url, { timeout, sync, cacheDB, nocache, method }).then(source => {
         try {
           source = transformStyleHost(source, host);
           source = transformSourcemapUrl(url, source, { devtool, sourcemapHost, scopeName, host, publicPath });

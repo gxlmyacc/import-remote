@@ -6,7 +6,7 @@ module.exports = {
         modules: 'commonjs',
         useBuiltIns: 'usage',
         corejs: 2,
-        targets: { browsers: ['Chrome >= 31', 'ie >= 8'] }
+        targets: { browsers: ['Chrome >= 49', 'firefox >= 45', 'ie >= 8'] }
       }
     ],
   ],
@@ -30,7 +30,7 @@ module.exports = {
     [
       '@babel/plugin-transform-runtime',
       {
-        regenerator: false, 
+        regenerator: false,
         useESModules: false,
       },
     ],
