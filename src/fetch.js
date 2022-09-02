@@ -1,14 +1,7 @@
 import { objectDefineProperty } from './_objdp';
-import IndexedDBProxy from './db';
 
 const DEFAULT_HEAD_TIMEOUT = 30000;
 const TABLE_NAME = 'fetched';
-
-function getLastMonthTime() {
-  const now = new Date();
-  now.setMonth(now.getMonth() - 1);
-  return now.getTime();
-}
 
 function checkRemoteModuleWebpack(context = window) {
   let globalModule = context.__remoteModuleWebpack__;
@@ -18,28 +11,11 @@ function checkRemoteModuleWebpack(context = window) {
       cached: {},
     };
   }
-  if (!globalModule.db && window.indexedDB) {
-    globalModule.cacheDB = false;
-    let db = globalModule.db = new IndexedDBProxy(
-      'import-remote-global-db',
-      [
-        {
-          name: TABLE_NAME,
-          key: 'url',
-          indexes: [{ name: 'timestamp' }]
-        }
-      ],
-    );
-    // delete last month cache
-    db.delete(TABLE_NAME, IDBKeyRange.upperBound(getLastMonthTime()), 'timestamp');
-  }
-
   return globalModule;
 }
 const globalModule = checkRemoteModuleWebpack();
-
 const globalCached = window.__remoteModuleWebpack__.cached;
-const globalDB = window.__remoteModuleWebpack__.db;
+const globalDB = () => window.__remoteModuleWebpack__.db;
 
 const queue = [];
 function pushQueue(url, resolve, reject) {
@@ -100,8 +76,8 @@ function fetch(url, { timeout = 120000, sync, cacheDB, nocache, method = 'GET', 
               err.url = url;
               res.fail(err);
             };
-            if ((cacheDB || globalModule.cacheDB) && globalDB) {
-              globalDB.get(TABLE_NAME, url).then(v => {
+            if ((cacheDB || globalModule.cacheDB) && globalDB()) {
+              globalDB().get(TABLE_NAME, url).then(v => {
                 console.error(`warning:[import-remtoe]fetch [ ${url} ] failed, use cacheDB's cache instead.`);
                 res.success(v.text);
               }).catch(cb);
@@ -129,8 +105,8 @@ function fetch(url, { timeout = 120000, sync, cacheDB, nocache, method = 'GET', 
               }, {});
               res.success(headers);
             } else {
-              if ((cacheDB || globalModule.cacheDB) && globalDB) {
-                globalDB.put(TABLE_NAME, {
+              if ((cacheDB || globalModule.cacheDB) && globalDB()) {
+                globalDB().put(TABLE_NAME, {
                   url,
                   text: xhr.responseText,
                   timestamp: Date.now(),
@@ -282,11 +258,10 @@ class AsyncRemoteModule {
   return this.readyRuntime().then(runtime => runtime[key].apply(runtime, arguments));
 });
 
-function enableCacheDB(enable = true) {
-  globalModule.cacheDB = enable;
-}
 
 export {
+  TABLE_NAME,
+  globalModule,
   globalDB,
   globalCached,
   requireJs,
@@ -296,7 +271,6 @@ export {
   isAbsoluteUrl,
   joinUrl,
   existModule,
-  enableCacheDB,
 
   AsyncRemoteModule
 };

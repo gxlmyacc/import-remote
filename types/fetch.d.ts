@@ -1,3 +1,4 @@
+import IndexedDBAsync from "indexed-db-async";
 import RemoteModule from "./module";
 import {
   RemoteOptions,
@@ -58,23 +59,33 @@ declare global {
 
 }
 
+declare function checkRemoteModuleWebpack(context?: Window): Window.__remoteModuleWebpack__;
 
 declare function isAbsoluteUrl(url: string): boolean;
 declare function joinUrl(host: string, path?: string): string;
 declare function existModule(host: string, moduleName?: boolean, options?: RemoteModuleOptions): Promise<null|Record<string, string>>
-declare function enableCacheDB(enable?: boolean): void;
+
+declare const globalModule: Window['__remoteModuleWebpack__'];
+declare const globalDB: IndexedDBAsync;
+declare const globalCached: Window.__remoteModuleWebpack__.cached;
+declare const TABLE_NAME: string;
 
 export {
+  TABLE_NAME,
+  globalModule,
+  globalDB,
+  globalCached,
+
   FetchOptions,
-  ImportRemoteCache,
   requireJs,
-  resolveModuleUrl,
   AsyncRemoteModule,
   RemoteModuleOptions,
+  checkRemoteModuleWebpack,
+  resolveModuleUrl,
   isAbsoluteUrl,
   joinUrl,
-  existModule,
-  enableCacheDB
+  existModule
 }
+
 
 export default fetch;

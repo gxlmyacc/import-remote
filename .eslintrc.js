@@ -176,6 +176,7 @@ module.exports = {
     // 强制分号之前和之后使用一致的空格
     // 'semi-spacing': [0, { after: true, before: false }],
     // 将立即调用函数表达式用括号括起来
-    'wrap-iife': [2, 'inside']
+    'wrap-iife': [2, 'inside'],
+    'no-new': 0
   }
 }

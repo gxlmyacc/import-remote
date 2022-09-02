@@ -1,6 +1,6 @@
 import {  versionLt, satisfy } from './semver';
 import { batchReplace } from './remote';
-import IndexedDBProxy from './db';
+import IndexedDBAsync from 'indexed-db-async';
 
 type ShareModule = {
   name: string,
@@ -57,7 +57,7 @@ type RemoteModuleWebpack = {
   __moduleManifests__: Record<string, RemoteRuntimeManifest>,
   cached: ImportRemoteCache,
   cacheDB: boolean,
-  db: IndexedDBProxy
+  db: IndexedDBAsync
 };
 
 type RemoteModuleRuntime = {

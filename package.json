@@ -1,6 +1,6 @@
 {
   "name": "import-remote",
-  "version": "0.0.19-alpha.3",
+  "version": "0.0.19-alpha.4",
   "main": "esm/index.js",
   "module": "esm/index.js",
   "typings": "types/index.d.ts",
@@ -20,7 +20,9 @@
   "files": [
     "dist",
     "esm",
+    "cache",
     "types",
+    "images",
     "plugin",
     "view/esm",
     "view/types"
@@ -40,6 +42,7 @@
     "escape-string-regexp": "^2.0.0",
     "find-up": "^4.1.0",
     "hash-sum": "^2.0.0",
+    "indexed-db-async": "^0.0.2",
     "loader-utils": "^1.2.3",
     "lodash": "^4.17.21",
     "pretty-error": "^2.1.1",

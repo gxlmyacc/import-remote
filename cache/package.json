@@ -1,0 +1,7 @@
+{
+  "name": "import-remote/cache",
+  "private": true,
+  "main": "../esm/db.js",
+  "module": "../esm/db.js",
+  "typings": "../types/db.d.ts"
+}

@@ -211,7 +211,12 @@ testOther.dosomething();
 
 - `cacheDB: boolean` - 是否开启`cacheDB`，当开启后，每次加载成功的远程资源会保存在一个名叫`import-remote-global-db`的`indexedDB`数据库中，当遇到某个资源ajax请求失败，`xhr.status`为`0`时，将会改为尝试从该数据库加载该资源。该数据每次启动时会清楚一个月之前的缓存，以避免缓存资源膨胀。
   
-  `注`：你也可以通过`import-remote`导出的`enableCacheDB`方法来为所有模块开启`cacheDB`；
+  `注`：你也可以通过`import-remote/cache`导出的`enableCacheDB`方法来为所有模块开启`cacheDB`；
+```js
+import { enableCacheDB } from 'import-remote/cache';
+
+enableCacheDB();
+```
 
 - `useEsModuleDefault: boolean` - 是否在加载到远程模块后直接返回入口模块的`default`导出，而不是返回整个该入口模块；
 

@@ -32,7 +32,7 @@ export {
   importCss,
   jsonp,
   requireManifest,
-  version
+  version,
 };
 
 export default remote;
