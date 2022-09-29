@@ -3151,10 +3151,10 @@ import-local@^3.0.2:
     pkg-dir "^4.2.0"
     resolve-cwd "^3.0.0"
 
-import-remote@^0.0.19-alpha.5:
-  version "0.0.19-alpha.5"
-  resolved "http://npm.dc.servyou-it.com/import-remote/-/import-remote-0.0.19-alpha.5.tgz#58e4e0c7ddb4c2888b7d47b8cd4e58c4d5084981"
-  integrity sha512-2SVzPIgFpkdUOZm5WupduX0HjBofuzzXTHVGhUXDTkktaR9tNfA9SOXbPP/Mqk/skxckbhAFKOPvL6TDXhb2sw==
+import-remote@^0.0.19-alpha.6:
+  version "0.0.19-alpha.6"
+  resolved "https://registry.yarnpkg.com/import-remote/-/import-remote-0.0.19-alpha.6.tgz#6327f0174ae5ef4eea1eaf1e0daf8540509006a2"
+  integrity sha512-lJebtHmM9iVj8MHusdJ0AMKRa+8vlb1PAuir/n1W0er94IKpASs5kEvrQ/EmlO9+YQIgnQLEuEqWI70ye/+weg==
   dependencies:
     "@babel/core" "^7.11.4"
     base-64 "^1.0.0"
@@ -3643,9 +3643,9 @@ minimist@^1.2.0, minimist@^1.2.5:
   integrity sha512-Jsjnk4bw3YJqYzbdyBiNsPWHPfO++UGG749Cxs6peCu5Xg4nrena6OVxOYxrQTqww0Jmwt+Ref8rggumkTLz9Q==
 
 moment@^2.24.0, moment@^2.25.3:
-  version "2.29.3"
-  resolved "https://registry.yarnpkg.com/moment/-/moment-2.29.3.tgz#edd47411c322413999f7a5940d526de183c031f3"
-  integrity sha512-c6YRvhEo//6T2Jz/vVtYzqBzwvPT95JBQ+smCytzf7c50oMZRsR/a4w88aD34I+/QVSfnoAnSBFPJHItlOMJVw==
+  version "2.29.4"
+  resolved "https://registry.yarnpkg.com/moment/-/moment-2.29.4.tgz#3dbe052889fe7c1b2ed966fcb3a77328964ef108"
+  integrity sha512-5LC9SOxjSc2HF6vO2CyuTDNivEdoz2IvyJJGj6X8DJ0eFyfszE0QiEd+iXmBvUP3WHxSjFH/vIsA0EN00cgr8w==
 
 ms@2.0.0:
   version "2.0.0"
