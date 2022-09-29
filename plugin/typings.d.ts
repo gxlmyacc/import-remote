@@ -152,6 +152,9 @@ declare namespace ModuleWebpackPlugin {
      */
     afterCreateRuntime?: (webpack_require: any, ctx: RemoteModuleRuntime) => void,
 
+
+    checkManifest?: () => void,
+
     beforeSourceRegx?: (regxStr: string, type: 'hot'|'jsonp', options: {
       remote: Remote,
       versionLt: versionLt

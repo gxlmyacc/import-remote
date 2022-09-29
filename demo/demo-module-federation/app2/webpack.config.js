@@ -2,7 +2,6 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 // const ImportRemotePlugin = require('import-remote/plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { ModuleFederationPlugin } = require('webpack').container;
-const webpack = require('webpack');
 const path = require('path');
 
 const useMinicss = false;
@@ -116,7 +115,7 @@ const config = {
   //   },
   // }],
   devServer: {
-    hot: true,
+    historyApiFallback: false,
     host: '0.0.0.0',
     port: 3003,
     allowedHosts: 'all',
@@ -128,12 +127,14 @@ const config = {
       directory: path.join(__dirname, 'dist'),
       publicPath: '/',
     },
-    headers: { 'Access-Control-Allow-Origin': '*' },
-    // writeToDisk: true,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+      'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, X-Requested-With',
+    },
   },
   // http://localhost:3003/remoteEntry.js
   plugins: [
-    new webpack.HotModuleReplacementPlugin(),
     new ModuleFederationPlugin({
       name: 'app2',
       filename: 'remoteEntry.js',

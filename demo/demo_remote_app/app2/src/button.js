@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Button } from 'antd';
 
-import './button.css';
 import 'antd/dist/antd.css';
+import './button.less';
 
 const RemoteButton = props => {
   console.log('RemoteButton props', props);

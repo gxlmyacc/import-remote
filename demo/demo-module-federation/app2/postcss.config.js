@@ -1,4 +1,4 @@
-module.exports = {
+const config = {
   plugins: {
     // To resolve path of an @import rule
     'postcss-import': {},
@@ -6,3 +6,6 @@ module.exports = {
     autoprefixer: {},
   },
 };
+
+
+module.exports = config;

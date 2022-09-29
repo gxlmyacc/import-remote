@@ -1,4 +1,4 @@
-import { RemoteModule } from 'import-remote/src';
+import { RemoteModule } from 'import-remote';
 
 const app = new RemoteModule('http://localhost:3003/', {
   externals: {

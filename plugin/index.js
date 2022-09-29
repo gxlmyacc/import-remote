@@ -10,10 +10,12 @@
 /** @typedef {import("webpack/lib/WebpackError.js")} WebpackError */
 
 // use Polyfill for util.promisify in node versions < v8
+// @ts-ignore
 const promisify = require('util.promisify');
 
 const vm = require('vm');
 const fs = require('fs');
+// @ts-ignore
 const _ = require('lodash');
 const path = require('path');
 // @ts-ignore
@@ -22,6 +24,7 @@ const webpack = require('webpack');
 const loaderUtils = require('loader-utils');
 // const { sync: getBabelOptionsSync } = require('read-babelrc-up');
 
+// @ts-ignore
 // @ts-ignore
 const WebPackError = require('webpack/lib/WebpackError.js');
 const webpackMajorVersion = Number(require('webpack/package.json').version.split('.')[0]);
@@ -47,7 +50,9 @@ function isSameFile(file1, file2) {
 }
 
 if (webpackMajorVersion >= 5) {
+  // @ts-ignore
   const RuntimeGlobals = require('webpack/lib/RuntimeGlobals');
+  // @ts-ignore
   const HarmonyExportExpressionDependency = require('webpack/lib/dependencies/HarmonyExportExpressionDependency');
   const HarmonyExportDependencyTemplate = HarmonyExportExpressionDependency.Template;
   // @ts-ignore
@@ -57,6 +62,7 @@ if (webpackMajorVersion >= 5) {
     ) {
 
       apply(
+        // @ts-ignore
         dependency,
         source,
         options
@@ -91,10 +97,12 @@ if (webpackMajorVersion >= 5) {
     });
   }
 
+  // @ts-ignore
   const ExportInfo = require('webpack/lib/ExportsInfo.js').ExportInfo;
   const _getUsedName = ExportInfo.prototype.getUsedName;
   const ALWAYS_USED_NAMES = ['__esModule'];
   if (_getUsedName) {
+    // @ts-ignore
     ExportInfo.prototype.getUsedName = function (fallbackName, runtime) {
       const used = _getUsedName.apply(this, arguments);
       if (used !== false || !ALWAYS_USED_NAMES.includes(fallbackName)
@@ -217,6 +225,7 @@ function babelTransform(str) {
 * @param {ProcessedModuleWebpackOptions} options
 * @returns
 */
+// @ts-ignore
 function resolveShareModules(self, compilation, options) {
   if (!options.shareModules || !options.shareModules.length) return [];
   const shareModules = options.shareModules.map(v => {
@@ -282,6 +291,7 @@ function resolveShareModules(self, compilation, options) {
 * @param {ProcessedModuleWebpackOptions} options
 * @returns {{ chunkMapping: {}, idToExternalAndNameMapping: {} }}
 */
+// @ts-ignore
 function resolveRemotes(self, compilation, options) {
   const remotes = {
     hasJsMatcher: self.hasJsMatcher,
@@ -344,6 +354,7 @@ function resolveRemotes(self, compilation, options) {
   * @param {ProcessedModuleWebpackOptions} options
   * @returns {Array<string>}
   */
+// @ts-ignore
 function resolveExternals(compilation, options) {
   // @ts-ignore
   return [...compilation.modules].filter(m => {
@@ -420,6 +431,7 @@ function findWebpackPluginIndex(config, Plugin) {
 // }
 
 function addFlagEntryExportAsUsedPlugin(config) {
+  // @ts-ignore
   const FlagEntryExportAsUsedPlugin = require('webpack/lib/FlagEntryExportAsUsedPlugin');
   const idx = findWebpackPluginIndex(config, FlagEntryExportAsUsedPlugin);
   if (idx < 0) {
@@ -447,6 +459,7 @@ class ModuleWebpackPlugin {
     const defaultOptions = {
       template: 'auto',
       templateContent: false,
+      // @ts-ignore
       templateParameters: null,
       filename: 'index.js',
       runtime: /(manifest|runtime~).+[.]js$/,
@@ -480,7 +493,9 @@ class ModuleWebpackPlugin {
     this.options = Object.assign(defaultOptions, userOptions);
 
     if (!this.options.template || !/\.js$/.test(this.options.template)) this.options.template = 'auto';
+    // @ts-ignore
     if (/\.html$/.test(this.options.filename)) {
+      // @ts-ignore
       this.options.filename = path.basename(this.options.filename, '.html') + '.js';
     }
 
@@ -529,9 +544,12 @@ class ModuleWebpackPlugin {
     }
 
     const packageFile = findUp.sync('package.json', { cwd: compiler.context || process.cwd() });
+    // @ts-ignore
     this.options.package = require(packageFile);
+    // @ts-ignore
     this.options.projectPath = path.dirname(packageFile);
     this.options.nodeModulesPath = path.relative(compiler.context, path.resolve(this.options.projectPath, './node_modules')).replace(/\\/g, '/');
+    // @ts-ignore
     this.options.template = this.getFullTemplatePath(this.options.template, compiler.context);
 
     // Inject child compiler plugin
@@ -543,7 +561,9 @@ class ModuleWebpackPlugin {
     // convert absolute filename into relative so that webpack can
     // generate it at correct location
     const filename = this.options.filename;
+    // @ts-ignore
     if (path.resolve(filename) === path.normalize(filename)) {
+      // @ts-ignore
       this.options.filename = path.relative(compiler.options.output.path, filename);
     }
     const libraryFileName = this.options.libraryFileName;
@@ -558,9 +578,11 @@ class ModuleWebpackPlugin {
     // `contenthash` is introduced in webpack v4.3
     // which conflicts with the plugin's existing `contenthash` method,
     // hence it is renamed to `templatehash` to avoid conflicts
+    // @ts-ignore
     this.options.filename = this.options.filename.replace(/\[(?:(\w+):)?contenthash(?::([a-z]+\d*))?(?::(\d+))?\]/ig,
       match => match.replace('contenthash', 'templatehash'));
 
+    // @ts-ignore
     compiler.hooks.afterPlugins.tap('ModuleWebpackPlugin', compiler => {
       // addHMRPlugin(compiler.options);
     });
@@ -570,9 +592,12 @@ class ModuleWebpackPlugin {
 
       compiler.hooks.compilation.tap('ModuleWebpackPlugin', compilation => {
         // @ts-ignore
+        // @ts-ignore
         const RuntimeGlobals = require('webpack/lib/RuntimeGlobals');
         // @ts-ignore
+        // @ts-ignore
         const compileBooleanMatcher = require('webpack/lib/util/compileBooleanMatcher');
+        // @ts-ignore
         // @ts-ignore
         const chunkHasJs = require('webpack/lib/javascript/JavascriptModulesPlugin').chunkHasJs;
 
@@ -621,6 +646,7 @@ class ModuleWebpackPlugin {
           .tap('ModuleWebpackPlugin', handler);
         compilation.hooks.runtimeRequirementInTree
           .for(RuntimeGlobals.getUpdateManifestFilename)
+          // @ts-ignore
           .tap('ModuleWebpackPlugin', (chunk, set) => {
             // const url = compilation.getPath(JSON.stringify(compilation.outputOptions.hotUpdateMainFilename), {
             //   hash: `" + ${RuntimeGlobals.getFullHash}() + "`,
@@ -639,14 +665,17 @@ class ModuleWebpackPlugin {
 
         compilation.hooks.runtimeRequirementInTree
           .for(RuntimeGlobals.shareScopeMap)
+          // @ts-ignore
           .tap('ModuleWebpackPlugin', (chunk, set) => {
             const {
               compareModulesByIdentifier,
+            // @ts-ignore
             // @ts-ignore
             } = require('webpack/lib/util/comparators');
 
             if (self.options.chunks && self.options.chunks.length) {
               const entrypoint = [...chunk.groupsIterable][0];
+              // @ts-ignore
               if (entrypoint && !self.options.chunks.includes(entrypoint.name)) return;
             }
 
@@ -796,6 +825,7 @@ class ModuleWebpackPlugin {
       }
     };
 
+    // @ts-ignore
     const emitEntryFile = compilation => {
       const options = self.options;
       let entryFileName = options.entryFileName;
@@ -839,11 +869,14 @@ class ModuleWebpackPlugin {
       // Get all entry point names for this html file
       // @ts-ignore
       const entryNames = Array.from(compilation.entrypoints.keys());
+      // @ts-ignore
       const filteredEntryNames = self.filterChunks(entryNames, self.options.chunks, self.options.excludeChunks);
+      // @ts-ignore
       const sortedEntryNames = self.sortEntryChunks(filteredEntryNames, this.options.chunksSortMode, compilation);
 
       const templateResult = this.options.templateContent
         ? { mainCompilationHash: compilation.hash }
+        // @ts-ignore
         : childCompilerPlugin.getCompilationEntryResult(this.options.template);
 
       this.childCompilerHash = templateResult.mainCompilationHash;
@@ -913,6 +946,7 @@ class ModuleWebpackPlugin {
       // Allow plugins to change the html before assets are injected
         .then(html => {
           const pluginArgs = { html, plugin: self, outputName: childCompilationOutputName };
+          // @ts-ignore
           return getModuleWebpackPluginHooks(compilation).afterTemplateExecution.promise(pluginArgs);
         });
 
@@ -947,6 +981,7 @@ class ModuleWebpackPlugin {
               parseInt(maxLength, 10)
             )
           );
+          // @ts-ignore
           self.entryInfo.outputName = finalOutputName;
           // Add the evaluated html code to the webpack assets
           emitAsset(finalOutputName, source);
@@ -1000,19 +1035,24 @@ class ModuleWebpackPlugin {
         compilation => {
           compilation.hooks.optimizeChunkModules.tap(
             'ModuleWebpackPlugin',
+            // @ts-ignore
             (chunks, modules) => {
               const entryNames = Array.from(compilation.entrypoints.keys());
               entryNames.forEach(entryName => {
                 const entrypoints = compilation.entrypoints.get(entryName);
+                // @ts-ignore
                 const c = entrypoints.chunks.find(c => c.name === entryName);
                 if (!c) return;
-                const entryModule = compilation.chunkGraph.getChunkRootModules(c).find(m => m.type === 'javascript/auto');
-                if (entryModule && c.runtime) {
-                  const exportsInfo = compilation.moduleGraph.getExportsInfo(entryModule);
-                  if (!exportsInfo) return;
-                  if (!exportsInfo.isUsed(c.runtime)) {
-                    exportsInfo.setUsedWithoutInfo(c.runtime);
-                  }
+                // @ts-ignore
+                const entryModules = compilation.chunkGraph.getChunkRootModules(c).filter(m => m.type === 'javascript/auto');
+                if (entryModules.length && c.runtime) {
+                  entryModules.forEach(entryModule => {
+                    const exportsInfo = compilation.moduleGraph.getExportsInfo(entryModule);
+                    if (!exportsInfo) return;
+                    if (!exportsInfo.isUsed(c.runtime)) {
+                      exportsInfo.setUsedWithoutInfo(c.runtime);
+                    }
+                  });
                 }
               });
             }
@@ -1031,6 +1071,7 @@ class ModuleWebpackPlugin {
            * @param {WebpackCompilation} compilationAssets
            * @param {(err?: Error) => void} callback
            */
+            // @ts-ignore
             // @ts-ignore
             (compilationAssets, callback) => processAssets(compilation, callback, (name, source) => {
               if (compilation.assets[name]) throw new Error(`assets [${name}] has aleady exist!`);
@@ -1054,6 +1095,7 @@ class ModuleWebpackPlugin {
    * @returns {Promise<string | (() => string | Promise<string>)>}
    */
   // @ts-ignore
+  // @ts-ignore
   evaluateCompilationResult(compilation, source) {
     if (!source) {
       return Promise.reject(new Error('The child compilation didn\'t provide a result'));
@@ -1068,6 +1110,7 @@ class ModuleWebpackPlugin {
     }
 
     const sourceModule = { __esModule: true };
+    // @ts-ignore
     const template = this.options.template.replace(/^.+!/, '').replace(/\?.+$/, '');
     const vmContext = vm.createContext(_.extend({
       ODULE_WEBPACK_PLUGIN: true,
@@ -1308,6 +1351,7 @@ class ModuleWebpackPlugin {
     };
 
     // let runtimeChunkIdx = -1;
+    // @ts-ignore
     compilation.chunks.forEach((chunk, i) => {
       if (this.options.runtimeChunk && chunk.hasRuntime()) {
         // if (entryNames.some(entryName => chunk.name.includes(entryName))) {
@@ -1332,9 +1376,12 @@ class ModuleWebpackPlugin {
     });
     // if (~runtimeChunkIdx) compilation.chunks.splice(runtimeChunkIdx, 1);
 
+    // @ts-ignore
     assets.batchReplaces = resolveBatchReplaces(this, compilation, this.options);
+    // @ts-ignore
     assets.shareModules = resolveShareModules(this, compilation, this.options);
     assets.remotes = resolveRemotes(this, compilation, this.options);
+    // @ts-ignore
     assets.externals = resolveExternals(compilation, this.options);
 
     // assetKeys.forEach(file => {
@@ -1349,6 +1396,7 @@ class ModuleWebpackPlugin {
 
     // Append a hash for cache busting
     if (this.options.hash && assets.manifest) {
+      // @ts-ignore
       assets.manifest = this.appendHash(assets.manifest, compilationHash);
     }
 
@@ -1359,7 +1407,8 @@ class ModuleWebpackPlugin {
       // if (webpackMajorVersion >= 5) {
       //   return ret;
       // }
-      if (entryModule.buildMeta.providedExports || entryModule.buildMeta.exportsType) {
+      const buildMeta = entryModule.buildMeta;
+      if (buildMeta && (buildMeta.providedExports || buildMeta.exportsType)) {
         ret.entryFile = resolveModuleFile(compilation, entryModule);
       }
       return ret;
@@ -1385,8 +1434,13 @@ class ModuleWebpackPlugin {
       }
       // @ts-ignore
       if (!c.name || !entryNames.includes(c.name)) return;
-      const entryModules = compilation.chunkGraph.getChunkRootModules(c).filter(m => m.type === 'javascript/auto');
-      if (entryModules) {
+      // @ts-ignore
+      let rootModules = compilation.chunkGraph.getChunkRootModules(c).filter(m => m.type === 'javascript/auto');
+      const optionEntry = compilation.options.entry[c.name];
+      // @ts-ignore
+      let entryModules = rootModules.filter(m => !optionEntry || !m.rawRequest || !optionEntry.import || optionEntry.import.includes(m.rawRequest));
+      if (!entryModules.length) entryModules = rootModules;
+      if (entryModules.length) {
         let entrys = entryModules.map(v => checkEntryModule(v));
         if (entrys.length <= 1) Object.assign(assets, entrys[0]);
         else {
@@ -1421,8 +1475,10 @@ class ModuleWebpackPlugin {
       // });
       // if (~runtimeChunkIdx) entrypoints.chunks.splice(i, 1);
 
+      // @ts-ignore
       const entryPointFiles = entrypoints.getFiles();
 
+      // @ts-ignore
       assets.entrys.ids.push(...entrypoints.chunks.map(c => ({
         id: c.id,
         isEntry: entryChunk === c,
@@ -1445,6 +1501,7 @@ class ModuleWebpackPlugin {
           const isEntry = Boolean(entryChunk && entryFiles.includes(chunkFile));
           let item = {
             file: this.options.hash
+              // @ts-ignore
               ? this.appendHash(entryPointPublicPath, compilationHash)
               : entryPointPublicPath,
             isRuntime: Boolean(runtimeChunk && runtimeFiles.includes(chunkFile)),
@@ -1477,6 +1534,7 @@ class ModuleWebpackPlugin {
         assets.entrys[ext].push(asset);
       });
     }
+    // @ts-ignore
     return assets;
   }
 
@@ -1546,6 +1604,7 @@ class ModuleWebpackPlugin {
     // Resolve template path
     return template.replace(
       /([!])([^/\\][^!?]+|[^/\\!?])($|\?[^!?\n]+$)/,
+      // @ts-ignore
       // @ts-ignore
       (match, prefix, filepath, postfix) => prefix + path.resolve(filepath) + postfix
     );

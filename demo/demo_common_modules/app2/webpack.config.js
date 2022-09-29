@@ -2,8 +2,6 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const path = require('path');
 const ImportRemotePlugin = require('import-remote/plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const ReactRefreshPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
-const webpack = require('webpack');
 
 const entryList = ['app', 'button'];
 
@@ -14,23 +12,26 @@ module.exports = {
   }, {
     index: './src/index.js'
   }),
-  devtool: 'source-map',
   mode: ['development', 'production'][0],
+  devtool: 'eval-source-map',
   target: ['web', 'es5'],
   devServer: {
-    contentBase: path.join(__dirname, 'dist'),
-    port: 3003,
-    headers: { 'Access-Control-Allow-Origin': '*' },
-    writeToDisk: true,
-    useLocalIp: true,
-    hot: true,
-    overlay: false,
-    quiet: true,
+    historyApiFallback: false,
     host: '0.0.0.0',
-    disableHostCheck: true,
-    inline: true,
-    stats: {
-      colors: true,
+    port: 3003,
+    allowedHosts: 'all',
+    client: {
+      overlay: false,
+      logging: 'none',
+    },
+    static: {
+      directory: path.join(__dirname, 'dist'),
+      publicPath: '/',
+    },
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+      'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, X-Requested-With',
     },
   },
   output: {
@@ -45,27 +46,47 @@ module.exports = {
         loader: 'babel-loader',
         exclude: /node_modules/,
         options: {
-          presets: ['@babel/preset-react'],
-          plugins: [
-            require.resolve('react-refresh/babel')
-          ]
+          presets: [
+            '@babel/preset-react'
+          ],
         },
       },
       {
         test: /\.css$/i,
-        use: [MiniCssExtractPlugin.loader, 'css-loader'],
+        use: [MiniCssExtractPlugin.loader, 'css-loader', 'postcss-loader'],
       },
+      {
+        test: /\.scss$/i,
+        use: [
+          MiniCssExtractPlugin.loader, 'css-loader', 'postcss-loader', 'fast-sass-loader',
+        ],
+      },
+      {
+        test: /\.less$/i,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader',
+          'postcss-loader',
+          {
+            loader: require.resolve('less-loader'),
+            options: {
+              lessOptions: {
+                javascriptEnabled: true,
+              },
+            },
+          },
+        ],
+      }
     ],
   },
   externals: [/antd\.css$/, 'react', 'react-dom', 'prop-types', 'antd'],
   plugins: [
-    new webpack.HotModuleReplacementPlugin(),
     new MiniCssExtractPlugin(),
     ...(entryList.map(entry => new ImportRemotePlugin({
       filename: `${entry}.js`,
       libraryFileName: true,
       commonModules: [
-        { name: '@basic-host-remote/common', url: 'http://localhost:3004/index.js' }
+        { url: 'http://localhost:3004/index.js' }
       ],
       chunks: [entry]
     }))),
@@ -73,6 +94,5 @@ module.exports = {
       template: './public/index.html',
       filename: 'index.html'
     }),
-    new ReactRefreshPlugin(),
   ],
 };

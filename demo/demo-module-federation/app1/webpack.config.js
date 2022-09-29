@@ -172,7 +172,6 @@ const config = {
         // },
         'react',
         'react-dom',
-        /dpl\.css$/
       ],
       chunks: ['index']
     }),

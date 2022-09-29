@@ -1,6 +1,8 @@
 import React from 'react';
 import LocalButton from './button';
 
+window.React2 = React;
+
 const App = () => (
   <div>
     <h1>Import-remote RemoteView示例：远程模块</h1>

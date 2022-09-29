@@ -156,7 +156,11 @@ function resolveResult(result, options) {
 function requireModule(__require__, manifest) {
   if (!__require__) return;
   let result = __require__(manifest.entryId, manifest.entryFile);
-  if (Array.isArray(manifest.entryId)) result = result[0];
+  if (Array.isArray(manifest.entryId)) {
+    let entryIndex = manifest.entryIndex || 0;
+    if (isFunction(entryIndex)) entryIndex = entryIndex.call(manifest, result);
+    result = result[entryIndex];
+  }
   return result;
 }
 
@@ -237,6 +241,7 @@ function remote(url, options = {}) {
 
         if (cached[cacheUrl]) cached[cacheUrl].manifest = manifest;
         getManifestCallback && (await getManifestCallback(manifest));
+        if (manifest.checkManifest) await manifest.checkManifest();
 
         // if (__remoteModuleWebpack__[scopeName]) {
         //   const ctx = __remoteModuleWebpack__[scopeName];
@@ -501,13 +506,6 @@ function remote(url, options = {}) {
           __require__.m[external.id] = fn;
         });
 
-        // eslint-disable-next-line no-empty
-        if (context.promisePending) try { await context.promisePending; } catch (ex) {}
-        innumerable(context, 'promisePending', Promise.all(manifest.entrys.ids.map(id => __require__.e(id, true))));
-        try {
-          await context.promisePending;
-        } finally { delete context.promisePending; }
-
         manifest.shareModules && manifest.shareModules.forEach(item => {
           let oldModule = __require__.m[item.id];
           if (oldModule && (oldModule.__import_remote_shared__ || oldModule.__import_remote_external__)) return;
@@ -543,6 +541,13 @@ function remote(url, options = {}) {
             __require__.m[item.id] = fn;
           }
         });
+
+        // eslint-disable-next-line no-empty
+        if (context.promisePending) try { await context.promisePending; } catch (ex) {}
+        innumerable(context, 'promisePending', Promise.all(manifest.entrys.ids.map(id => __require__.e(id, true))));
+        try {
+          await context.promisePending;
+        } finally { delete context.promisePending; }
 
         if (__require__._init) await __require__._init(manifest.remotes);
 

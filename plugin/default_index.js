@@ -60,10 +60,11 @@ module.exports = function ({
   if (options.beforeSource) data.beforeSource = options.beforeSource;
   if (options.afterCreateRuntime) data.afterCreateRuntime = options.afterCreateRuntime;
   if (options.beforeSourceRegx) data.beforeSourceRegx = options.beforeSourceRegx;
+  if (options.checkManifest) data.checkManifest = options.checkManifest;
   return `module.exports=function(){return ${JSON.stringify(data, (key, value) => {
     if (typeof value === 'function') {
       let str = value.toString();
-      let [, args = '', bracketL, body = '', bracketR] = str.match(/^(?:(?:function)?\s?[A-Za-z0-9_$]*\s?)?\(([A-Za-z0-9_$\s,]*)\)\s*(?:=>\s*)?({?)((?:.|\n)*)(}?)$/) || [];
+      let [, args = '', bracketL, body = '', bracketR] = str.match(/^(?:(?:function)?\s?[A-Za-z0-9_$]*\s?)?\(?([A-Za-z0-9_$\s\n\r,]*)\)?\s*(?:=>\s*)?({?)((?:.|\n|\r)*)(}?)$/) || [];
       if (bracketL === '{' && !bracketR && body.endsWith('}')) {
         bracketR = '}';
         body = body.substr(0, body.length - 1).trim();

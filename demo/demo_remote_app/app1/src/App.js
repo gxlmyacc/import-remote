@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { RemoteApp } from 'import-remote/view';
 import app2 from './app2';
 
+window.React1 = React;
+
 const App = () => {
   const [text, setText] = useState('app1 button');
   const [showRemoteApp, setShowRemoteApp] = useState(true);

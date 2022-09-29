@@ -116,7 +116,7 @@ const RemoteApp = React.forwardRef(
           setApp({ App });
         }).catch(e => {
           if ($refs.clearWhenError) {
-            let App = $refs.hoc(null, e) || null;
+            let App = ($refs.hoc && $refs.hoc(null, e)) || null;
             setApp({ App });
           }
           return e;
