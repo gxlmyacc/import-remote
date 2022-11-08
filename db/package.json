@@ -1,5 +1,5 @@
 {
-  "name": "import-remote/cache",
+  "name": "import-remote/db",
   "main": "../esm/db.js",
   "module": "../esm/db.js",
   "typings": "../types/db.d.ts"

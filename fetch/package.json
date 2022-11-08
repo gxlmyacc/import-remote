@@ -1,0 +1,6 @@
+{
+  "name": "import-remote/fetch",
+  "main": "../esm/fetch.js",
+  "module": "../esm/fetch.js",
+  "typings": "../types/fetch.d.ts"
+}

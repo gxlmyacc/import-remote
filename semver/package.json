@@ -1,0 +1,6 @@
+{
+  "name": "import-remote/semver",
+  "main": "../esm/semver.js",
+  "module": "../esm/semver.js",
+  "typings": "../types/semver.d.ts"
+}

@@ -2,6 +2,7 @@ import {
   isAbsoluteUrl,
   joinUrl,
 } from './fetch';
+import { RemoteImportOptions } from './importJs'
 
 declare const DEFAULT_TIMEOUT: string;
 declare const ATTR_SCOPE_NAME: string;
@@ -14,10 +15,11 @@ declare function innumerable<T>(
 ): T;
 
 
+declare function requireFromStr(source: string, options?: { global?: any, url?: string, moduleProps?: Record<string, any>}): any;
 declare function hasOwnProp(obj: any, v: PropertyKey): boolean;
-declare function isPlainObject(obj: any): boolean;
-declare function isFunction(obj: any): boolean;
-declare function isRegExp(obj: any): boolean;
+declare function isPlainObject(obj: any): obj is Record<string, any>;
+declare function isFunction(fn: any): fn is Function;
+declare function isRegExp(obj: any): obj is RegExp;
 declare function isSameHost(host1: string, host2: string): boolean;
 declare function isEvalDevtool(devtool: boolean|string): boolean;
 
@@ -29,10 +31,23 @@ declare function objectDefineProperty<T>(o: T, p: PropertyKey, attributes: Prope
 
 declare function getCacheUrl(url: string, scopeName: string): string;
 
+declare function transformSourcemapUrl(href: string, source: string, options?: RemoteImportOptions): string;
+declare function resolveRelativeUrl(
+  url: string,
+  options?: {
+    host?: string,
+    onHost?: (host: string) => string,
+  }
+): string;
+
+
+declare function walkMainifest<T>(target: T): T;
+
 export {
   DEFAULT_TIMEOUT,
   ATTR_SCOPE_NAME,
 
+  requireFromStr,
   getCacheUrl,
   innumerable,
   hasOwnProp,
@@ -42,9 +57,13 @@ export {
   isFunction,
   isPlainObject,
   isRegExp,
-  isEvalDevtool,
   mergeObject,
   getHostFromUrl,
+  isEvalDevtool,
   requireWithVersion,
+  resolveRelativeUrl,
+  walkMainifest,
+
+  transformSourcemapUrl,
   objectDefineProperty
 }

@@ -1,0 +1,6 @@
+{
+  "name": "import-remote/importJson",
+  "main": "../esm/importJson.js",
+  "module": "../esm/importJson.js",
+  "typings": "../types/importJson.d.ts"
+}

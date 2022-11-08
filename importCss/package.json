@@ -1,0 +1,6 @@
+{
+  "name": "import-remote/importCss",
+  "main": "../esm/importCss.js",
+  "module": "../esm/importCss.js",
+  "typings": "../types/importCss.d.ts"
+}

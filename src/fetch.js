@@ -11,6 +11,7 @@ function checkRemoteModuleWebpack(context = window) {
       cached: {},
     };
   }
+  if (!globalModule.shareModules) globalModule.shareModules = {};
   return globalModule;
 }
 const globalModule = checkRemoteModuleWebpack();

@@ -1,0 +1,6 @@
+{
+  "name": "import-remote/jsonp",
+  "main": "../esm/jsonp.js",
+  "module": "../esm/jsonp.js",
+  "typings": "../types/jsonp.d.ts"
+}

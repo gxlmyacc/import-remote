@@ -1,5 +1,5 @@
-import { ImportRemoteCache, FetchOptions } from './fetch';
-import { SourcemapCallback, BeforeSourceCallback } from './types';
+import { FetchOptions } from './fetch';
+import { ImportRemoteCache, SourcemapCallback, BeforeSourceCallback } from './types';
 
 interface RemoteImportOptions extends FetchOptions {
   cached?: ImportRemoteCache,

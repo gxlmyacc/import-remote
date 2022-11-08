@@ -1,0 +1,6 @@
+{
+  "name": "import-remote/importJs",
+  "main": "../esm/importJs.js",
+  "module": "../esm/importJs.js",
+  "typings": "../types/importJs.d.ts"
+}

@@ -5,35 +5,33 @@ const DEFAULT_TIMEOUT = 120000;
 
 const ATTR_SCOPE_NAME = 'data-remote-scope';
 
-function requireFromStr(source, { global: context = window, moduleProps = {}, } = {}) {
+/** @type {import('types/utils').requireFromStr} */
+function requireFromStr(source, { global: context = window, url, moduleProps = {}, } = {}) {
   // eslint-disable-next-line no-useless-catch
-  try {
-    const _module = { inRemoteModule: true, exports: {}, ...moduleProps };
-    let names = ['module', 'exports'];
-    let args = [_module, _module.exports];
+  const _module = { inRemoteModule: true, exports: {}, ...moduleProps };
+  let names = ['module', 'exports'];
+  let args = [_module, _module.exports];
 
-    if (context && context !== window) {
-      Object.keys(context).forEach(key => {
-        let v = context[key];
-        if (v == null) {
-          if (key !== '__windowProxy__') return;
-          v = window;
-          if (!v.doc) v.doc = window.document;
-        }
-        names.push(key);
-        args.push(v);
-      });
-    }
-    // eslint-disable-next-line
-    const fn = new Function(...names, source);
-    fn.apply(context, args);
-    return _module.exports;
-  } catch (ex) {
-    // console.error(ex);
-    throw ex;
+  if (context && context !== window) {
+    Object.keys(context).forEach(key => {
+      let v = context[key];
+      if (v == null) {
+        if (key !== '__windowProxy__') return;
+        v = window;
+        if (!v.doc) v.doc = window.document;
+      }
+      names.push(key);
+      args.push(v);
+    });
   }
+  if (url) source = `//# filename=${url}\n` + source;
+  // eslint-disable-next-line no-new-func
+  const fn = new Function(...names, source);
+  fn.apply(context, args);
+  return _module.exports;
 }
 
+/** @type {import('types/utils').resolveRelativeUrl} */
 function resolveRelativeUrl(url, options = {}) {
   if (!url || isAbsoluteUrl(url)) return url;
   let host = options.host || window.location.origin;
@@ -55,21 +53,24 @@ function resolveRelativeUrl(url, options = {}) {
 
 const _toString = Object.prototype.toString;
 
+/** @type {import('types/utils').isPlainObject} */
 function isPlainObject(obj) {
   return _toString.call(obj) === '[object Object]';
 }
 
+/** @type {import('types/utils').isRegExp} */
 function isRegExp(obj) {
   return _toString.call(obj) === '[object RegExp]';
 }
 
+/** @type {import('types/utils').isFunction} */
 function isFunction(fn) {
   return fn
     && typeof fn === 'function'
     && (!fn.prototype || fn.prototype === Function || fn.constructor === Function);
 }
 
-/** @type {import('../types').mergeObject} */
+/** @type {import('types/utils').mergeObject} */
 function mergeObject(target) {
   function _mergeObject(target, source, copiedObjects) {
     if (!target) return target;
@@ -98,8 +99,7 @@ function mergeObject(target) {
 
 /**
  * @template T
- * @param {T} target
- * @returns {T}
+ * @type {import('types/utils').walkMainifest<T>}
  */
 function walkMainifest(target) {
   let copied = [];
@@ -141,7 +141,7 @@ function walkMainifest(target) {
   return _walk(target, copied);
 }
 
-/** @type {import('../types').innumerable} */
+/** @type {import('types/utils').innumerable} */
 function innumerable(
   obj,
   key,
@@ -153,18 +153,12 @@ function innumerable(
 }
 
 const _hasOwnProperty = Object.prototype.hasOwnProperty;
-/**
- * @param {object} obj
- * @param {string} propName
- * @returns
- */
+/** @type {import('types/utils').hasOwnProp} */
 function hasOwnProp(obj, propName) {
   return _hasOwnProperty.call(obj, propName);
 }
 
-/**
- * @param {string} url
- */
+/** @type {import('types/utils').getHostFromUrl} */
 function getHostFromUrl(url) {
   url = url.replace(/((https?:)?\/\/[^?#]*).*/g, '$1');
   if (!/\.js$/.test(url)) return url;
@@ -173,23 +167,18 @@ function getHostFromUrl(url) {
   return urls.join('/');
 }
 
-/**
- * @param {string|boolean} devtool
- */
+/** @type {import('types/utils').isEvalDevtool} */
 function isEvalDevtool(devtool) {
   return typeof devtool === 'string' && /^(eval|inline)/.test(String(devtool));
 }
 
-/** @type {import('../types').requireWithVersion} */
+/** @type {import('types/utils').requireWithVersion} */
 function requireWithVersion(module, version) {
   if (module && !module.version) innumerable(module, 'version', version);
   return module;
 }
 
-/**
- * @param {string} host1
- * @param {string} host2
- */
+/** @type {import('types/utils').isSameHost} */
 function isSameHost(host1, host2) {
   host1 = host1.replace(/\/+$/, '');
   host2 = host2.replace(/\/+$/, '');
@@ -229,6 +218,7 @@ function transformSourcemapUrl(href, source, { devtool, sourcemapHost, scopeName
   return source;
 }
 
+/** @type {import('types/utils').getCacheUrl} */
 function getCacheUrl(url, scopeName) {
   if (!scopeName || typeof scopeName !== 'string') return url;
   return url + `${url.indexOf('?') >= 0 ? '&' : '?'}scopeName=${encodeURIComponent(scopeName)}`;

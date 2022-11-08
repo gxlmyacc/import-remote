@@ -56,7 +56,7 @@ function importJs(url, {
             }
           }
           if (beforeSource) source = beforeSource(source, 'js', url, { isEval });
-          const result = requireFromStr(source, { global });
+          const result = requireFromStr(source, { global, url });
           resolve(result);
         } catch (err) {
           if (err && !err.url) err.url = url;

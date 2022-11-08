@@ -57,7 +57,8 @@ type RemoteModuleWebpack = {
   __moduleManifests__: Record<string, RemoteRuntimeManifest>,
   cached: ImportRemoteCache,
   cacheDB: boolean,
-  db: IndexedDBAsync
+  db: IndexedDBAsync,
+  shareModules: Record<string, any>
 };
 
 type RemoteModuleRuntime = {

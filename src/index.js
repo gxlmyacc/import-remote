@@ -10,6 +10,7 @@ import importCss from './importCss';
 import jsonp from './jsonp';
 import { satisfy, versionLt } from './semver';
 
+/** @type {string} */
 const version = typeof __packageversion__ === 'undefined' ? undefined : __packageversion__;
 
 export {

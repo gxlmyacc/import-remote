@@ -1,3 +1,4 @@
+import {  DEFAULT_TIMEOUT } from './utils';
 
 /** @type {import('../types/jsonp').default}  */
 function jsonp(url, options = {}) {
@@ -16,7 +17,7 @@ function jsonp(url, options = {}) {
 
       script.charset = 'utf-8';
       script.timeout = 120;
-      script.setAttribute('data-webpack', options.key);
+      script.setAttribute('data-webpack', options.key || '');
       script.src = url;
     }
     let timeout;
@@ -28,7 +29,7 @@ function jsonp(url, options = {}) {
       resolve(event);
       if (prev) return prev(event);
     };
-    timeout = setTimeout(onScriptComplete.bind(null, undefined, { type: 'timeout', target: script }), options.timeout || 120000);
+    timeout = setTimeout(onScriptComplete.bind(null, undefined, { type: 'timeout', target: script }), options.timeout || DEFAULT_TIMEOUT);
     script.onerror = onScriptComplete.bind(null, script.onerror);
     script.onload = onScriptComplete.bind(null, script.onload);
     needAttach && document.head.appendChild(script);

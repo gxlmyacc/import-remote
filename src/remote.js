@@ -392,8 +392,8 @@ function remote(url, options = {}) {
           const checkOffset = (source, offset, match, replaceStr) => {
             // if (/^ ?=/.test(source.substr(offset + match.length, 2))) return match;
             if (!offset) return replaceStr;
-            if (!/^(window|self|global)\./.test(match)) {
-              const [, prefixVar] = source.substr(offset - 7, 7).match(/(window|self|global)\.$/) || [];
+            if (!/^(window|self|global|globalThis)\./.test(match)) {
+              const [, prefixVar] = source.substr(offset - 7, 7).match(/(window|self|global|globalThis)\.$/) || [];
               if (prefixVar) offset = Math.max(offset - prefixVar.length - 1, 0);
             }
             return (offset && ['.', '\'', '"', '$', '_', '`'].includes(source[offset - 1])) ? match : replaceStr;
@@ -509,7 +509,7 @@ function remote(url, options = {}) {
         manifest.shareModules && manifest.shareModules.forEach(item => {
           let oldModule = __require__.m[item.id];
           if (oldModule && (oldModule.__import_remote_shared__ || oldModule.__import_remote_external__)) return;
-          let newModule = requireExternal(item, true);
+          let newModule = requireExternal(item, true) || __remoteModuleWebpack__.shareModules[item.id];
           if (newModule !== undefined) {
             let itemVersion = item.version;
             if (itemVersion) {
@@ -539,6 +539,7 @@ function remote(url, options = {}) {
             };
             fn.__import_remote_shared__ = true;
             __require__.m[item.id] = fn;
+            if (!__remoteModuleWebpack__.shareModules[item.id]) __remoteModuleWebpack__.shareModules[item.id] = newModule;
           }
         });
 

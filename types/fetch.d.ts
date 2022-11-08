@@ -59,7 +59,7 @@ declare global {
 
 }
 
-declare function checkRemoteModuleWebpack(context?: Window): Window.__remoteModuleWebpack__;
+declare function checkRemoteModuleWebpack(context?: Window): typeof window.__remoteModuleWebpack__;
 
 declare function isAbsoluteUrl(url: string): boolean;
 declare function joinUrl(host: string, path?: string): string;
@@ -67,7 +67,7 @@ declare function existModule(host: string, moduleName?: boolean, options?: Remot
 
 declare const globalModule: Window['__remoteModuleWebpack__'];
 declare const globalDB: IndexedDBAsync;
-declare const globalCached: Window.__remoteModuleWebpack__.cached;
+declare const globalCached: (typeof window.__remoteModuleWebpack__)['cached'];
 declare const TABLE_NAME: string;
 
 export {
