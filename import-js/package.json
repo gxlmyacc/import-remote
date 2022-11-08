@@ -1,5 +1,5 @@
 {
-  "name": "import-remote/importJs",
+  "name": "import-remote/import-js",
   "main": "../esm/importJs.js",
   "module": "../esm/importJs.js",
   "typings": "../types/importJs.d.ts"

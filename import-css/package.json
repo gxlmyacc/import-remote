@@ -1,5 +1,5 @@
 {
-  "name": "import-remote/importCss",
+  "name": "import-remote/import-css",
   "main": "../esm/importCss.js",
   "module": "../esm/importCss.js",
   "typings": "../types/importCss.d.ts"
