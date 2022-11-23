@@ -754,21 +754,23 @@ function createRuntime(options = {}) {
             currentUpdateApplyHandlers = [];
 
             return Promise.all(
-              Object.keys(__webpack_require__.hmrC).reduce(function (
-                promises,
-                key
-              ) {
-                __webpack_require__.hmrC[key](
-                  update.c,
-                  update.r,
-                  update.m,
+              Object.keys(__webpack_require__.hmrC).reduce(
+                function (
                   promises,
-                  currentUpdateApplyHandlers,
-                  updatedModules
-                );
-                return promises;
-              },
-              [])
+                  key
+                ) {
+                  __webpack_require__.hmrC[key](
+                    update.c,
+                    update.r,
+                    update.m,
+                    promises,
+                    currentUpdateApplyHandlers,
+                    updatedModules
+                  );
+                  return promises;
+                },
+                []
+              )
             ).then(function () {
               return waitForBlockingPromises(function () {
                 if (applyOnUpdate) {

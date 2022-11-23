@@ -89,6 +89,8 @@ export {
 };
 
 /** @type {import('../types/importCss').default}  */
-export default function (href, options = {}) {
+function importCss(href, options = {}) {
   return fetchStyle(href, options);
 }
+
+export default importCss;

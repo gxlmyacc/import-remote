@@ -6,9 +6,9 @@ const DEFAULT_TIMEOUT = 120000;
 const ATTR_SCOPE_NAME = 'data-remote-scope';
 
 /** @type {import('types/utils').requireFromStr} */
-function requireFromStr(source, { global: context = window, moduleProps = {}, } = {}) {
+function requireFromStr(source, { global: context = window, url, moduleProps = {}, } = {}) {
   // eslint-disable-next-line no-useless-catch
-  const _module = { inRemoteModule: true, exports: {}, url, ...moduleProps };
+  const _module = { inRemoteModule: true, exports: {}, ...moduleProps };
   let names = ['module', 'exports'];
   let args = [_module, _module.exports];
 
@@ -25,7 +25,7 @@ function requireFromStr(source, { global: context = window, moduleProps = {}, } 
       args.push(v);
     });
   }
-  if (url && !/\/\/# sourceMappingURL=[\w.\/_:?&%=#+-]+\.map$/.test(source)) source = source + `\n//# sourceMappingURL=${url}.map`;
+  if (url && !/\/\/# sourceMappingURL=[\w./_:?&%=#+-]+\.map$/.test(source)) source += `\n//# sourceMappingURL=${url}.map`;
   // eslint-disable-next-line no-new-func
   (new Function(...names, source)).apply(context, args);
   return _module.exports;
@@ -203,11 +203,15 @@ function transformSourcemapUrl(href, source, { devtool, sourcemapHost, scopeName
     }
 
     if (/\.css$/i.test(href)) {
-      source = source.replace(sourceMappingURLCssRegx,
-        (m, p1) =>  `/*# sourceMappingURL=${joinUrl(sourcemapHost, p1)}*/`);
+      source = source.replace(
+        sourceMappingURLCssRegx,
+        (m, p1) =>  `/*# sourceMappingURL=${joinUrl(sourcemapHost, p1)}*/`
+      );
     } else {
-      source = source.replace(sourceMappingURLJsRegx,
-        (m, p1) =>  `//# sourceMappingURL=${joinUrl(sourcemapHost, p1)}`);
+      source = source.replace(
+        sourceMappingURLJsRegx,
+        (m, p1) =>  `//# sourceMappingURL=${joinUrl(sourcemapHost, p1)}`
+      );
     }
   } else if (scopeName) {
     const sourcemapHost = sessionStorage.getItem(`import-remote-${scopeName}-sourcemapping-host`);

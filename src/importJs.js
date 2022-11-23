@@ -34,7 +34,8 @@ function importJs(url, {
               const regx = new RegExp(`\\/\\/# sourceMappingURL=data:application\\/json;charset=utf-8;base64,([0-9A-Za-z=/+.-]+)${
                 isEval ? '\\\\n' : '(?:\\n|$)'
               }`, 'g');
-              source = source.replace(regx,
+              source = source.replace(
+                regx,
                 (m, p1) => {
                   let sourcemap = JSON.parse(base64.decode(p1));
                   sourcemap.sources = sourcemap.sources.map(src => {
@@ -50,7 +51,8 @@ function importJs(url, {
                   return `//# sourceMappingURL=data:application/json;charset=utf-8;base64,${base64.encode(JSON.stringify(sourcemap))}${
                     isEval ? '\\n' : m.endsWith('\n') ? '\n' : ''
                   }`;
-                });
+                }
+              );
             } else {
               source = transformSourcemapUrl(url, source, { devtool, sourcemapHost, scopeName, host, publicPath });
             }

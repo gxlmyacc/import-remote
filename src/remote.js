@@ -196,14 +196,15 @@ function requireManifest(url, options) {
  */
 function checkReplaceOffset(source, offset, match, replaceStr) {
   // if (/^ ?=/.test(source.substr(offset + match.length, 2))) return match;
+  let newMatch = match;
   if (offset && !/^(window|self|global|globalThis)\./.test(match)) {
-    const [, prefixVar] = source.substr(offset - 7, 7).match(/(window|self|global|globalThis)\.$/) || [];
+    const [, prefixVar] = source.substr(offset - 12, 12).match(/(window|self|global|globalThis)\.$/) || [];
     if (prefixVar) {
       offset = Math.max(offset - prefixVar.length - 1, 0);
-      match = `${prefixVar}.` + match;
+      newMatch = `${prefixVar}.` + match;
     }
   }
-  if (match.length > replaceStr.length) replaceStr = replaceStr.padEnd(match.length, ' ');
+  if (newMatch.length > replaceStr.length) replaceStr = replaceStr.padEnd(newMatch.length, ' ');
   return (offset && ['.', '\'', '"', '$', '_', '`'].includes(source[offset - 1])) ? match : replaceStr;
 }
 
@@ -260,7 +261,10 @@ function remote(url, options = {}) {
           method,
           done: () => isDone = true
         });
-        if (isDone) return resolve(manifest);
+        if (isDone) {
+          resolve(manifest);
+          return;
+        }
         if (!manifest.scopeName) throw new Error('[import-remote:remote]scopeName can not be empty!');
 
         if (scopeName && manifest.scopeName !== scopeName) manifest.scopeName = scopeName;
@@ -370,10 +374,12 @@ function remote(url, options = {}) {
             commonModuleOptions.some(option => {
               const commonModuleContext = __remoteModuleWebpack__[option.name];
               const commonModuleManifest = __remoteModuleWebpack__.__moduleManifests__[option.name];
-              result = commonModuleContext && commonModuleManifest && resolveModule(external,
+              result = commonModuleContext && commonModuleManifest && resolveModule(
+                external,
                 commonModuleContext.require || commonModuleContext.__require__,
                 commonModuleManifest.nodeModulesPath,
-                manifest.nodeModulesPath);
+                manifest.nodeModulesPath
+              );
               return result !== undefined;
             });
           }
@@ -385,7 +391,7 @@ function remote(url, options = {}) {
         };
 
         let context = __remoteModuleWebpack__[scopeName];
-        if (context) checkContext(context)
+        if (context) checkContext(context);
         else {
           const globalObject = manifest.windowObject || 'window';
           let newGlobalObject = manifest.globalObject || '__context__';
@@ -497,8 +503,13 @@ function remote(url, options = {}) {
 
               if (beforeSource) source = beforeSource(source, type, href, options);
               if (manifest.beforeSource) {
-                source = manifest.beforeSource(source, type, href, options,
-                  { versionLt, satisfy, batchReplace, checkReplaceOffset });
+                source = manifest.beforeSource(
+                  source,
+                  type,
+                  href,
+                  options,
+                  { versionLt, satisfy, batchReplace, checkReplaceOffset }
+                );
               }
 
               return source;
