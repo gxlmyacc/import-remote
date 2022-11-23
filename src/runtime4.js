@@ -21,7 +21,7 @@ function createRuntime({
   beforeSource,
 } = {}) {
   const modules = [];
-  
+
   const _hasOwnProperty = Object.prototype.hasOwnProperty;
   // The module cache
   context.installedModules = context.installedModules || {};
@@ -69,7 +69,7 @@ function createRuntime({
       inRemoteModule: true,
       requireExternal,
       publicPath,
-      
+
       i: moduleId,
       l: false,
       exports: {}
@@ -85,9 +85,9 @@ function createRuntime({
     // Execute the module function
     try {
       modules[moduleId].call(
-        module.exports, 
-        module, 
-        module.exports, 
+        module.exports,
+        module,
+        module.exports,
         hot ? hotCreateRequire(moduleId) : __webpack_require__
       );
     } catch (ex) {
@@ -121,12 +121,12 @@ function createRuntime({
     hotAddUpdateChunk(chunkId, moreModules);
     if (parentHotUpdateCallback) parentHotUpdateCallback(chunkId, moreModules);
   };
-  
+
   function hotDownloadUpdateChunk(chunkId) {
     let href = __webpack_require__.p + '' + chunkId + '.' + hotCurrentHash + '.hot-update.js';
     return importJs(href, {  timeout, global: context, cached, scopeName, host, devtool, beforeSource });
-  }                          
-  
+  }
+
   function hotDownloadManifest(requestTimeout) {
     requestTimeout = requestTimeout || 10000;
     return new Promise(async function (resolve, reject) {
@@ -190,7 +190,7 @@ function createRuntime({
         finishChunkLoading();
         throw err;
       });
-  
+
       function finishChunkLoading() {
         hotChunksLoading--;
         if (hotStatus === 'prepare') {
@@ -209,7 +209,7 @@ function createRuntime({
     };
     return fn;
   }
-  
+
   // eslint-disable-next-line no-unused-vars
   function hotCreateModule(moduleId) {
     const hot = {
@@ -221,7 +221,7 @@ function createRuntime({
       _selfInvalidated: false,
       _disposeHandlers: [],
       _main: hotCurrentChildModule !== moduleId,
-  
+
       // Module API
       active: true,
       accept(dep, callback) {
@@ -268,7 +268,7 @@ function createRuntime({
             break;
         }
       },
-  
+
       // Management API
       check: hotCheck,
       apply: hotApply,
@@ -283,22 +283,22 @@ function createRuntime({
         let idx = hotStatusHandlers.indexOf(l);
         if (idx >= 0) hotStatusHandlers.splice(idx, 1);
       },
-  
+
       // inherit from previous dispose call
       data: hotCurrentModuleData[moduleId]
     };
     hotCurrentChildModule = undefined;
     return hot;
   }
-  
+
   let hotStatusHandlers = [];
   let hotStatus = 'idle';
-  
+
   function hotSetStatus(newStatus) {
     hotStatus = newStatus;
     for (let i = 0; i < hotStatusHandlers.length; i++) hotStatusHandlers[i].call(null, newStatus);
   }
-  
+
   // while downloading
   let hotWaitingFiles = 0;
   let hotChunksLoading = 0;
@@ -306,15 +306,15 @@ function createRuntime({
   let hotRequestedFilesMap = {};
   let hotAvailableFilesMap = {};
   let hotDeferred;
-  
+
   // The update info
   let hotUpdate; let hotUpdateNewHash; let hotQueuedInvalidatedModules;
-  
+
   function toModuleId(id) {
     let isNumber = +id + '' === id;
     return isNumber ? +id : id;
   }
-  
+
   function hotCheck(apply) {
     if (hotStatus !== 'idle') {
       throw new Error('check() is only allowed in idle status');
@@ -330,7 +330,7 @@ function createRuntime({
       hotWaitingFilesMap = {};
       hotAvailableFilesMap = update.c;
       hotUpdateNewHash = update.h;
-  
+
       hotSetStatus('prepare');
       let promise = new Promise(function (resolve, reject) {
         hotDeferred = {
@@ -352,7 +352,7 @@ function createRuntime({
       return promise;
     });
   }
-  
+
   function hotAddUpdateChunk(chunkId, moreModules) {
     if (!hotAvailableFilesMap[chunkId] || !hotRequestedFilesMap[chunkId]) return;
     hotRequestedFilesMap[chunkId] = false;
@@ -365,7 +365,7 @@ function createRuntime({
       hotUpdateDownloaded();
     }
   }
-  
+
   function hotEnsureUpdateChunk(chunkId) {
     if (!hotAvailableFilesMap[chunkId]) {
       hotWaitingFilesMap[chunkId] = true;
@@ -375,7 +375,7 @@ function createRuntime({
       hotDownloadUpdateChunk(chunkId);
     }
   }
-  
+
   function hotUpdateDownloaded() {
     hotSetStatus('ready');
     let deferred = hotDeferred;
@@ -407,26 +407,26 @@ function createRuntime({
       deferred.resolve(outdatedModules);
     }
   }
-  
+
   function hotApply(options) {
     if (hotStatus !== 'ready') throw new Error('apply() is only allowed in ready status');
     options = options || {};
     return hotApplyInternal(options);
   }
-  
+
   function hotApplyInternal(options) {
     hotApplyInvalidatedModules();
-  
+
     let cb;
     let i;
     let j;
     let module;
     let moduleId;
-  
+
     function getAffectedStuff(updateModuleId) {
       let outdatedModules = [updateModuleId];
       let outdatedDependencies = {};
-  
+
       let queue = outdatedModules.map(function (id) {
         return {
           chain: [id],
@@ -481,7 +481,7 @@ function createRuntime({
           });
         }
       }
-  
+
       return {
         type: 'accepted',
         moduleId: updateModuleId,
@@ -489,14 +489,14 @@ function createRuntime({
         outdatedDependencies
       };
     }
-  
+
     function addAllToSet(a, b) {
       for (let i = 0; i < b.length; i++) {
         let item = b[i];
         if (a.indexOf(item) === -1) a.push(item);
       }
     }
-  
+
     // at begin all updates modules are outdated
     // the "outdated" status can propagate to parents if they don't accept the children
     let outdatedDependencies = {};
@@ -509,11 +509,11 @@ function createRuntime({
         '[HMR] unexpected require(' + result.moduleId + ') to disposed module'
       );
     };
-  
+
     for (let id in hotUpdate) {
       if (_hasOwnProperty.call(hotUpdate, id)) {
         moduleId = toModuleId(id);
- 
+
         if (hotUpdate[id]) {
           result = getAffectedStuff(moduleId);
         } else {
@@ -593,7 +593,7 @@ function createRuntime({
         }
       }
     }
-  
+
     // Store self accepted outdated modules to require them later by the module system
     let outdatedSelfAcceptedModules = [];
     for (i = 0; i < outdatedModules.length; i++) {
@@ -612,7 +612,7 @@ function createRuntime({
         });
       }
     }
-  
+
     // Now in "dispose" phase
     hotSetStatus('dispose');
     Object.keys(hotAvailableFilesMap).forEach(function (chunkId) {
@@ -620,16 +620,16 @@ function createRuntime({
         hotDisposeChunk(chunkId);
       }
     });
-  
+
     let idx;
     let queue = outdatedModules.slice();
     while (queue.length > 0) {
       moduleId = queue.pop();
       module = context.installedModules[moduleId];
       if (!module) continue;
-  
+
       let data = {};
-  
+
       // Call dispose handlers
       let disposeHandlers = module.hot._disposeHandlers;
       for (j = 0; j < disposeHandlers.length; j++) {
@@ -637,16 +637,16 @@ function createRuntime({
         cb(data);
       }
       hotCurrentModuleData[moduleId] = data;
-  
+
       // disable module (this disables requires from this module)
       module.hot.active = false;
-  
+
       // remove module from cache
       delete context.installedModules[moduleId];
-  
+
       // when disposing there is no need to call dispose handler
       delete outdatedDependencies[moduleId];
-  
+
       // remove "parents" references from all children
       for (j = 0; j < module.children.length; j++) {
         let child = context.installedModules[module.children[j]];
@@ -657,7 +657,7 @@ function createRuntime({
         }
       }
     }
-  
+
     // remove outdated dependency from module children
     let dependency;
     let moduleOutdatedDependencies;
@@ -675,23 +675,23 @@ function createRuntime({
         }
       }
     }
-  
+
     // Now in "apply" phase
     hotSetStatus('apply');
-  
+
     if (hotUpdateNewHash !== undefined) {
       hotCurrentHash = hotUpdateNewHash;
       hotUpdateNewHash = undefined;
     }
     hotUpdate = undefined;
-  
+
     // insert new code
     for (moduleId in appliedUpdate) {
       if (_hasOwnProperty.call(appliedUpdate, moduleId)) {
         modules[moduleId] = appliedUpdate[moduleId];
       }
     }
-  
+
     // call accept handlers
     let error = null;
     for (moduleId in outdatedDependencies) {
@@ -730,7 +730,7 @@ function createRuntime({
         }
       }
     }
-  
+
     // Load self accepted modules
     for (i = 0; i < outdatedSelfAcceptedModules.length; i++) {
       let item = outdatedSelfAcceptedModules[i];
@@ -771,13 +771,13 @@ function createRuntime({
         }
       }
     }
-  
+
     // handle errors in accept handlers and self accepted module load
     if (error) {
       hotSetStatus('fail');
       return Promise.reject(error);
     }
-  
+
     if (hotQueuedInvalidatedModules) {
       return hotApplyInternal(options).then(function (list) {
         outdatedModules.forEach(function (moduleId) {
@@ -786,13 +786,13 @@ function createRuntime({
         return list;
       });
     }
-  
+
     hotSetStatus('idle');
     return new Promise(function (resolve) {
       resolve(outdatedModules);
     });
   }
-  
+
   function hotApplyInvalidatedModules() {
     if (hotQueuedInvalidatedModules) {
       if (!hotUpdate) hotUpdate = {};
@@ -801,7 +801,7 @@ function createRuntime({
       return true;
     }
   }
-  
+
   function hotApplyInvalidatedModule(moduleId) {
     if (!_hasOwnProperty.call(hotUpdate, moduleId)) hotUpdate[moduleId] = modules[moduleId];
   }
@@ -817,10 +817,10 @@ function createRuntime({
     else if (context.installedCssChunks[chunkId] !== 0 && cssChunks[chunkId]) {
       promises.push(context.installedCssChunks[chunkId] = new Promise(function (resolve, reject) {
         let href = __webpack_require__.p + cssChunks[chunkId];
-        importCss(href, { 
-          timeout, 
-          head: context.__windowProxy__.doc.head, 
-          scopeName, 
+        importCss(href, {
+          timeout,
+          head: context.__wp__.doc.head,
+          scopeName,
           host,
           devtool,
           beforeSource,

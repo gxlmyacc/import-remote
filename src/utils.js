@@ -6,7 +6,7 @@ const DEFAULT_TIMEOUT = 120000;
 const ATTR_SCOPE_NAME = 'data-remote-scope';
 
 /** @type {import('types/utils').requireFromStr} */
-function requireFromStr(source, { global: context = window, url, moduleProps = {}, } = {}) {
+function requireFromStr(source, { global: context = window, moduleProps = {}, } = {}) {
   // eslint-disable-next-line no-useless-catch
   const _module = { inRemoteModule: true, exports: {}, ...moduleProps };
   let names = ['module', 'exports'];
@@ -16,18 +16,18 @@ function requireFromStr(source, { global: context = window, url, moduleProps = {
     Object.keys(context).forEach(key => {
       let v = context[key];
       if (v == null) {
-        if (key !== '__windowProxy__') return;
+        if (key !== '_wp_') return;
         v = window;
-        if (!v.doc) v.doc = window.document;
+        if (!v.d || !v.doc) v.doc = v.d = window.document;
+        if (!v.globals || !v.g) v.g = v.globals = {};
       }
       names.push(key);
       args.push(v);
     });
   }
-  if (url) source = `//# filename=${url}\n` + source;
+  // if (url) source = `//# filename=${url}\n` + source;
   // eslint-disable-next-line no-new-func
-  const fn = new Function(...names, source);
-  fn.apply(context, args);
+  (new Function(...names, source)).apply(context, args);
   return _module.exports;
 }
 

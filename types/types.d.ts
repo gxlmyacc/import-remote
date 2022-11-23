@@ -66,7 +66,7 @@ type RemoteModuleRuntime = {
   webpackHotUpdate(chunkId: string|number, moreModules: Record<string, any>, runtime: RemoteModuleRuntime): void,
   window: Window,
   __context__: RemoteModuleRuntime,
-  __windowProxy__: {
+  __wp__: {
     doc: {
       body: HTMLElement,
       createElement(tagName: string, options?: ElementCreationOptions): HTMLElement,

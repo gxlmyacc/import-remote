@@ -183,8 +183,8 @@ function resolveBatchReplaces(self, compilation, options) {
   const isEval = isEvalDevtool(compilation.options.devtool);
   const batchReplacesMap = {
     'react-error-overlay': [
-      [/\bwindow\.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__\b/g, '__windowProxy__.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__'],
-      [/\bwindow\.parent\.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__\b/g, `window.parent.__remoteModuleWebpack__[${isEval ? '\\' : ''}"%SCOPE_NAME%${isEval ? '\\' : ''}"].__windowProxy__.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__`]
+      [/\bwindow\.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__\b/g, '__wp__.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__'],
+      [/\bwindow\.parent\.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__\b/g, `window.parent.__remoteModuleWebpack__[${isEval ? '\\' : ''}"%SCOPE_NAME%${isEval ? '\\' : ''}"].__wp__.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__`]
     ],
     ...(options.batchReplaces || {})
   };

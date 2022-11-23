@@ -13,7 +13,7 @@ import { versionLt, satisfy } from './semver';
 function createContext(context) {
   if (!context) context = {};
   if (!context.window) context.window = window;
-  context.__context__ = context;
+  context._cx_ = context.__context__ = context;
   return context;
 }
 
@@ -59,8 +59,8 @@ function createWindowProxy(windowProxy, { scopeName, host, beforeSource } = {}) 
     el.addEventListener && el.addEventListener('load', () => {
       try {
         if (el.src && !/^data:/.test(el.src)) return;
-        if (el.contentWindow && !el.contentWindow.__windowProxy__) {
-          el.contentWindow.__windowProxy__ = {
+        if (el.contentWindow && !el.contentWindow.__wp__) {
+          el.contentWindow.__wp__ = {
             doc: {
               html: el.contentDocument,
               body: el.contentDocument.body,
@@ -106,9 +106,12 @@ function createWindowProxy(windowProxy, { scopeName, host, beforeSource } = {}) 
     }
     return el;
   };
+  let globals = {};
   return {
     doc,
-    globals: {},
+    globals,
+    d: doc,
+    g: globals,
     ...windowOthers
   };
 }
@@ -177,6 +180,25 @@ function requireManifest(url, options) {
     }
     return manifest;
   });
+}
+
+/**
+ * @param {string} source
+ * @param {number} offset
+ * @param {string} match
+ * @param {string} replaceStr
+ */
+function checkReplaceOffset(source, offset, match, replaceStr) {
+  // if (/^ ?=/.test(source.substr(offset + match.length, 2))) return match;
+  if (offset && !/^(window|self|global|globalThis)\./.test(match)) {
+    const [, prefixVar] = source.substr(offset - 7, 7).match(/(window|self|global|globalThis)\.$/) || [];
+    if (prefixVar) {
+      offset = Math.max(offset - prefixVar.length - 1, 0);
+      match = `${prefixVar}.` + match;
+    }
+  }
+  if (match.length > replaceStr.length) replaceStr = replaceStr.padEnd(match.length, ' ');
+  return (offset && ['.', '\'', '"', '$', '_', '`'].includes(source[offset - 1])) ? match : replaceStr;
 }
 
 /** @type {import('^/types/remote').default} */
@@ -358,7 +380,7 @@ function remote(url, options = {}) {
 
         if (!__remoteModuleWebpack__[scopeName]) {
           const globalObject = manifest.windowObject || 'window';
-          const newGlobalObject = manifest.globalObject || '__context__';
+          let newGlobalObject = manifest.globalObject || '__context__';
           const libraryTarget = manifest.libraryTarget;
 
           const beforeSourceRegx = manifest.beforeSourceRegx || (regxStr => regxStr);
@@ -388,23 +410,13 @@ function remote(url, options = {}) {
             });
           });
 
-          // eslint-disable-next-line arrow-body-style
-          const checkOffset = (source, offset, match, replaceStr) => {
-            // if (/^ ?=/.test(source.substr(offset + match.length, 2))) return match;
-            if (!offset) return replaceStr;
-            if (!/^(window|self|global|globalThis)\./.test(match)) {
-              const [, prefixVar] = source.substr(offset - 7, 7).match(/(window|self|global|globalThis)\.$/) || [];
-              if (prefixVar) offset = Math.max(offset - prefixVar.length - 1, 0);
-            }
-            return (offset && ['.', '\'', '"', '$', '_', '`'].includes(source[offset - 1])) ? match : replaceStr;
-          };
-
           const ctx = __remoteModuleWebpack__[scopeName] = createContext(windowProxy.context);
+          if (newGlobalObject === '__context__') newGlobalObject = '_cx_';
           Object.assign(ctx, remote.globals, globals);
           innumerable(ctx, '__remoteModuleWebpack__', __remoteModuleWebpack__);
           innumerable(ctx, '__HOST__', host);
           // innumerable(ctx, 'cached', cached);
-          ctx.__windowProxy__ = createWindowProxy(windowProxy, {
+          ctx.__wp__ = ctx._wp_ = createWindowProxy(windowProxy, {
             scoped: manifest.scopeName, host, beforeSource
           });
           ctx.require = createRuntime5({
@@ -425,10 +437,9 @@ function remote(url, options = {}) {
                   [sourcePrefix] = match || [];
                   if (sourcePrefix) {
                     const appVar = match[1] || '';
-                    const newSourcePrefix1 = `(${newGlobalObject}['${jsonpFunction}']=${newGlobalObject}['${jsonpFunction}']||[])`;
+                    const newSourcePrefix = `${(appVar ? `var ${appVar}=${globalObject}.${appVar}=\n` : '')}(${newGlobalObject}['${jsonpFunction}']=${newGlobalObject}['${jsonpFunction}']||[])`;
                     source = (match.index ? source.substr(0, match.index) : '')
-                      + (appVar ? `var ${appVar}=${globalObject}.${appVar}=\n` : '')
-                      + newSourcePrefix1
+                      + newSourcePrefix.padEnd(sourcePrefix.length, ' ')
                       + source.substr(match.index + sourcePrefix.length);
                   }
                 }
@@ -437,28 +448,27 @@ function remote(url, options = {}) {
                   const match = source.match(hotSourceRegx);
                   const [hotSourcePrefix] = match || [];
                   if (hotSourcePrefix) {
+                    const newSourcePrefix = + `(typeof ${hotUpdateGlobal}!=="undefined")&&${hotUpdateGlobal}`
                     source = (match.index ? source.substr(0, match.index) : '')
-                      + `(typeof ${hotUpdateGlobal} !== "undefined") && ${hotUpdateGlobal}` + source.substr(match.index + hotSourcePrefix.length);
+                      + newSourcePrefix.padEnd(hotSourcePrefix.length, ' ')
+                      + source.substr(match.index + hotSourcePrefix.length);
                   }
                 }
 
                 const sources = splitSource(source, /[\s<>|&{}:,;()"'+=*![\]/\\]/);
                 sources.forEach((src, i) => {
-                  const replaceStr1 = 'document'.concat('.documentElement.getElementsBy');
-                  const replaceStr2 = 'document'.concat('.documentElement').concat('.querySelector');
                   src = batchReplace(src, [
-                    [/\b(?:window\.)?document\.getElementsBy(TagName(?:NS)?|Name|ClassName)\b/g, (m, p1, offset, src) => checkOffset(src, offset, m, replaceStr1 + p1)],
-                    [/\b(?:window\.)?document\.querySelector(All)?\b/g, (m, p1, offset, src) => checkOffset(src, offset, m, replaceStr2 + (p1 || ''))],
-                    [/\b(?:window\.)?document\.getElementById\b/g, (m, offset, src) => checkOffset(src, offset, m, '__windowProxy__.doc.getElementById')],
-                    [/\b(?:window\.)?document\.createElement\b/g, (m, offset, src) => checkOffset(src, offset, m, '__windowProxy__.doc.createElement')],
-                    [/\b(?:window\.)?document\.body\b/g, (m, offset, src) => checkOffset(src, offset, m, '__windowProxy__.doc.body')],
-                    [/\b(?:window\.)?document\.head\b/g, (m, offset, src) => checkOffset(src, offset, m, '__windowProxy__.doc.head')],
-                    [/\b(?:window\.)?document\.documentElement\b/g,  (m, offset, src) => checkOffset(src, offset, m, '__windowProxy__.doc.html')],
-                    ctx.__windowProxy__.addEventListener
-                      ? [/\bwindow\.addEventListener\b/g, '__windowProxy__.addEventListener']
+                    [/\b(?:window\.)?document(\.getElementsBy(?:TagName(?:NS)?|Name|ClassName)|querySelector(All)?)\b/g, (m, p1, offset, src) => checkReplaceOffset(src, offset, m, '_wp_.d.html' + p1)],
+                    [/\b(?:window\.)?document\.getElementById\b/g, (m, offset, src) => checkReplaceOffset(src, offset, m, '__wp__.d.getElementById')],
+                    [/\b(?:window\.)?document\.createElement\b/g, (m, offset, src) => checkReplaceOffset(src, offset, m, '__wp__.d.createElement')],
+                    [/\b(?:window\.)?document\.body\b/g, (m, offset, src) => checkReplaceOffset(src, offset, m, '__wp__.d.body')],
+                    [/\b(?:window\.)?document\.head\b/g, (m, offset, src) => checkReplaceOffset(src, offset, m, '__wp__.d.head')],
+                    [/\b(?:window\.)?document\.documentElement\b/g,  (m, offset, src) => checkReplaceOffset(src, offset, m, '__wp__.d.html')],
+                    ctx.__wp__.addEventListener
+                      ? [/\bwindow\.addEventListener\b/g, '__wp__.addEventListener']
                       : null,
-                    ctx.__windowProxy__.removeEventListener
-                      ? [/\bwindow\.removeEventListener\b/g, '__windowProxy__.removeEventListener']
+                    ctx.__wp__.removeEventListener
+                      ? [/\bwindow\.removeEventListener\b/g, '__wp__.removeEventListener']
                       : null,
                   ]);
                   if (batchReplaces) src = batchReplace(src, batchReplaces);
@@ -467,7 +477,7 @@ function remote(url, options = {}) {
                       if (Array.isArray(varName)) return varName;
                       return [
                         new RegExp(`\\b${options.isEval ? '(\\\\n)?' : ''}(?:global|window)\\.${escapeStringRegexp(varName)}\\b`, 'g'),
-                        `__windowProxy__.globals.${varName}`
+                        (m, offset, src) => checkReplaceOffset(src, offset, m, `_wp_.g.${varName}`)
                       ];
                     }));
                   }
@@ -480,7 +490,7 @@ function remote(url, options = {}) {
               if (beforeSource) source = beforeSource(source, type, href, options);
               if (manifest.beforeSource) {
                 source = manifest.beforeSource(source, type, href, options,
-                  { versionLt, satisfy, batchReplace, checkOffset });
+                  { versionLt, satisfy, batchReplace, checkReplaceOffset });
               }
 
               return source;

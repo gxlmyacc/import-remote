@@ -1072,7 +1072,7 @@ function createRuntime(options = {}) {
 
         importCss(href, {
           timeout,
-          head: context.__windowProxy__.doc.head,
+          head: context.__wp__.doc.head,
           scopeName,
           host,
           devtool,
