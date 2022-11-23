@@ -17,6 +17,12 @@ function createContext(context) {
   return context;
 }
 
+function checkContext(context) {
+  if (!context) return;
+  if (!context._cx_) context._cx_ = context.__context__;
+  if (context.__windowProxy__ && !context.__wp__) context.__wp__ = context._wp_ = context.__windowProxy__;
+}
+
 function resolvePath(modulePath) {
   if (modulePath.includes('!')) {
     const paths = modulePath.split('!').filter(Boolean);
@@ -378,7 +384,9 @@ function remote(url, options = {}) {
           return result;
         };
 
-        if (!__remoteModuleWebpack__[scopeName]) {
+        let context = __remoteModuleWebpack__[scopeName];
+        if (context) checkContext(context)
+        else {
           const globalObject = manifest.windowObject || 'window';
           let newGlobalObject = manifest.globalObject || '__context__';
           const libraryTarget = manifest.libraryTarget;
@@ -410,13 +418,13 @@ function remote(url, options = {}) {
             });
           });
 
-          const ctx = __remoteModuleWebpack__[scopeName] = createContext(windowProxy.context);
+          const ctx = context = __remoteModuleWebpack__[scopeName] = createContext(windowProxy.context);
           if (newGlobalObject === '__context__') newGlobalObject = '_cx_';
           Object.assign(ctx, remote.globals, globals);
           innumerable(ctx, '__remoteModuleWebpack__', __remoteModuleWebpack__);
           innumerable(ctx, '__HOST__', host);
           // innumerable(ctx, 'cached', cached);
-          ctx.__wp__ = ctx._wp_ = createWindowProxy(windowProxy, {
+          ctx.__wp__ = ctx._wp_ = ctx.__windowProxy__ = createWindowProxy(windowProxy, {
             scoped: manifest.scopeName, host, beforeSource
           });
           ctx.require = createRuntime5({
@@ -437,7 +445,7 @@ function remote(url, options = {}) {
                   [sourcePrefix] = match || [];
                   if (sourcePrefix) {
                     const appVar = match[1] || '';
-                    const newSourcePrefix = `${(appVar ? `var ${appVar}=${globalObject}.${appVar}=\n` : '')}(${newGlobalObject}['${jsonpFunction}']=${newGlobalObject}['${jsonpFunction}']||[])`;
+                    const newSourcePrefix = `${(appVar ? `var ${appVar}=${globalObject}.${appVar}=\n` : '')}(${newGlobalObject}['${jsonpFunction}'])`;
                     source = (match.index ? source.substr(0, match.index) : '')
                       + newSourcePrefix.padEnd(sourcePrefix.length, ' ')
                       + source.substr(match.index + sourcePrefix.length);
@@ -448,7 +456,7 @@ function remote(url, options = {}) {
                   const match = source.match(hotSourceRegx);
                   const [hotSourcePrefix] = match || [];
                   if (hotSourcePrefix) {
-                    const newSourcePrefix = + `(typeof ${hotUpdateGlobal}!=="undefined")&&${hotUpdateGlobal}`
+                    const newSourcePrefix = `(${newGlobalObject}['${hotUpdateGlobal}'])`;
                     source = (match.index ? source.substr(0, match.index) : '')
                       + newSourcePrefix.padEnd(hotSourcePrefix.length, ' ')
                       + source.substr(match.index + hotSourcePrefix.length);
@@ -500,7 +508,6 @@ function remote(url, options = {}) {
           options.afterCreateRuntime && options.afterCreateRuntime(ctx.require, ctx);
         }
 
-        const context = __remoteModuleWebpack__[scopeName];
         let __require__ = context.require || context.__require__;
 
         manifest.externals.forEach(external => {

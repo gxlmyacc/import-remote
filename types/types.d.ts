@@ -61,22 +61,27 @@ type RemoteModuleWebpack = {
   shareModules: Record<string, any>
 };
 
+type RemoteWindowProxy = {
+  doc: {
+    body: HTMLElement,
+    createElement(tagName: string, options?: ElementCreationOptions): HTMLElement,
+    getElementById(elementId: string, scoped?: boolean): HTMLElement | null;
+    head: HTMLElement,
+    html: HTMLElement,
+  },
+  globals: Record<string, any>,
+  __REACT_ERROR_OVERLAY_GLOBAL_HOOK__: any
+}
+
 type RemoteModuleRuntime = {
   require<T>(moduleId: string|number, entryFile?: string): T,
   webpackHotUpdate(chunkId: string|number, moreModules: Record<string, any>, runtime: RemoteModuleRuntime): void,
   window: Window,
   __context__: RemoteModuleRuntime,
-  __wp__: {
-    doc: {
-      body: HTMLElement,
-      createElement(tagName: string, options?: ElementCreationOptions): HTMLElement,
-      getElementById(elementId: string, scoped?: boolean): HTMLElement | null;
-      head: HTMLElement,
-      html: HTMLElement,
-    },
-    globals: Record<string, any>,
-    __REACT_ERROR_OVERLAY_GLOBAL_HOOK__: any
-  }
+  __wp__: RemoteWindowProxy,
+  __windowProxy__: RemoteWindowProxy,
+  _cx_: RemoteModuleRuntime,
+  _wp_: RemoteWindowProxy,
   readonly webpackChunk: [string[], Record<string, any>[]][],
   readonly __HOST__: string
   readonly __remoteModuleWebpack__: RemoteModuleWebpack,

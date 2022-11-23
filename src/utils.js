@@ -8,7 +8,7 @@ const ATTR_SCOPE_NAME = 'data-remote-scope';
 /** @type {import('types/utils').requireFromStr} */
 function requireFromStr(source, { global: context = window, moduleProps = {}, } = {}) {
   // eslint-disable-next-line no-useless-catch
-  const _module = { inRemoteModule: true, exports: {}, ...moduleProps };
+  const _module = { inRemoteModule: true, exports: {}, url, ...moduleProps };
   let names = ['module', 'exports'];
   let args = [_module, _module.exports];
 
@@ -25,7 +25,7 @@ function requireFromStr(source, { global: context = window, moduleProps = {}, } 
       args.push(v);
     });
   }
-  // if (url) source = `//# filename=${url}\n` + source;
+  if (url && !/\/\/# sourceMappingURL=[\w.\/_:?&%=#+-]+\.map$/.test(source)) source = source + `\n//# sourceMappingURL=${url}.map`;
   // eslint-disable-next-line no-new-func
   (new Function(...names, source)).apply(context, args);
   return _module.exports;
