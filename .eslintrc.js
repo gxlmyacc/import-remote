@@ -43,6 +43,7 @@ module.exports = {
     'func-names': 0,
     'global-require': 0,
     'implicit-arrow-linebreak': 0,
+    'import/extensions': 0,
     'import/no-dynamic-require': 0,
     'import/no-extraneous-dependencies': 0,
     'import/no-mutable-exports': 0,
@@ -57,6 +58,7 @@ module.exports = {
     'jsx-a11y/href-no-hash': 'off',
     'jsx-quotes': 2,
     'linebreak-style': 0,
+    'max-classes-per-file': 0,
     'max-len': [2, {
       code: 150,
       ignoreRegExpLiterals: true,

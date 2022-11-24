@@ -579,8 +579,10 @@ class ModuleWebpackPlugin {
     // which conflicts with the plugin's existing `contenthash` method,
     // hence it is renamed to `templatehash` to avoid conflicts
     // @ts-ignore
-    this.options.filename = this.options.filename.replace(/\[(?:(\w+):)?contenthash(?::([a-z]+\d*))?(?::(\d+))?\]/ig,
-      match => match.replace('contenthash', 'templatehash'));
+    this.options.filename = this.options.filename.replace(
+      /\[(?:(\w+):)?contenthash(?::([a-z]+\d*))?(?::(\d+))?\]/ig,
+      match => match.replace('contenthash', 'templatehash')
+    );
 
     // @ts-ignore
     compiler.hooks.afterPlugins.tap('ModuleWebpackPlugin', compiler => {
@@ -685,7 +687,7 @@ class ModuleWebpackPlugin {
               let ret = [];
               if (async) {
                 let arr;
-                let regx = new RegExp(/__webpack_require__\.e\("?([0-9A-Za-z_-]+)"?\)/g);
+                let regx = /__webpack_require__\.e\("?([0-9A-Za-z_-]+)"?\)/g;
                 while (arr = regx.exec(source)) {
                   ret.push(isNumber ? Number(arr[1]) : arr[1]);
                 }
@@ -1012,8 +1014,9 @@ class ModuleWebpackPlugin {
     };
 
     if (webpackMajorVersion < 5) {
-      compiler.hooks.emit.tapAsync('ModuleWebpackPlugin',
-      /**
+      compiler.hooks.emit.tapAsync(
+        'ModuleWebpackPlugin',
+        /**
        * Hook into the webpack emit phase
        * @param {WebpackCompilation} compilation
        * @param {(err?: Error) => void} callback
@@ -1025,9 +1028,11 @@ class ModuleWebpackPlugin {
             source: () => source,
             size: () => source.length
           };
-        }));
+        })
+      );
     } else {
-      compiler.hooks.thisCompilation.tap('ModuleWebpackPlugin',
+      compiler.hooks.thisCompilation.tap(
+        'ModuleWebpackPlugin',
         /**
          * Hook into the webpack compilation
          * @param {WebpackCompilation} compilation
@@ -1078,7 +1083,8 @@ class ModuleWebpackPlugin {
               compilation.emitAsset(name, new webpack.sources.RawSource(source, false));
             })
           );
-        });
+        }
+      );
 
       compiler.hooks.emit.tapAsync('ModuleWebpackPlugin', (compilation, callback) => {
         emitEntryFile(compilation);
@@ -1413,9 +1419,11 @@ class ModuleWebpackPlugin {
       }
       return ret;
     };
+    let entryName = '';
     const chunks = compilation.chunks instanceof Set ? Array.from(compilation.chunks) : compilation.chunks;
-    const entryChunk = chunks.find(c => {
-      if (webpackMajorVersion < 5) {
+    let entryChunk = null;
+    if (webpackMajorVersion < 5) {
+      entryChunk = chunks.find(c => {
         // @ts-ignore
         if (!c.entryModule) return;
         // @ts-ignore
@@ -1429,33 +1437,43 @@ class ModuleWebpackPlugin {
         } else if (c.name && entryNames.includes(c.name)) {
           // empty
         } else return;
-        Object.assign(assets, checkEntryModule(c.entryModule));
         return true;
-      }
-      // @ts-ignore
-      if (!c.name || !entryNames.includes(c.name)) return;
-      // @ts-ignore
-      let rootModules = compilation.chunkGraph.getChunkRootModules(c).filter(m => m.type === 'javascript/auto');
-      const optionEntry = compilation.options.entry[c.name];
-      // @ts-ignore
-      let entryModules = rootModules.filter(m => !optionEntry || !m.rawRequest || !optionEntry.import || optionEntry.import.includes(m.rawRequest));
-      if (!entryModules.length) entryModules = rootModules;
-      if (entryModules.length) {
-        let entrys = entryModules.map(v => checkEntryModule(v));
-        if (entrys.length <= 1) Object.assign(assets, entrys[0]);
-        else {
+      });
+    } else {
+      entryNames.find(name => {
+        let entrypoint = compilation.entrypoints.get(name);
+        let c = entrypoint && entrypoint.getEntrypointChunk();
+        if (c) {
+          entryName = name;
+          entryChunk = c;
+        }
+        return c;
+      });
+    }
+    if (entryChunk) {
+      if (webpackMajorVersion < 5) Object.assign(assets, checkEntryModule(entryChunk.entryModule));
+      else {
+        // @ts-ignore
+        let rootModules = compilation.chunkGraph.getChunkRootModules(entryChunk).filter(m => m.type === 'javascript/auto');
+        const optionEntry = compilation.options.entry[entryName || entryChunk.name];
+        let entryModules = rootModules.filter(
           // @ts-ignore
-          assets.entryId = entrys.map(v => v.entryId);
-          // @ts-ignore
-          assets.entryFile = entrys.map(v => v.entryFile);
+          m => !optionEntry || !m.rawRequest || !optionEntry.import || optionEntry.import.includes(m.rawRequest)
+        );
+        if (!entryModules.length) entryModules = rootModules;
+        if (entryModules.length) {
+          let entrys = entryModules.map(v => checkEntryModule(v));
+          if (entrys.length <= 1) Object.assign(assets, entrys[0]);
+          else {
+            // @ts-ignore
+            assets.entryId = entrys.map(v => v.entryId);
+            // @ts-ignore
+            assets.entryFile = entrys.map(v => v.entryFile);
+          }
         }
       }
-      // if (assets.hot) {
-      //   const entryModule = [...c.modulesIterable].find(m => m.type === 'javascript/auto');
-      //   checkEntryModule(entryModule);
-      // } else checkEntryModule(c.entryModule);
-      return true;
-    });
+    }
+
 
     // Extract paths to .js, .mjs and .css files from the current compilation
     const entryPointPublicPathMap = {};

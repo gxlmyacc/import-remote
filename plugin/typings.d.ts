@@ -1,13 +1,14 @@
-import { AsyncSeriesWaterfallHook } from "tapable";
+import { AsyncSeriesWaterfallHook } from 'tapable';
 import WebpackCompiler from 'webpack/lib/Compiler';
 import WebpackCompilation from 'webpack/lib/Compilation';
-import { CommonModule } from "^/types/types";
-import Remote from "^/types/remote";
-import { satisfy, versionLt } from "^/types/semver";
+import { CommonModule } from '^/types/types';
+import Remote from '^/types/remote';
+import { satisfy, versionLt } from '^/types/semver';
 
 export = ModuleWebpackPlugin;
 
 declare class ModuleWebpackPlugin {
+
   constructor(options?: ModuleWebpackPlugin.Options);
 
   apply(compiler: WebpackCompiler): void;
@@ -15,6 +16,7 @@ declare class ModuleWebpackPlugin {
   static getHooks(compilation: WebpackCompilation): ModuleWebpackPlugin.Hooks;
 
   static readonly version: number;
+
 }
 
 declare namespace ModuleWebpackPlugin {
@@ -73,14 +75,14 @@ declare namespace ModuleWebpackPlugin {
     /**
      * List all entries which should be injected
      */
-    chunks?: "all" | string[];
+    chunks?: 'all' | string[];
     /**
      * Allows to control how chunks should be sorted before they are included to the html.
      * @default 'auto'
      */
     chunksSortMode?:
-    | "auto"
-    | "manual"
+    | 'auto'
+    | 'manual'
     | (((entryNameA: string, entryNameB: string) => number));
     /**
      * List all entries which should not be injected
