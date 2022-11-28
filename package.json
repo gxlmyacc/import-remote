@@ -51,7 +51,7 @@
     "find-up": "^4.1.0",
     "hash-sum": "^2.0.0",
     "indexed-db-async": "^0.0.2",
-    "loader-utils": "^1.4.1",
+    "loader-utils": "^2.0.4",
     "lodash": "^4.17.21",
     "pretty-error": "^2.1.1",
     "tapable": "^1.1.3",
