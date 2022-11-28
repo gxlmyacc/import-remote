@@ -1,6 +1,6 @@
+import IndexedDBAsync from 'indexed-db-async';
 import {  versionLt, satisfy } from './semver';
 import { batchReplace } from './remote';
-import IndexedDBAsync from 'indexed-db-async';
 
 type ShareModule = {
   name: string,
@@ -209,4 +209,4 @@ export {
   RemoteRuntimeManifest,
   RemoteModuleWebpack,
   RemoteModuleRuntime
-}
+};

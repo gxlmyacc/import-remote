@@ -16,6 +16,6 @@ declare function importJs<T = any>(url: string, options?: RemoteImportOptions): 
 
 export {
   RemoteImportOptions
-}
+};
 
 export default importJs;

@@ -105,7 +105,7 @@ declare namespace ModuleWebpackPlugin {
      * The file path of import-remote-entrys.js write to.
      * @default ''
      */
-    entryFileName?: string|boolean;
+    entriesManifest?: string|boolean;
     /**
      * If `true` then append a unique `webpack` compilation hash to all included scripts and CSS files.
      * This is useful for cache busting
@@ -154,8 +154,9 @@ declare namespace ModuleWebpackPlugin {
      */
     afterCreateRuntime?: (webpack_require: any, ctx: RemoteModuleRuntime) => void,
 
-
     checkManifest?: () => void,
+
+    attachTemplate?: (data: TemplateAssets, props: Record<string, any>) => string,
 
     beforeSourceRegx?: (regxStr: string, type: 'hot'|'jsonp', options: {
       remote: Remote,

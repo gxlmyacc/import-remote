@@ -2,7 +2,7 @@ let arePropertyDescriptorsSupported = (function () {
   let obj = {};
   try {
     Object.defineProperty(obj, 'x', { enumerable: false, value: obj });
-    // eslint-disable-next-line guard-for-in
+    // eslint-disable-next-line guard-for-in, no-unreachable-loop
     for (let _ in obj) return false;
     return obj.x === obj;
   } catch (e) {

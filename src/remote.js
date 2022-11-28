@@ -166,9 +166,9 @@ function requireModule(__require__, manifest) {
   if (!__require__) return;
   let result = __require__(manifest.entryId, manifest.entryFile);
   if (Array.isArray(manifest.entryId)) {
-    let entryIndex = manifest.entryIndex || 0;
-    if (isFunction(entryIndex)) entryIndex = entryIndex.call(manifest, result);
-    result = result[entryIndex];
+    let entryIndex = manifest.entryIndex;
+    if (isFunction(entryIndex)) entryIndex = entryIndex.call(manifest, result, __require__);
+    result = entryIndex == null ? result.find(v => v) : result[entryIndex];
   }
   return result;
 }
@@ -179,7 +179,7 @@ function requireManifest(url, options) {
       options.done && options.done();
       return manifest;
     }
-    let target = manifest(remote, options);
+    let target = manifest(remote, options, { url });
     if (target) {
       if (options.meta) target = target.meta;
       manifest = target && (manifest.iref ? walkMainifest : v => v)(target);
@@ -197,15 +197,15 @@ function requireManifest(url, options) {
 function checkReplaceOffset(source, offset, match, replaceStr) {
   // if (/^ ?=/.test(source.substr(offset + match.length, 2))) return match;
   let newMatch = match;
-  if (offset && !/^(window|self|global|globalThis)\./.test(match)) {
-    const [, prefixVar] = source.substr(offset - 12, 12).match(/(window|self|global|globalThis)\.$/) || [];
-    if (prefixVar) {
-      offset = Math.max(offset - prefixVar.length - 1, 0);
-      newMatch = `${prefixVar}.` + match;
-    }
-  }
+  // if (offset && !/^(window|self|global|globalThis)\./.test(match)) {
+  //   const [, prefixVar] = source.substr(offset - 12, 12).match(/(window|self|global|globalThis)\.$/) || [];
+  //   if (prefixVar) {
+  //     offset = Math.max(offset - prefixVar.length - 1, 0);
+  //     newMatch = `${prefixVar}.` + match;
+  //   }
+  // }
   if (newMatch.length > replaceStr.length) replaceStr = replaceStr.padEnd(newMatch.length, ' ');
-  return (offset && ['.', '\'', '"', '$', '_', '`'].includes(source[offset - 1])) ? match : replaceStr;
+  return (offset && /^[.'"$_`\\]$/.test(source[offset - 1])) ? match : replaceStr;
 }
 
 /** @type {import('^/types/remote').default} */
@@ -490,7 +490,7 @@ function remote(url, options = {}) {
                     src = batchReplace(src, manifest.globalToScopes.map(varName => {
                       if (Array.isArray(varName)) return varName;
                       return [
-                        new RegExp(`\\b${options.isEval ? '(\\\\n)?' : ''}(?:global|window)\\.${escapeStringRegexp(varName)}\\b`, 'g'),
+                        new RegExp(`\\b${options.isEval ? '(\\\\n)?' : ''}(?:window)\\.${escapeStringRegexp(varName)}\\b`, 'g'),
                         (m, offset, src) => checkReplaceOffset(src, offset, m, `_wp_.g.${varName}`)
                       ];
                     }));

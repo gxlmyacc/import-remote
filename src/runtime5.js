@@ -249,7 +249,7 @@ function createRuntime(options = {}) {
   __webpack_require__.hmd = module => {
     module = Object.create(module);
     if (!module.children) module.children = [];
-    Object.defineProperty(module, 'exports', {
+    objectDefineProperty(module, 'exports', {
       enumerable: true,
       set: () => {
         throw new Error('ES Modules may not assign module.exports or exports.*, Use ESM export syntax, instead: ' + module.id);

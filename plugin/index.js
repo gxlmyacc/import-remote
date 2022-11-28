@@ -163,9 +163,11 @@ function resolveModuleFile(compilation, module) {
   }
   if (!request) return '';
   if (request) request = request.split('?')[0];
-  return path.isAbsolute(request)
-    ? path.relative(compilation.options.context, request).replace(/\\/g, '/')
-    : request;
+  if (path.isAbsolute(request)) {
+    request = path.relative(compilation.options.context, request).replace(/\\/g, '/');
+    if (!path.isAbsolute(request) && !/^\./.test(request)) request = './' + request;
+  }
+  return request;
 }
 
 function isEvalDevtool(devtool) {
@@ -462,11 +464,12 @@ class ModuleWebpackPlugin {
       // @ts-ignore
       templateParameters: null,
       filename: 'index.js',
+      entryFileName: '',
       runtime: /(manifest|runtime~).+[.]js$/,
       runtimeChunk: true,
       libraryFileName: '',
       libraryWithMap: true,
-      entryFileName: '',
+      entriesManifest: '',
       hash: false,
       compile: true,
       cache: true,
@@ -830,8 +833,8 @@ class ModuleWebpackPlugin {
     // @ts-ignore
     const emitEntryFile = compilation => {
       const options = self.options;
-      let entryFileName = options.entryFileName;
-      if (!entryFileName) return;
+      let entriesManifest = options.entriesManifest;
+      if (!entriesManifest) return;
       let entriesJson = {
         timestamp: BUILD_TIMESTAMP,
         name: options.package.name,
@@ -849,10 +852,10 @@ class ModuleWebpackPlugin {
       const entriesJsonStr = JSON.stringify(entriesJson);
       if (globalLastEntriesJson && globalLastEntriesJson === entriesJsonStr) return;
 
-      let dist = typeof entryFileName === 'string'
+      let dist = typeof entriesManifest === 'string'
         ? path.resolve(
           compiler.options.output.path,
-          entryFileName.endsWith('/') ? `${entryFileName}import-remote-entries.js` : entryFileName
+          entriesManifest.endsWith('/') ? `${entriesManifest}import-remote-entries.js` : entriesManifest
         )
         : path.resolve(compiler.options.output.path, 'import-remote-entries.js');
       if (!fs.existsSync(dist)) {
@@ -1321,10 +1324,21 @@ class ModuleWebpackPlugin {
     const assets = {
       // The public path
       publicPath,
-      // the entry file
+      /**
+       * the entry file
+       * @type {string|Array<string>}
+       */
       entryFile: '',
-      // then entry id
+      /**
+       * the entry id
+       * @type {string|number|Array<string|number>}
+       */
       entryId: 0,
+      /**
+       * the entry index
+       * @type {null|number}
+       */
+      entryIndex: null,
       // hash
       hash: compilationHash,
       // jsonpFunction
@@ -1406,6 +1420,8 @@ class ModuleWebpackPlugin {
       assets.manifest = this.appendHash(assets.manifest, compilationHash);
     }
 
+    let entryFileName = this.options.entryFileName || this.options.filename || '';
+    let entryResource = entryFileName && path.resolve(compilation.options.context, entryFileName);
     const checkEntryModule = entryModule => {
       let ret = {};
       // @ts-ignore
@@ -1417,9 +1433,10 @@ class ModuleWebpackPlugin {
       if (buildMeta && (buildMeta.providedExports || buildMeta.exportsType)) {
         ret.entryFile = resolveModuleFile(compilation, entryModule);
       }
+      if (entryModule.resource && entryResource === entryModule.resource) ret.default = true;
       return ret;
     };
-    let entryName = '';
+    // let entryName = '';
     const chunks = compilation.chunks instanceof Set ? Array.from(compilation.chunks) : compilation.chunks;
     let entryChunk = null;
     if (webpackMajorVersion < 5) {
@@ -1444,7 +1461,7 @@ class ModuleWebpackPlugin {
         let entrypoint = compilation.entrypoints.get(name);
         let c = entrypoint && entrypoint.getEntrypointChunk();
         if (c) {
-          entryName = name;
+          // entryName = name;
           entryChunk = c;
         }
         return c;
@@ -1453,14 +1470,14 @@ class ModuleWebpackPlugin {
     if (entryChunk) {
       if (webpackMajorVersion < 5) Object.assign(assets, checkEntryModule(entryChunk.entryModule));
       else {
+        // const optionEntry = compilation.options.entry[entryName || entryChunk.name];
         // @ts-ignore
-        let rootModules = compilation.chunkGraph.getChunkRootModules(entryChunk).filter(m => m.type === 'javascript/auto');
-        const optionEntry = compilation.options.entry[entryName || entryChunk.name];
-        let entryModules = rootModules.filter(
-          // @ts-ignore
-          m => !optionEntry || !m.rawRequest || !optionEntry.import || optionEntry.import.includes(m.rawRequest)
-        );
-        if (!entryModules.length) entryModules = rootModules;
+        let entryModules = [...compilation.chunkGraph.getChunkEntryModulesIterable(entryChunk)]; // .filter(m => m.type === 'javascript/auto');
+        // let entryModules = rootModules.filter(
+        //   // @ts-ignore
+        //   m => !optionEntry || !m.rawRequest || !optionEntry.import || optionEntry.import.includes(m.rawRequest)
+        // );
+        // if (!entryModules.length) entryModules = rootModules;
         if (entryModules.length) {
           let entrys = entryModules.map(v => checkEntryModule(v));
           if (entrys.length <= 1) Object.assign(assets, entrys[0]);
@@ -1469,6 +1486,11 @@ class ModuleWebpackPlugin {
             assets.entryId = entrys.map(v => v.entryId);
             // @ts-ignore
             assets.entryFile = entrys.map(v => v.entryFile);
+            assets.entryIndex = entrys.findIndex(v => v.default);
+            if (assets.entryIndex < 0) {
+              console.warn(`[import-remote/plugin]warning: not find the entryId of ${entryNames.join(',')}`);
+              assets.entryIndex = entrys.length - 1;
+            }
           }
         }
       }
@@ -1649,7 +1671,7 @@ class ModuleWebpackPlugin {
 /**
  * The major version number of this plugin
  */
-ModuleWebpackPlugin.version = 1;
+ModuleWebpackPlugin.version = require('./version');
 
 /**
  * A static helper to get the hooks for this plugin

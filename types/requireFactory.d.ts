@@ -1,7 +1,7 @@
 import { ExternalItem } from './types';
 
 type RemoteRequireFactoryMap = {
-  [key: string]: () => Promise<any>
+  [key: string]: (() => Promise<any>)|any
 }
 
 interface RemoteRequireFactory {
@@ -13,9 +13,11 @@ declare function createRequireFactory(
   factory: Omit<RemoteRequireFactory, '__import_remote_require_factory__'>|RemoteRequireFactoryMap
 ): RemoteRequireFactory;
 
-declare function isRequireFactory(fn: any): boolean;
+declare function isRequireFactory(fn: any): fn is RemoteRequireFactory;
 
 export {
+  RemoteRequireFactoryMap,
+  RemoteRequireFactory,
   isRequireFactory
 };
 

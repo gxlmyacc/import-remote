@@ -25,7 +25,7 @@ function requireFromStr(source, { global: context = window, url, moduleProps = {
       args.push(v);
     });
   }
-  if (url && !/\/\/# sourceMappingURL=[\w./_:?&%=#+-]+\.map$/.test(source)) source += `\n//# sourceMappingURL=${url}.map`;
+  if (url && !/\/\/# sourceURL=[\w./_:?&%=#+-]+\.js$/.test(source)) source += `\n//# sourceURL=${url}`;
   // eslint-disable-next-line no-new-func
   (new Function(...names, source)).apply(context, args);
   return _module.exports;

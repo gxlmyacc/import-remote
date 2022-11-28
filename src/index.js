@@ -9,6 +9,7 @@ import importJson from './importJson';
 import importCss from './importCss';
 import jsonp from './jsonp';
 import { satisfy, versionLt } from './semver';
+import pluginVersion from '../plugin/version';
 
 /** @type {string} */
 const version = typeof __packageversion__ === 'undefined' ? undefined : __packageversion__;
@@ -59,6 +60,7 @@ remote.use = function (plugin) {
 };
 
 remote.externals['import-remote'] = remoteExternal;
-innumerable(remote, 'version', version);
+Object.keys(remoteExternal).forEach(key => (key !== 'default') && innumerable(remote, key, remoteExternal[key]));
+innumerable(remote, 'pv', pluginVersion);
 
 export default remote;

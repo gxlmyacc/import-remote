@@ -233,7 +233,7 @@ enableCacheDB();
 |**`chunks`**|`{?}`|`?`|允许你只添加某些chunks(e.g only the unit-test chunk)|
 |**[`chunksSortMode`](#plugins)**|`{String\|Function}`|`auto`|在chunks被include到html文件中以前，允许你控制chunks 应当如何被排序。允许的值: `none`|`auto`|`dependency`|{Function} - 默认值: `auto`|
 |**`excludeChunks`**|`{Array.<string>}`|``|允许你跳过某些chunks (e.g don't add the unit-test chunk)|
-|**`entryFileName`**|`{Boolean|String}`|`''`|当该参数为true时，将为项目生成一个所有入口的说明文件(默认文件名`import-remote-entries.js`),你可以通过通过`RemoteModule`的`requireEntries`方法加载该文件来获取该项目目前存在的所有入口文件信息|
+|**`entriesManifest`**|`{Boolean|String}`|`''`|当该参数为true时，将为项目生成一个所有入口的说明文件(默认文件名`import-remote-entries.js`),你可以通过通过`RemoteModule`的`requireEntries`方法加载该文件来获取该项目目前存在的所有入口文件信息|
 |**`libraryFileName`**|`{Boolean|String}`|`''`|当该参数为true时，将会将本包打包的`import-remote.min.js`文件复制到打包目标目录中，你可以通过`import AsyncRemoteModule from "import-remote/esm/fetch";`，先通过它远程加载`import-remote.min.js`后再加载实际的远程入口，已避免`import-remote`升级后需要宿主也升级`import-remote`的问题|
 
 #### 生成多输出入口文件

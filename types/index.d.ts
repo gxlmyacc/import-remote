@@ -14,7 +14,7 @@ export * from './semver';
 export * from './types';
 
 
-declare var version: string;
+declare let version: string;
 
 export {
   FetchOptions,
@@ -32,7 +32,7 @@ export {
   importCss,
   jsonp,
   requireManifest,
-  version,
+  version
 };
 
 export default remote;

@@ -3,18 +3,19 @@ function isRegExp(obj) {
   return _toString.call(obj) === '[object RegExp]';
 }
 
-module.exports = function ({
-  version,
-  pkg,
-  timestamp,
-  outputOptions,
-  webpackVersion,
-  webpackConfig,
-  moduleWebpackPlugin: {
-    scopeName, entryFile, entryId, hash, jsonpFunction, remotes, shareModules, batchReplaces,
-    hot, chunks, externals, publicPath, entrys, options
-  }
-}) {
+module.exports = function (props) {
+  const {
+    version,
+    pkg,
+    timestamp,
+    outputOptions,
+    webpackVersion,
+    webpackConfig,
+    moduleWebpackPlugin: {
+      scopeName, entryFile, entryId, entryIndex, hash, jsonpFunction, remotes, shareModules, batchReplaces,
+      hot, chunks, externals, publicPath, entrys, options
+    }
+  } = props;
   const filterEntry = (entry, isId) => {
     let ret = !options.runtimeChunk || !entry.isRuntime;
     if (ret && isId && remotes.chunkToModuleMapping && remotes.chunkToModuleMapping[entry.id]) ret = false;
@@ -53,6 +54,7 @@ module.exports = function ({
     },
     meta: options.meta || {}
   };
+  if (entryIndex != null) data.entryIndex = entryIndex;
   if (options.globalToScopes && options.globalToScopes.length) data.globalToScopes = options.globalToScopes;
   if (batchReplaces && batchReplaces.length) data.batchReplaces = batchReplaces;
   if (options.commonModules) data.commonModules = options.commonModules;
@@ -61,7 +63,7 @@ module.exports = function ({
   if (options.afterCreateRuntime) data.afterCreateRuntime = options.afterCreateRuntime;
   if (options.beforeSourceRegx) data.beforeSourceRegx = options.beforeSourceRegx;
   if (options.checkManifest) data.checkManifest = options.checkManifest;
-  return `module.exports=function(){return ${JSON.stringify(data, (key, value) => {
+  return `module.exports=function(r,o){var m=${JSON.stringify(data, (key, value) => {
     if (typeof value === 'function') {
       let str = value.toString();
       let [, args = '', bracketL, body = '', bracketR] = str.match(/^(?:(?:function)?\s?[A-Za-z0-9_$]*\s?)?\(?([A-Za-z0-9_$\s\n\r,]*)\)?\s*(?:=>\s*)?({?)((?:.|\n|\r)*)(}?)$/) || [];
@@ -89,6 +91,8 @@ module.exports = function ({
       };
     }
     return value;
-  })};};module.exports['iref']=true;`;
+  })};${Array.isArray(entryId) ? `!r.pv&&(m.entryId=m.entryId[${entryIndex}]);` : ''}${
+    options.attachTemplate ? options.attachTemplate(data, props) : ''
+  }return m};module.exports['iref']=true;`;
 };
 

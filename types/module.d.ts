@@ -3,12 +3,15 @@ import { RemoteModuleOptions, FetchOptions } from './fetch';
 
 declare class RemoteModule {
 
-  public host: string
-  public pathname: string
-  public options: RemoteOptions
-  public resolveModuleUrl: RemoteModuleOptions['resolveModuleUrl']
+  public host: string;
 
-  readonly __import_remote_module_class__: true
+  public pathname: string;
+
+  public options: RemoteOptions;
+
+  public resolveModuleUrl: RemoteModuleOptions['resolveModuleUrl'];
+
+  readonly __import_remote_module_class__: true;
 
   constructor(host: string, options?: RemoteModuleOptions)
 
@@ -20,7 +23,7 @@ declare class RemoteModule {
 
   exist(moduleName?: string, options?: FetchOptions): Promise<null|Record<string, string>>
 
-  requireEntries<T = {}>(entriesName?: string, options?: FetchOptions): Promise<EntriesInfo>
+  requireEntries(entriesName?: string, options?: FetchOptions): Promise<EntriesInfo>
 
   requireMeta<T = any>(moduleName?: string, options?: FetchOptions): Promise<T>
 
@@ -35,6 +38,7 @@ declare class RemoteModule {
   importSync<T = any>(moduleName?: string, options?: RemoteOptions): T
 
   [key: string]: any
+
 }
 
 export default RemoteModule;

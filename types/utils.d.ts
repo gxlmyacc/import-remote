@@ -1,8 +1,8 @@
 import {
   isAbsoluteUrl,
-  joinUrl,
+  joinUrl
 } from './fetch';
-import { RemoteImportOptions } from './importJs'
+import { RemoteImportOptions } from './importJs';
 
 declare const DEFAULT_TIMEOUT: string;
 declare const ATTR_SCOPE_NAME: string;
@@ -66,4 +66,4 @@ export {
 
   transformSourcemapUrl,
   objectDefineProperty
-}
+};

@@ -77,6 +77,7 @@ module.exports = {
     'no-eval': 2,
     'no-extend-native': 0,
     'no-lonely-if': 0,
+    'no-loop-func': 0,
     'no-mixed-operators': 2,
     'no-multi-assign': 0,
     'no-multi-spaces': 0,

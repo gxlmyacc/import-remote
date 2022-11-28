@@ -1,5 +1,14 @@
 import { innumerable, isPlainObject, isFunction, hasOwnProp } from './utils';
 
+/**
+ * @typedef {import('../types/requireFactory').RemoteRequireFactory} RemoteRequireFactory
+ * @typedef {import('../types/requireFactory').RemoteRequireFactoryMap} RemoteRequireFactoryMap
+ */
+
+/**
+ * @param {RemoteRequireFactoryMap} modulesMap
+ * @returns {Omit<RemoteRequireFactory, '__import_remote_require_factory__'>}
+ */
 function defaultRequireFactory(modulesMap) {
   return async function _requireFactory(externals) {
     const moduleExternals = externals.filter(external => hasOwnProp(modulesMap, external.name));

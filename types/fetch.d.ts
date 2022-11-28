@@ -1,5 +1,5 @@
-import IndexedDBAsync from "indexed-db-async";
-import RemoteModule from "./module";
+import IndexedDBAsync from 'indexed-db-async';
+import RemoteModule from './module';
 import {
   RemoteOptions,
   EntriesInfo,
@@ -24,14 +24,21 @@ declare function requireJs<T = any>(url: string, options?: FetchOptions): Promis
 
 declare function resolveModuleUrl(host: string, moduleName?: string): string;
 interface RemoteModuleOptions extends RemoteOptions {
-  resolveModuleUrl?: (this: RemoteModule, host: string, moduleName: string, originResolveModuleUrl?: typeof resolveModuleUrl, sync?: boolean) => string|Promise<string>;
+  resolveModuleUrl?: (
+    this: RemoteModule,
+    host: string, moduleName: string,
+    originResolveModuleUrl?: typeof resolveModuleUrl,
+    sync?: boolean
+  ) => string|Promise<string>;
 }
 
 declare class AsyncRemoteModule {
 
-  public libraryUrl: string
-  public host: string
-  public options: RemoteModuleOptions
+  public libraryUrl: string;
+
+  public host: string;
+
+  public options: RemoteModuleOptions;
 
   constructor(libraryUrl: string|RemoteModule, host: string, options?: RemoteModuleOptions)
 
@@ -39,7 +46,7 @@ declare class AsyncRemoteModule {
 
   exist(moduleName?: string, options?: FetchOptions): Promise<null|Record<string, string>>
 
-  requireEntries<T = {}>(entriesName?: string, options?: FetchOptions): Promise<EntriesInfo>
+  requireEntries(entriesName?: string, options?: FetchOptions): Promise<EntriesInfo>
 
   requireMeta<T = any>(moduleName?: string, options?: FetchOptions): Promise<T>
 
@@ -48,6 +55,7 @@ declare class AsyncRemoteModule {
   import<T = any>(moduleName?: string, options?: RemoteOptions): Promise<T>
 
   [key: string]: any
+
 }
 
 declare global {
@@ -85,7 +93,7 @@ export {
   isAbsoluteUrl,
   joinUrl,
   existModule
-}
+};
 
 
 export default fetch;
