@@ -47,6 +47,7 @@ module.exports = {
     'import/no-dynamic-require': 0,
     'import/no-extraneous-dependencies': 0,
     'import/no-mutable-exports': 0,
+    'import/no-relative-packages': 0,
     'import/no-unresolved': 0,
     'import/prefer-default-export': 0,
     indent: [2, 2, {

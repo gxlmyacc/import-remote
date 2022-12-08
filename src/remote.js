@@ -20,7 +20,17 @@ function createContext(context) {
 function checkContext(context) {
   if (!context) return;
   if (!context._cx_) context._cx_ = context.__context__;
-  if (context.__windowProxy__ && !context.__wp__) context.__wp__ = context._wp_ = context.__windowProxy__;
+  if (context.__windowProxy__ && !context.__wp__) {
+    const wp = context.__wp__ = context._wp_ = context.__windowProxy__;
+    const doc = wp.doc;
+    Object.assign(wp, {
+      d: doc,
+      x: doc.html,
+      b: doc.body,
+      h: doc.head,
+      g: wp.globals,
+    });
+  }
 }
 
 function resolvePath(modulePath) {
@@ -66,19 +76,26 @@ function createWindowProxy(windowProxy, { scopeName, host, beforeSource } = {}) 
       try {
         if (el.src && !/^data:/.test(el.src)) return;
         if (el.contentWindow && !el.contentWindow.__wp__) {
-          el.contentWindow.__wp__ = {
-            doc: {
-              html: el.contentDocument,
-              body: el.contentDocument.body,
-              head: el.contentDocument.head,
-              createElement() {
-                return el.contentDocument.createElement(...arguments);
-              },
-              getElementById() {
-                return el.contentDocument.getElementById(...arguments);
-              }
+          let doc = {
+            html: el.contentDocument,
+            body: el.contentDocument.body,
+            head: el.contentDocument.head,
+            createElement() {
+              return el.contentDocument.createElement(...arguments);
+            },
+            getElementById() {
+              return el.contentDocument.getElementById(...arguments);
             }
           };
+          const context = { doc, globals: {} };
+          Object.assign(context, {
+            d: doc,
+            x: doc.html,
+            b: doc.body,
+            h: doc.head,
+            g: context.globals,
+          });
+          el.contentWindow.__wp__ = el.contentWindow._wp_ = el.contentWindow.__windowProxy__ = context;
         }
       } catch (ex) { console.error(ex); }
     }, true);
@@ -117,6 +134,9 @@ function createWindowProxy(windowProxy, { scopeName, host, beforeSource } = {}) 
     doc,
     globals,
     d: doc,
+    x: doc.html,
+    b: doc.body,
+    h: doc.head,
     g: globals,
     ...windowOthers
   };
@@ -188,6 +208,11 @@ function requireManifest(url, options) {
   });
 }
 
+const spacePads = new Array(100);
+for (let i = 0; i < 100; i++) {
+  spacePads[i] = ''.padEnd(i, ' ');
+}
+
 /**
  * @param {string} source
  * @param {number} offset
@@ -204,11 +229,22 @@ function checkReplaceOffset(source, offset, match, replaceStr) {
   //     newMatch = `${prefixVar}.` + match;
   //   }
   // }
-  if (newMatch.length > replaceStr.length) replaceStr = replaceStr.padEnd(newMatch.length, ' ');
+  let padLen = newMatch.length - replaceStr.length;
+  if (padLen > 0 && padLen < spacePads.length) replaceStr += spacePads[padLen];
   return (offset && /^[.'"$_`\\]$/.test(source[offset - 1])) ? match : replaceStr;
 }
 
-/** @type {import('^/types/remote').default} */
+/**
+ * @typedef {import('../types/types').RemoteOptions} RemoteOptions
+ */
+
+
+/**
+ * @template T
+ * @param {string} url
+ * @param {RemoteOptions} [options]
+ * @returns {Promise<T>}
+ */
 function remote(url, options = {}) {
   url = resolveRelativeUrl(url, {
     host: options.host,
