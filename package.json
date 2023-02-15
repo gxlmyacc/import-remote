@@ -1,6 +1,6 @@
 {
   "name": "import-remote",
-  "version": "0.1.0-alpha.7",
+  "version": "0.1.0-alpha.9",
   "main": "esm/index.js",
   "module": "esm/index.js",
   "typings": "types/index.d.ts",
@@ -47,7 +47,7 @@
     "@babel/core": "^7.20.2",
     "base-64": "^1.0.0",
     "core-js": "^2",
-    "escape-string-regexp": "^2.0.0",
+    "escape-string-regexp": "^1.0.5",
     "find-up": "^4.1.0",
     "hash-sum": "^2.0.0",
     "indexed-db-async": "^0.0.2",

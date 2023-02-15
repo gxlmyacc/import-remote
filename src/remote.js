@@ -3,7 +3,7 @@ import { globalCached, checkRemoteModuleWebpack, requireJs } from './fetch';
 import {
   DEFAULT_TIMEOUT, ATTR_SCOPE_NAME,
   isFunction, getHostFromUrl, resolveRelativeUrl, walkMainifest,
-  innumerable, isPlainObject, joinUrl, isSameHost, getCacheUrl
+  innumerable, isPlainObject, joinUrl, isSameHost, getCacheUrl, copyOwnProperties
 } from './utils';
 import createRuntime5 from './runtime5';
 import { transformStyleHost, ATTR_CSS_TRANSFORMED } from './importCss';
@@ -17,7 +17,7 @@ function createContext(context) {
   return context;
 }
 
-function checkContext(context) {
+function checkContext(context, options = {}) {
   if (!context) return;
   if (!context._cx_) context._cx_ = context.__context__;
   if (context.__windowProxy__ && !context.__wp__) {
@@ -31,6 +31,8 @@ function checkContext(context) {
       g: wp.globals,
     });
   }
+  if (!context.options) innumerable(context, 'options', {});
+  copyOwnProperties(context.options, options);
 }
 
 function resolvePath(modulePath) {
@@ -209,7 +211,7 @@ function requireManifest(url, options) {
 }
 
 const spacePads = new Array(100);
-for (let i = 0; i < 100; i++) {
+for (let i = 0; i < spacePads.length; i++) {
   spacePads[i] = ''.padEnd(i, ' ');
 }
 
@@ -427,7 +429,7 @@ function remote(url, options = {}) {
         };
 
         let context = __remoteModuleWebpack__[scopeName];
-        if (context) checkContext(context);
+        if (context) checkContext(context, options);
         else {
           const globalObject = manifest.windowObject || 'window';
           let newGlobalObject = manifest.globalObject || '__context__';
@@ -465,6 +467,7 @@ function remote(url, options = {}) {
           Object.assign(ctx, remote.globals, globals);
           innumerable(ctx, '__remoteModuleWebpack__', __remoteModuleWebpack__);
           innumerable(ctx, '__HOST__', host);
+          innumerable(ctx, 'options', options);
           // innumerable(ctx, 'cached', cached);
           ctx.__wp__ = ctx._wp_ = ctx.__windowProxy__ = createWindowProxy(windowProxy, {
             scoped: manifest.scopeName, host, beforeSource
@@ -534,10 +537,10 @@ function remote(url, options = {}) {
                   sources[i] = src;
                 });
 
-                return sources.join('');
+                source = sources.join('');
               }
 
-              if (beforeSource) source = beforeSource(source, type, href, options);
+              if (ctx.options?.beforeSource) source = ctx.options.beforeSource(source, type, href, options);
               if (manifest.beforeSource) {
                 source = manifest.beforeSource(
                   source,

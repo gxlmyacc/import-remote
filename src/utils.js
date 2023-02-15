@@ -228,6 +228,27 @@ function getCacheUrl(url, scopeName) {
   return url + `${url.indexOf('?') >= 0 ? '&' : '?'}scopeName=${encodeURIComponent(scopeName)}`;
 }
 
+/** @type {import('types/utils').copyOwnProperties} */
+function copyOwnProperty(target, key, source) {
+  if (!target || !source) return;
+  const d = Object.getOwnPropertyDescriptor(source, key);
+  d && Object.defineProperty(target, key, d);
+  return d;
+}
+
+/**
+ * @template T
+ * @type {import('types/utils').copyOwnProperties<T>}
+ * */
+function copyOwnProperties(target, source, overwrite) {
+  if (!target || !source) return target;
+  Object.getOwnPropertyNames(source).forEach(key => {
+    if (!overwrite && hasOwnProp(target, key)) return;
+    copyOwnProperty(target, key, source);
+  });
+  return target;
+}
+
 export {
   DEFAULT_TIMEOUT,
   ATTR_SCOPE_NAME,
@@ -251,5 +272,8 @@ export {
   requireWithVersion,
 
   transformSourcemapUrl,
-  objectDefineProperty
+  objectDefineProperty,
+
+  copyOwnProperty,
+  copyOwnProperties
 };

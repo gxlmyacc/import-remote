@@ -43,6 +43,10 @@ declare function resolveRelativeUrl(
 
 declare function walkMainifest<T>(target: T): T;
 
+
+declare function copyOwnProperty(target: any, key: string, source: any): PropertyDescriptor | undefined;
+declare function copyOwnProperties<T>(target: T, source: any, overwrite?: boolean): T;
+
 export {
   DEFAULT_TIMEOUT,
   ATTR_SCOPE_NAME,
@@ -65,5 +69,8 @@ export {
   walkMainifest,
 
   transformSourcemapUrl,
-  objectDefineProperty
+  objectDefineProperty,
+
+  copyOwnProperty,
+  copyOwnProperties
 };
