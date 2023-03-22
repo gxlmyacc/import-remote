@@ -10,10 +10,11 @@ import { transformStyleHost, ATTR_CSS_TRANSFORMED } from './importCss';
 import { isRequireFactory } from './requireFactory';
 import { versionLt, satisfy } from './semver';
 
-function createContext(context) {
+function createContext(context, options = {}) {
   if (!context) context = {};
   if (!context.window) context.window = window;
   context._cx_ = context.__context__ = context;
+  innumerable(context, 'options', options);
   return context;
 }
 
@@ -462,12 +463,11 @@ function remote(url, options = {}) {
             });
           });
 
-          const ctx = context = __remoteModuleWebpack__[scopeName] = createContext(windowProxy.context);
+          const ctx = context = __remoteModuleWebpack__[scopeName] = createContext(windowProxy.context, options);
           if (newGlobalObject === '__context__') newGlobalObject = '_cx_';
           Object.assign(ctx, remote.globals, globals);
           innumerable(ctx, '__remoteModuleWebpack__', __remoteModuleWebpack__);
           innumerable(ctx, '__HOST__', host);
-          innumerable(ctx, 'options', options);
           // innumerable(ctx, 'cached', cached);
           ctx.__wp__ = ctx._wp_ = ctx.__windowProxy__ = createWindowProxy(windowProxy, {
             scoped: manifest.scopeName, host, beforeSource

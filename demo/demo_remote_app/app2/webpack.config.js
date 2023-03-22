@@ -38,6 +38,7 @@ module.exports = {
     publicPath: '/',
     filename: 'assets/[name]-[contenthash:5].js',
     chunkFilename: 'assets/[name]-[contenthash:5].js',
+    // libraryTarget: 'umd',
   },
   module: {
     rules: [
@@ -80,6 +81,9 @@ module.exports = {
     ],
   },
   // externals: [/antd\.css$/, 'react', 'react-dom', 'prop-types', 'antd'],
+  // externals: {
+  //   react: 'React'
+  // },
   plugins: [
     new MiniCssExtractPlugin(),
     ...(entryList.map(entry => new ImportRemotePlugin({

@@ -43,7 +43,7 @@
 
 ### 和`webpack Module Fedetation`打包的区别
 
-  - `webpack Module Fedetation` 需要应用和宿主都是`webpack5`，`import-remote`没有这个要求，`webpack4/5`都可以，甚至宿主的打包环境使用的不是`webpack`也没问题；
+  - `webpack Module Fedetation` 需要应用和宿主都是`webpack5`，`import-remote`没有这个要求，`webpack4/5`都可以，甚至宿主的打包环境使用的不是`webpack`(gulp、vite等)也没问题；
 
 ### 实现原理
 

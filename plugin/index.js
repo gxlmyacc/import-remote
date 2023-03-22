@@ -363,11 +363,11 @@ function resolveExternals(compilation, options) {
     // @ts-ignore
     if (webpackMajorVersion < 5) return m.external;
     // @ts-ignore
-    return m.externalType === 'var';
+    return m.externalType;
   }).map(m => {
     let v = { id: getModuleId(compilation, m) };
     // @ts-ignore
-    if (m.externalType) v.type = m.externalTyp;
+    if (m.externalType) v.type = m.externalType;
     // @ts-ignore
     if (isPlainObject(m.request)) {
       // @ts-ignore
@@ -377,7 +377,7 @@ function resolveExternals(compilation, options) {
       Object.assign(v, { name: m.userRequest, var: varName });
     } else {
       // @ts-ignore
-      Object.assign(v, { name: m.request, var: m.request });
+      Object.assign(v, { name: m.userRequest, var: m.request });
     }
     v.path = resolveModulePath(compilation, v.name);
     return v;
