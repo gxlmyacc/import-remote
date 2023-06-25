@@ -767,16 +767,18 @@ class ModuleWebpackPlugin {
                   'consume-shared'
                 // @ts-ignore
                 )._value;
-                self.moduleIdToSourceMapping[id] = [
-                  module.options.shareScope,
-                  module.options.shareKey,
-                  module.options.requiredVersion,
-                  getChunkIdFormSource(source, true)
-                ];
-                let [entryId] = getChunkIdFormSource(source);
-                if (entryId != null) self.moduleIdToSourceMapping[id].push(entryId);
-                let methodName = getMapHandlerMethod(source);
-                if (methodName) self.moduleIdToSourceMapping[id].push(methodName);
+                if (source) {
+                  self.moduleIdToSourceMapping[id] = [
+                    module.options.shareScope,
+                    module.options.shareKey,
+                    module.options.requiredVersion,
+                    getChunkIdFormSource(source, true)
+                  ];
+                  let [entryId] = getChunkIdFormSource(source);
+                  if (entryId != null) self.moduleIdToSourceMapping[id].push(entryId);
+                  let methodName = getMapHandlerMethod(source);
+                  if (methodName) self.moduleIdToSourceMapping[id].push(methodName);
+                }
               }
             };
 
