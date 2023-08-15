@@ -1442,7 +1442,7 @@ class ModuleWebpackPlugin {
     const chunks = compilation.chunks instanceof Set ? Array.from(compilation.chunks) : compilation.chunks;
     let entryChunk = null;
     if (webpackMajorVersion < 5) {
-      entryChunk = chunks.find(c => {
+      entryChunk =  (compilation.namedChunks && compilation.namedChunks.get(entryNames[0])) || chunks.find(c => {
         // @ts-ignore
         if (!c.entryModule) return;
         // @ts-ignore
