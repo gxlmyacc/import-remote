@@ -6,7 +6,10 @@ module.exports = {
         modules: process.env.LIBRARY_MODE ? 'commonjs' : false,
         useBuiltIns: 'usage',
         corejs: 2,
-        targets: { browsers: ['Chrome >= 49', 'firefox >= 45', 'ie >= 8'] },
+        targets: {
+          // browsers: ['Chrome >= 86'],
+          browsers: ['Chrome >= 49', 'firefox >= 45', 'ie >= 8']
+        },
         loose: true
       }
     ],

@@ -241,6 +241,10 @@ function checkReplaceOffset(source, offset, match, replaceStr) {
  * @typedef {import('../types/types').RemoteOptions} RemoteOptions
  */
 
+function isOriginDocument(ctx) {
+  const doc = ctx.__wp__.d;
+  return doc && doc.head === document.head && doc.body === document.body;
+}
 
 /**
  * @template T
@@ -510,20 +514,26 @@ function remote(url, options = {}) {
 
                 const sources = splitSource(source, /[\s<>|&{}:,;()"'+=*![\]/\\]/);
                 sources.forEach((src, i) => {
-                  src = batchReplace(src, [
-                    [/\b(?:window\.)?document(\.getElementsBy(?:TagName(?:NS)?|Name|ClassName)|querySelector(All)?)\b/g, (m, p1, offset, src) => checkReplaceOffset(src, offset, m, '_wp_.d.html' + p1)],
-                    [/\b(?:window\.)?document\.getElementById\b/g, (m, offset, src) => checkReplaceOffset(src, offset, m, '__wp__.d.getElementById')],
-                    [/\b(?:window\.)?document\.createElement\b/g, (m, offset, src) => checkReplaceOffset(src, offset, m, '__wp__.d.createElement')],
-                    [/\b(?:window\.)?document\.body\b/g, (m, offset, src) => checkReplaceOffset(src, offset, m, '__wp__.d.body')],
-                    [/\b(?:window\.)?document\.head\b/g, (m, offset, src) => checkReplaceOffset(src, offset, m, '__wp__.d.head')],
-                    [/\b(?:window\.)?document\.documentElement\b/g,  (m, offset, src) => checkReplaceOffset(src, offset, m, '__wp__.d.html')],
-                    ctx.__wp__.addEventListener
-                      ? [/\bwindow\.addEventListener\b/g, '__wp__.addEventListener']
-                      : null,
-                    ctx.__wp__.removeEventListener
-                      ? [/\bwindow\.removeEventListener\b/g, '__wp__.removeEventListener']
-                      : null,
-                  ]);
+                  if (!isOriginDocument(ctx)) {
+                    src = batchReplace(src, [
+                      [/\b(?:window\.)?document(\.getElementsBy(?:TagName(?:NS)?|Name|ClassName)|querySelector(All)?)\b/g, (m, p1, offset, src) => checkReplaceOffset(src, offset, m, '_wp_.d.html' + p1)],
+                      [/\b(?:window\.)?document\.getElementById\b/g, (m, offset, src) => checkReplaceOffset(src, offset, m, '__wp__.d.getElementById')],
+                      [/\b(?:window\.)?document\.createElement\b/g, (m, offset, src) => checkReplaceOffset(src, offset, m, '__wp__.d.createElement')],
+                      [/\b(?:window\.)?document\.body\b/g, (m, offset, src) => checkReplaceOffset(src, offset, m, '__wp__.d.body')],
+                      [/\b(?:window\.)?document\.head\b/g, (m, offset, src) => checkReplaceOffset(src, offset, m, '__wp__.d.head')],
+                      [/\b(?:window\.)?document\.documentElement\b/g,  (m, offset, src) => checkReplaceOffset(src, offset, m, '__wp__.d.html')],
+                    ]);
+                  }
+                  if (ctx.window !== window) {
+                    src = batchReplace(src, [
+                      ctx.__wp__.addEventListener
+                        ? [/\bwindow\.addEventListener\b/g, '__wp__.addEventListener']
+                        : null,
+                      ctx.__wp__.removeEventListener
+                        ? [/\bwindow\.removeEventListener\b/g, '__wp__.removeEventListener']
+                        : null,
+                    ]);
+                  }
                   if (batchReplaces) src = batchReplace(src, batchReplaces);
                   if (manifest.globalToScopes) {
                     src = batchReplace(src, manifest.globalToScopes.map(varName => {
