@@ -20,7 +20,7 @@ type ExternalItem = {
 
 type SourcemapCallback = (
   scopeName: string,
-  host: string,
+  host?: string,
   publicPath: string,
   href: string,
   source: string,

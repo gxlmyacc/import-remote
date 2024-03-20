@@ -15,7 +15,9 @@ interface FetchOptions {
   cacheDB?: boolean,
   nocache?: boolean,
   method?: FetchMethod,
-  headers?: Record<string, string>
+  headers?: Record<string, string>,
+  require?: (moduleId: string) => any,
+  cached?: Record<string, any>,
 }
 
 declare function fetch<T = any>(url: string, options?: FetchOptions): Promise<T>;

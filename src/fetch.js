@@ -52,7 +52,7 @@ function innumerable(
 /** @type {import('../types/fetch').default} */
 function fetch(url, { timeout = 120000, sync, cacheDB, nocache, method = 'GET', headers } = {}) {
   if (!globalCached._fetched) innumerable(globalCached, '_fetched', {});
-  const fetched = globalCached._fetched;
+  const fetched = globalCached._fetched || {};
   const next = url => {
     if (fetched[url]) return fetched[url];
 
@@ -178,7 +178,7 @@ function requireJs(url, options = {}) {
       throw ex;
     });
   };
-  if (url.then) return url.then(next);
+  if (url && url.then) return url.then(next);
   return next(url);
 }
 
@@ -194,7 +194,7 @@ function isAbsoluteUrl(url) {
  * @param {string} host
  * @param {string} [path]
  */
-function joinUrl(host, path) {
+function joinUrl(host, path = '') {
   if (path && /^["'].+["']$/.test(path)) path = path.substr(1, path.length - 2);
   if (!host || isAbsoluteUrl(path) /* || /^\//.test(path) */) return path;
   if (/^\/[A-Za-z]/.test(host) && path.startsWith(host)) return path;
@@ -206,7 +206,6 @@ function joinUrl(host, path) {
 /**
  * @param {string} host
  * @param {string} [moduleName]
- * @param {boolean} [sync]
  */
 function resolveModuleUrl(host, moduleName = 'index.js') {
   if (!/\.js$/.test(moduleName)) moduleName += '.js';

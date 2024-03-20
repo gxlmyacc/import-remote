@@ -5,8 +5,8 @@ const DEFAULT_TIMEOUT = 120000;
 
 const ATTR_SCOPE_NAME = 'data-remote-scope';
 
-/** @type {import('types/utils').requireFromStr} */
-function requireFromStr(source, { global: context = window, url, moduleProps = {}, } = {}) {
+/** @type {import('../types/utils').requireFromStr} */
+function requireFromStr(source, { global: context = window, url = undefined, moduleProps = {}, } = {}) {
   // eslint-disable-next-line no-useless-catch
   const _module = { inRemoteModule: true, exports: {}, ...moduleProps };
   let names = ['module', 'exports'];
@@ -31,7 +31,7 @@ function requireFromStr(source, { global: context = window, url, moduleProps = {
   return _module.exports;
 }
 
-/** @type {import('types/utils').resolveRelativeUrl} */
+/** @type {import('../types/utils').resolveRelativeUrl} */
 function resolveRelativeUrl(url, options = {}) {
   if (!url || isAbsoluteUrl(url)) return url;
   let host = options.host || window.location.origin;
@@ -48,29 +48,29 @@ function resolveRelativeUrl(url, options = {}) {
       options.onHost && options.onHost(host);
     }
   }
-  return joinUrl(host, url);
+  return joinUrl(host, url) || '';
 }
 
 const _toString = Object.prototype.toString;
 
-/** @type {import('types/utils').isPlainObject} */
+/** @type {import('../types/utils').isPlainObject} */
 function isPlainObject(obj) {
   return _toString.call(obj) === '[object Object]';
 }
 
-/** @type {import('types/utils').isRegExp} */
+/** @type {import('../types/utils').isRegExp} */
 function isRegExp(obj) {
   return _toString.call(obj) === '[object RegExp]';
 }
 
-/** @type {import('types/utils').isFunction} */
+/** @type {import('../types/utils').isFunction} */
 function isFunction(fn) {
   return fn
     && typeof fn === 'function'
     && (!fn.prototype || fn.prototype === Function || fn.constructor === Function);
 }
 
-/** @type {import('types/utils').mergeObject} */
+/** @type {import('../types/utils').mergeObject} */
 function mergeObject(target) {
   function _mergeObject(target, source, copiedObjects) {
     if (!target) return target;
@@ -99,7 +99,7 @@ function mergeObject(target) {
 
 /**
  * @template T
- * @type {import('types/utils').walkMainifest<T>}
+ * @type {import('../types/utils').walkMainifest<T>}
  */
 function walkMainifest(target) {
   let copied = [];
@@ -141,7 +141,7 @@ function walkMainifest(target) {
   return _walk(target, copied);
 }
 
-/** @type {import('types/utils').innumerable} */
+/** @type {import('../types/utils').innumerable} */
 function innumerable(
   obj,
   key,
@@ -153,12 +153,12 @@ function innumerable(
 }
 
 const _hasOwnProperty = Object.prototype.hasOwnProperty;
-/** @type {import('types/utils').hasOwnProp} */
+/** @type {import('../types/utils').hasOwnProp} */
 function hasOwnProp(obj, propName) {
   return _hasOwnProperty.call(obj, propName);
 }
 
-/** @type {import('types/utils').getHostFromUrl} */
+/** @type {import('../types/utils').getHostFromUrl} */
 function getHostFromUrl(url) {
   url = url.replace(/((https?:)?\/\/[^?#]*).*/g, '$1');
   if (!/\.js$/.test(url)) return url;
@@ -167,18 +167,19 @@ function getHostFromUrl(url) {
   return urls.join('/');
 }
 
-/** @type {import('types/utils').isEvalDevtool} */
+/** @type {import('../types/utils').isEvalDevtool} */
 function isEvalDevtool(devtool) {
   return typeof devtool === 'string' && /^(eval|inline)/.test(String(devtool));
 }
 
-/** @type {import('types/utils').requireWithVersion} */
+/** @type {import('../types/utils').requireWithVersion} */
 function requireWithVersion(module, version) {
+  // @ts-ignore
   if (module && !module.version) innumerable(module, 'version', version);
   return module;
 }
 
-/** @type {import('types/utils').isSameHost} */
+/** @type {import('../types/utils').isSameHost} */
 function isSameHost(host1, host2) {
   host1 = host1.replace(/\/+$/, '');
   host2 = host2.replace(/\/+$/, '');
@@ -215,30 +216,30 @@ function transformSourcemapUrl(href, source, { devtool, sourcemapHost, scopeName
     }
   } else if (scopeName) {
     const sourcemapHost = sessionStorage.getItem(`import-remote-${scopeName}-sourcemapping-host`);
-    if (sourcemapHost && href.startsWith(host)) {
+    if (sourcemapHost && host && href.startsWith(host)) {
       source = `${source}\n//# sourceMappingURL=${joinUrl(sourcemapHost, href.substr(host.length, href.length))}.map`;
     }
   }
   return source;
 }
 
-/** @type {import('types/utils').getCacheUrl} */
+/** @type {import('../types/utils').getCacheUrl} */
 function getCacheUrl(url, scopeName) {
   if (!scopeName || typeof scopeName !== 'string') return url;
   return url + `${url.indexOf('?') >= 0 ? '&' : '?'}scopeName=${encodeURIComponent(scopeName)}`;
 }
 
-/** @type {import('types/utils').copyOwnProperties} */
+/** @type {import('../types/utils').copyOwnProperties} */
 function copyOwnProperty(target, key, source) {
-  if (!target || !source) return;
+  if (!target || !source) return target;
   const d = Object.getOwnPropertyDescriptor(source, key);
   d && Object.defineProperty(target, key, d);
-  return d;
+  return target;
 }
 
 /**
  * @template T
- * @type {import('types/utils').copyOwnProperties<T>}
+ * @type {import('../types/utils').copyOwnProperties<T>}
  * */
 function copyOwnProperties(target, source, overwrite) {
   if (!target || !source) return target;
