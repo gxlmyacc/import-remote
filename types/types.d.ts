@@ -111,6 +111,7 @@ interface RemoteOptions {
       head: HTMLElement
     }
   },
+  nocache?: boolean,
   isCommonModule?: boolean,
   useEsModuleDefault?: boolean,
   meta?: Record<string, any>
