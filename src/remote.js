@@ -271,6 +271,7 @@ function remote(url, options = {}) {
     method,
     cacheDB,
     windowProxy = { document: { html: document.documentElement, body: document.body, head: document.head } },
+    nocache=true
   } = options;
   let { scopeName } = options;
   const __remoteModuleWebpack__ = checkRemoteModuleWebpack(windowProxy.context);
@@ -297,7 +298,7 @@ function remote(url, options = {}) {
         const manifest = await requireManifest(url, {
           timeout,
           global: window,
-          nocache: true,
+          nocache: nocache,
           cacheDB,
           sync,
           cached,
